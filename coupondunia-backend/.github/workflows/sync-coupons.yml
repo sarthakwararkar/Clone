@@ -1,0 +1,41 @@
+name: Sync Affiliate Coupons
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    # Allow manual trigger
+
+jobs:
+  sync:
+    name: Sync Coupons from Affiliate Networks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: coupondunia-backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: coupondunia-backend
+
+      - name: Run coupon sync job
+        run: npx tsx src/jobs/syncCoupons.ts
+        working-directory: coupondunia-backend
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          UPSTASH_REDIS_URL: ${{ secrets.UPSTASH_REDIS_URL }}
+          UPSTASH_REDIS_TOKEN: ${{ secrets.UPSTASH_REDIS_TOKEN }}
+          VCOMMISSION_API_KEY: ${{ secrets.VCOMMISSION_API_KEY }}
+          ADMITAD_CLIENT_ID: ${{ secrets.ADMITAD_CLIENT_ID }}
+          ADMITAD_CLIENT_SECRET: ${{ secrets.ADMITAD_CLIENT_SECRET }}
+          CJ_API_KEY: ${{ secrets.CJ_API_KEY }}
