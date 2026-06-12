@@ -50,7 +50,8 @@ export class CouponService {
         c.discount_value, c.affiliate_url, c.source, c.is_verified, c.is_exclusive,
         c.is_featured, c.expires_at, c.starts_at, c.success_rate, c.used_count,
         c.created_at,
-        s.name AS store_name, s.slug AS store_slug, s.logo_url AS store_logo_url
+        s.name AS store_name, s.slug AS store_slug, s.logo_url AS store_logo_url,
+        s.banner_url AS store_banner_url
       FROM coupons c
       JOIN stores s ON s.id = c.store_id
     `;
@@ -76,7 +77,8 @@ export class CouponService {
           c.discount_value, c.affiliate_url, c.source, c.is_verified, c.is_exclusive,
           c.is_featured, c.expires_at, c.starts_at, c.success_rate, c.used_count,
           c.created_at,
-          s.name AS store_name, s.slug AS store_slug, s.logo_url AS store_logo_url
+          s.name AS store_name, s.slug AS store_slug, s.logo_url AS store_logo_url,
+          s.banner_url AS store_banner_url
         FROM coupons c
         JOIN stores s ON s.id = c.store_id
         JOIN categories cat ON cat.id = s.category_id
@@ -139,7 +141,8 @@ export class CouponService {
         c.is_featured, c.expires_at, c.starts_at, c.success_rate, c.used_count,
         c.created_at,
         s.id AS s_id, s.name AS store_name, s.slug AS store_slug,
-        s.logo_url AS store_logo_url, s.website_url AS store_website_url,
+        s.logo_url AS store_logo_url, s.banner_url AS store_banner_url,
+        s.website_url AS store_website_url,
         s.affiliate_url AS store_affiliate_url, s.affiliate_network AS store_affiliate_network,
         s.description AS store_description, s.category_id AS store_category_id,
         s.is_featured AS store_is_featured, s.cashback_rate AS store_cashback_rate,
@@ -344,6 +347,7 @@ export class CouponService {
         name: row.store_name as string,
         slug: row.store_slug as string,
         logo_url: (row.store_logo_url as string) || null,
+        banner_url: (row.store_banner_url as string) || null,
         website_url: (row.store_website_url as string) || null,
         affiliate_url: (row.store_affiliate_url as string) || null,
         affiliate_network: (row.store_affiliate_network as string) || null,
@@ -359,6 +363,7 @@ export class CouponService {
         name: row.store_name as string,
         slug: row.store_slug as string,
         logo_url: (row.store_logo_url as string) || null,
+        banner_url: (row.store_banner_url as string) || null,
         website_url: null,
         affiliate_url: null,
         affiliate_network: null,

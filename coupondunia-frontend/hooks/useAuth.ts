@@ -61,12 +61,45 @@ export function useAuth() {
 
   const signUp = async (email: string, password: string, name: string) => {
     const supabase = createClient()
-    const { error } = await supabase.auth.signUp({ email, password })
-    if (error) throw error
-    try {
-      await api.updateMe({ name })
-    } catch {
-      // Not critical
+    
+    // 1. Sign up the user in Supabase
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ 
+      email, 
+      password 
+    })
+    if (signUpError) throw signUpError
+
+    // 2. Auto-login the user immediately using their credentials
+    let sessionData = signUpData.session
+    if (!sessionData) {
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (!signInError && signInData.session) {
+        sessionData = signInData.session
+      } else if (signInError) {
+        // If sign-in fails due to unconfirmed email, let the user know they need to verify
+        if (
+          signInError.message.toLowerCase().includes('confirm') || 
+          signInError.message.toLowerCase().includes('verified') ||
+          signInError.message.toLowerCase().includes('confirmation')
+        ) {
+          throw new Error('Please check your email to verify and confirm your account.')
+        }
+        throw signInError
+      }
+    }
+
+    // 3. Sync profile name to database if we have an active session
+    if (sessionData) {
+      try {
+        // Wait briefly for the backend auto-creation route to run
+        await new Promise((resolve) => setTimeout(resolve, 500))
+        await api.updateMe({ name })
+      } catch {
+        // Non-critical profile name update failure
+      }
     }
   }
 

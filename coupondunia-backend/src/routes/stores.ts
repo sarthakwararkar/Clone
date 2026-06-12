@@ -44,7 +44,7 @@ storesRouter.get('/', async (c) => {
   // Build query
   let dataQuery = sql`
     SELECT
-      s.id, s.name, s.slug, s.logo_url, s.website_url, s.affiliate_url,
+      s.id, s.name, s.slug, s.logo_url, s.banner_url, s.website_url, s.affiliate_url,
       s.affiliate_network, s.description, s.category_id, s.is_featured,
       s.cashback_rate, s.created_at,
       (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS coupon_count
@@ -58,7 +58,7 @@ storesRouter.get('/', async (c) => {
   if (query.category) {
     dataQuery = sql`
       SELECT
-        s.id, s.name, s.slug, s.logo_url, s.website_url, s.affiliate_url,
+        s.id, s.name, s.slug, s.logo_url, s.banner_url, s.website_url, s.affiliate_url,
         s.affiliate_network, s.description, s.category_id, s.is_featured,
         s.cashback_rate, s.created_at,
         (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS coupon_count
@@ -98,6 +98,7 @@ storesRouter.get('/', async (c) => {
     name: row.name as string,
     slug: row.slug as string,
     logo_url: row.logo_url as string | null,
+    banner_url: row.banner_url as string | null,
     website_url: row.website_url as string | null,
     affiliate_url: row.affiliate_url as string | null,
     affiliate_network: row.affiliate_network as string | null,
@@ -143,7 +144,7 @@ storesRouter.get('/:slug', async (c) => {
   // Get store details
   const storeResult = await db.execute(sql`
     SELECT
-      s.id, s.name, s.slug, s.logo_url, s.website_url, s.affiliate_url,
+      s.id, s.name, s.slug, s.logo_url, s.banner_url, s.website_url, s.affiliate_url,
       s.affiliate_network, s.description, s.category_id, s.is_featured,
       s.cashback_rate, s.created_at,
       (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS coupon_count
@@ -162,6 +163,7 @@ storesRouter.get('/:slug', async (c) => {
     name: storeRow.name as string,
     slug: storeRow.slug as string,
     logo_url: storeRow.logo_url as string | null,
+    banner_url: storeRow.banner_url as string | null,
     website_url: storeRow.website_url as string | null,
     affiliate_url: storeRow.affiliate_url as string | null,
     affiliate_network: storeRow.affiliate_network as string | null,

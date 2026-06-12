@@ -35,6 +35,7 @@ export function StoreForm({ initialData, categories }: StoreFormProps) {
       cashback_rate: initialData?.cashback_rate ?? '',
       is_featured: initialData?.is_featured ?? false,
       logo_url: initialData?.logo_url ?? '',
+      banner_url: initialData?.banner_url ?? '',
     },
   })
 
@@ -109,6 +110,7 @@ export function StoreForm({ initialData, categories }: StoreFormProps) {
       if (values.category_id !== undefined) formData.append('category_id', String(values.category_id))
       if (values.cashback_rate) formData.append('cashback_rate', values.cashback_rate)
       formData.append('is_featured', String(values.is_featured))
+      formData.append('banner_url', values.banner_url ?? '')
 
       if (selectedFile) {
         formData.append('logo', selectedFile)
@@ -300,6 +302,21 @@ export function StoreForm({ initialData, categories }: StoreFormProps) {
             <p className="text-xs text-red-500 mt-1">
               {form.formState.errors.description.message}
             </p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            Banner Image URL
+          </label>
+          <input
+            type="text"
+            {...form.register('banner_url')}
+            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30"
+            placeholder="e.g. https://images.unsplash.com/photo-..."
+          />
+          {form.formState.errors.banner_url && (
+            <p className="text-xs text-red-500 mt-1">{form.formState.errors.banner_url.message}</p>
           )}
         </div>
 

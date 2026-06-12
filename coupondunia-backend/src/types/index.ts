@@ -113,6 +113,7 @@ export interface StoreResponse {
   name: string;
   slug: string;
   logo_url: string | null;
+  banner_url: string | null;
   website_url: string | null;
   affiliate_url: string | null;
   affiliate_network: string | null;
@@ -127,6 +128,8 @@ export interface StoreResponse {
 export interface StoreCreateInput {
   name: string;
   slug: string;
+  logo_url?: string;
+  banner_url?: string;
   website_url?: string;
   affiliate_url?: string;
   affiliate_network?: string;
@@ -139,6 +142,8 @@ export interface StoreCreateInput {
 export interface StoreUpdateInput {
   name?: string;
   slug?: string;
+  logo_url?: string;
+  banner_url?: string;
   website_url?: string;
   affiliate_url?: string;
   affiliate_network?: string;

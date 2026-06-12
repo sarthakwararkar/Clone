@@ -23,6 +23,8 @@ const SEED_STORES = [
     affiliate_url: 'CUELINKS_AFFILIATE_URL_MYNTRA',
     cashback_rate: 'Up to 10%',
     category: 'fashion',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/b/bc/Myntra_Logo.png',
+    banner_url: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1200&q=80',
     description: "India's largest fashion platform with brands like H&M, Zara, Nike, Puma",
     coupons: [
       { title: "Flat 30% Off on Top Brands", type: "code", code: "MYNTRA30", discount_value: "30%", is_verified: true, is_featured: true },
@@ -54,6 +56,8 @@ const SEED_STORES = [
     affiliate_url: 'CUELINKS_AFFILIATE_URL_FLIPKART',
     cashback_rate: 'Up to 12%',
     category: 'electronics',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/7/7a/Flipkart_logo.png',
+    banner_url: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80',
     description: "India's leading e-commerce marketplace for electronics, fashion, and groceries",
     coupons: [
       { title: "Flat 10% Off on Electronics", type: "code", code: "FKELEC10", discount_value: "10%", is_verified: true, is_featured: true },
@@ -85,6 +89,8 @@ const SEED_STORES = [
     affiliate_url: 'AMAZON_ASSOCIATES_AFFILIATE_URL',
     cashback_rate: 'Up to 8%',
     category: 'electronics',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/600px-Amazon_logo.svg.png',
+    banner_url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80',
     description: 'Amazon India — shop electronics, books, fashion, and more with fast delivery',
     coupons: [
       { title: "Up to 70% Off in Great Indian Festival Sale", type: "deal", discount_value: "70%", is_featured: true },
@@ -116,6 +122,8 @@ const SEED_STORES = [
     affiliate_url: 'SWIGGY_AFFILIATE_URL',
     cashback_rate: 'Up to 20%',
     category: 'food',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/1/13/Swiggy_logo.png',
+    banner_url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80',
     description: 'Swiggy — order food online from top restaurants with fast delivery',
     coupons: [
       { title: "Flat 60% Off on First Order (Max ₹120)", type: "code", code: "SWIGNEW", discount_value: "60%", is_verified: true, is_exclusive: true, is_featured: true },
@@ -147,6 +155,8 @@ const SEED_STORES = [
     affiliate_url: 'ZOMATO_AFFILIATE_URL',
     cashback_rate: 'Up to 15%',
     category: 'food',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/7/75/Zomato_logo.png',
+    banner_url: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=1200&q=80',
     description: 'Zomato — discover restaurants, order food online, read reviews',
     coupons: [
       { title: "Flat 50% Off on First 5 Orders (Max ₹100)", type: "code", code: "ZOMONEW", discount_value: "50%", is_exclusive: true, is_featured: true },
@@ -178,6 +188,8 @@ const SEED_STORES = [
     affiliate_url: 'CUELINKS_AFFILIATE_URL_NYKAA',
     cashback_rate: 'Up to 10%',
     category: 'beauty',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Nykaa_Logo.svg/512px-Nykaa_Logo.svg.png',
+    banner_url: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1200&q=80',
     description: "Nykaa — India's premier beauty and wellness destination",
     coupons: [
       { title: "Flat 20% Off on Luxury Brands", type: "code", code: "NYK20", discount_value: "20%", is_verified: true, is_featured: true },
@@ -209,6 +221,8 @@ const SEED_STORES = [
     affiliate_url: 'CUELINKS_AFFILIATE_URL_MMT',
     cashback_rate: 'Up to ₹600 per booking',
     category: 'travel',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/MakeMyTrip_Logo.svg/512px-MakeMyTrip_Logo.svg.png',
+    banner_url: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1200&q=80',
     description: 'MakeMyTrip — book flights, hotels, holiday packages across India and worldwide',
     coupons: [
       { title: "Flat ₹1500 Off on Domestic Flight Bookings", type: "code", code: "MMTFLY", discount_value: "₹1500", is_verified: true, is_featured: true },
@@ -240,6 +254,8 @@ const SEED_STORES = [
     affiliate_url: 'CUELINKS_AFFILIATE_URL_AJIO',
     cashback_rate: 'Up to 12%',
     category: 'fashion',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/AJIO_logo.svg/512px-AJIO_logo.svg.png',
+    banner_url: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80',
     description: 'Ajio — curated fashion from top Indian and international brands',
     coupons: [
       { title: "Flat 30% Off Sitewide", type: "code", code: "AJIO30", discount_value: "30%", is_verified: true, is_featured: true },
@@ -271,6 +287,8 @@ const SEED_STORES = [
     affiliate_url: 'CUELINKS_AFFILIATE_URL_BIGBASKET',
     cashback_rate: 'Up to 8%',
     category: 'grocery',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Bigbasket_Logo.svg/512px-Bigbasket_Logo.svg.png',
+    banner_url: 'https://images.unsplash.com/photo-1543083503-087771d187cf?auto=format&fit=crop&w=1200&q=80',
     description: "BigBasket — India's largest online grocery and supermarket",
     coupons: [
       { title: "Flat 25% Off on First Order", type: "code", code: "BBNEW25", discount_value: "25%", is_verified: true, is_exclusive: true, is_featured: true },
@@ -302,6 +320,8 @@ const SEED_STORES = [
     affiliate_url: 'CUELINKS_AFFILIATE_URL_MEESHO',
     cashback_rate: 'Up to 15%',
     category: 'fashion',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Meesho_Logo_2023.svg/512px-Meesho_Logo_2023.svg.png',
+    banner_url: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=1200&q=80',
     description: 'Meesho — affordable fashion, home and kitchen products starting at ₹99',
     coupons: [
       { title: "Flat 30% Off Sitewide on First Order", type: "code", code: "MEESHO30", discount_value: "30%", is_verified: true, is_exclusive: true, is_featured: true },
@@ -386,6 +406,8 @@ export async function main() {
         cashback_rate: storeData.cashback_rate,
         description: storeData.description,
         category_id: categoryId,
+        logo_url: storeData.logo_url || null,
+        banner_url: storeData.banner_url || null,
       }).onConflictDoUpdate({
         target: stores.slug,
         set: {
@@ -395,6 +417,8 @@ export async function main() {
           cashback_rate: sql`EXCLUDED.cashback_rate`,
           description: sql`EXCLUDED.description`,
           category_id: sql`EXCLUDED.category_id`,
+          logo_url: sql`EXCLUDED.logo_url`,
+          banner_url: sql`EXCLUDED.banner_url`,
           updated_at: sql`NOW()`,
         }
       }).returning();

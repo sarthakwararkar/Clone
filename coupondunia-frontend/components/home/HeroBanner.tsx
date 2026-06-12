@@ -41,7 +41,20 @@ export function HeroBanner({ coupons }: HeroBannerProps) {
           className="absolute inset-0 transition-opacity duration-400"
           style={{ opacity: idx === current ? 1 : 0, zIndex: idx === current ? 1 : 0 }}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-red-500 to-orange-500" />
+          {s.store?.banner_url ? (
+            <div className="absolute inset-0">
+              <Image
+                src={s.store.banner_url}
+                alt={s.store.name}
+                fill
+                className="object-cover"
+                priority={idx === 0}
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-transparent" />
+            </div>
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-red-500 to-orange-500" />
+          )}
           <div className="relative z-10 h-full flex items-center justify-between px-8 md:px-12">
             {/* Left: content */}
             <div className="flex-1 max-w-lg">

@@ -52,8 +52,10 @@ const updateCouponSchema = z.object({
 const createStoreSchema = z.object({
   name: z.string().min(1).max(200),
   slug: z.string().min(1).max(200).regex(/^[a-z0-9-]+$/),
-  website_url: z.string().url().optional(),
-  affiliate_url: z.string().url().optional(),
+  logo_url: z.string().url().or(z.literal('')).optional(),
+  banner_url: z.string().url().or(z.literal('')).optional(),
+  website_url: z.string().url().or(z.literal('')).optional(),
+  affiliate_url: z.string().url().or(z.literal('')).optional(),
   affiliate_network: z.string().optional(),
   description: z.string().max(2000).optional(),
   category_id: z.number().int().positive().optional(),
@@ -64,8 +66,10 @@ const createStoreSchema = z.object({
 const updateStoreSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   slug: z.string().min(1).max(200).regex(/^[a-z0-9-]+$/).optional(),
-  website_url: z.string().url().optional(),
-  affiliate_url: z.string().url().optional(),
+  logo_url: z.string().url().or(z.literal('')).optional(),
+  banner_url: z.string().url().or(z.literal('')).optional(),
+  website_url: z.string().url().or(z.literal('')).optional(),
+  affiliate_url: z.string().url().or(z.literal('')).optional(),
   affiliate_network: z.string().optional(),
   description: z.string().max(2000).optional(),
   category_id: z.number().int().positive().optional(),
@@ -231,7 +235,8 @@ adminRouter.post('/stores', async (c) => {
     .values({
       name: storeData.name,
       slug: storeData.slug,
-      logo_url: logoUrl,
+      logo_url: logoUrl || storeData.logo_url || null,
+      banner_url: storeData.banner_url || null,
       website_url: storeData.website_url ?? null,
       affiliate_url: storeData.affiliate_url ?? null,
       affiliate_network: storeData.affiliate_network ?? null,
@@ -253,6 +258,7 @@ adminRouter.post('/stores', async (c) => {
     name: store.name,
     slug: store.slug,
     logo_url: store.logo_url,
+    banner_url: store.banner_url,
     website_url: store.website_url,
     affiliate_url: store.affiliate_url,
     affiliate_network: store.affiliate_network,
@@ -347,8 +353,10 @@ adminRouter.patch('/stores/:id', async (c) => {
   const setData: Record<string, unknown> = { updated_at: new Date() };
   if (updateData.name !== undefined) setData.name = updateData.name;
   if (updateData.slug !== undefined) setData.slug = updateData.slug;
-  if (updateData.website_url !== undefined) setData.website_url = updateData.website_url;
-  if (updateData.affiliate_url !== undefined) setData.affiliate_url = updateData.affiliate_url;
+  if (updateData.logo_url !== undefined) setData.logo_url = updateData.logo_url || null;
+  if (updateData.banner_url !== undefined) setData.banner_url = updateData.banner_url || null;
+  if (updateData.website_url !== undefined) setData.website_url = updateData.website_url || null;
+  if (updateData.affiliate_url !== undefined) setData.affiliate_url = updateData.affiliate_url || null;
   if (updateData.affiliate_network !== undefined) setData.affiliate_network = updateData.affiliate_network;
   if (updateData.description !== undefined) setData.description = updateData.description;
   if (updateData.category_id !== undefined) setData.category_id = updateData.category_id;
@@ -379,6 +387,7 @@ adminRouter.patch('/stores/:id', async (c) => {
     name: updated.name,
     slug: updated.slug,
     logo_url: updated.logo_url,
+    banner_url: updated.banner_url,
     website_url: updated.website_url,
     affiliate_url: updated.affiliate_url,
     affiliate_network: updated.affiliate_network,

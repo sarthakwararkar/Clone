@@ -15,6 +15,7 @@ export const storeSchema = z.object({
   cashback_rate: z.string().optional(),
   is_featured: z.boolean(),
   logo_url: z.string().optional(),
+  banner_url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
 })
 
 export type StoreSchemaValues = z.infer<typeof storeSchema>

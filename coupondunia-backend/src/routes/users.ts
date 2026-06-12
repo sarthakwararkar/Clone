@@ -124,6 +124,7 @@ usersRouter.get('/saved', async (c) => {
       c.is_featured, c.expires_at, c.starts_at, c.success_rate, c.used_count,
       c.created_at,
       s.name AS store_name, s.slug AS store_slug, s.logo_url AS store_logo_url,
+      s.banner_url AS store_banner_url,
       sc.saved_at
     FROM saved_coupons sc
     JOIN coupons c ON c.id = sc.coupon_id
@@ -156,6 +157,7 @@ usersRouter.get('/saved', async (c) => {
       name: row.store_name as string,
       slug: row.store_slug as string,
       logo_url: row.store_logo_url as string | null,
+      banner_url: row.store_banner_url as string | null,
       website_url: null,
       affiliate_url: null,
       affiliate_network: null,

@@ -58,6 +58,7 @@ export const stores = pgTable(
     name: text('name').notNull(),
     slug: text('slug').notNull().unique(),
     logo_url: text('logo_url'),
+    banner_url: text('banner_url'),
     website_url: text('website_url'),
     affiliate_url: text('affiliate_url'),
     affiliate_network: text('affiliate_network'),

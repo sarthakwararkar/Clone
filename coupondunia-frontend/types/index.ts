@@ -20,6 +20,7 @@ export interface Store {
   name: string
   slug: string
   logo_url: string | null
+  banner_url: string | null
   website_url: string | null
   affiliate_url: string | null
   affiliate_network: string | null
