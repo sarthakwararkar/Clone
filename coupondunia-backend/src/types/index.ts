@@ -37,7 +37,7 @@ export interface PaginatedResponse<T> {
 // ─── Coupon Types ───────────────────────────────────────────────────────────
 
 export type CouponType = 'code' | 'deal' | 'cashback';
-export type CouponSource = 'vcommission' | 'admitad' | 'cj' | 'manual';
+export type CouponSource = 'vcommission' | 'admitad' | 'cj' | 'manual' | 'cuelinks' | 'grabon' | 'cashkaro' | 'desidime';
 
 export interface CouponData {
   title: string;

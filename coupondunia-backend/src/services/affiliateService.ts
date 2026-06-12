@@ -17,17 +17,20 @@ export class AffiliateService {
    * Sync coupons from vCommission API.
    * vCommission provides a JSON API for Indian affiliate programs.
    */
+  /**
+   * Sync coupons from vCommission API.
+   * vCommission provides a JSON API for Indian affiliate programs.
+   */
   async syncVCommission(apiKey: string): Promise<CouponData[]> {
     console.log('[AffiliateService] Syncing vCommission coupons...');
 
     try {
-      // vCommission API endpoint (replace with actual endpoint)
-      const response = await fetch(
-        `https://api.vcommission.com/coupons?apikey=${apiKey}&format=json`,
-        {
-          headers: { Accept: 'application/json' },
-        }
-      );
+      const response = await fetch('https://api.vcommission.com/api/coupons', {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          Accept: 'application/json',
+        },
+      });
 
       if (!response.ok) {
         console.error(`vCommission API returned ${response.status}`);
@@ -36,18 +39,14 @@ export class AffiliateService {
 
       const data = (await response.json()) as {
         coupons?: Array<{
-          id: string;
-          title: string;
-          description: string;
-          code: string;
-          type: string;
-          discount: string;
-          url: string;
-          store: string;
-          store_slug: string;
-          start_date: string;
-          end_date: string;
-          exclusive: boolean;
+          coupon_id: string | number;
+          coupon_title: string;
+          coupon_code: string | null;
+          coupon_type: string;
+          valid_till: string | null;
+          tracking_url: string;
+          merchant_name: string;
+          coupon_description?: string;
         }>;
       };
 
@@ -56,22 +55,102 @@ export class AffiliateService {
         return [];
       }
 
-      return data.coupons.map((item) => ({
-        title: item.title || 'Untitled Offer',
-        description: item.description || null,
-        code: item.code || null,
-        coupon_type: this.mapCouponType(item.type),
-        discount_value: item.discount || '',
-        affiliate_url: item.url || '',
-        source: 'vcommission' as CouponSource,
-        external_id: item.id,
-        store_slug: this.slugify(item.store_slug || item.store || ''),
-        starts_at: item.start_date ? new Date(item.start_date) : null,
-        expires_at: item.end_date ? new Date(item.end_date) : null,
-        is_exclusive: item.exclusive || false,
-      }));
+      const dbStores = await this.db.select({ slug: stores.slug }).from(stores);
+      const storeSlugs = new Set(dbStores.map(s => s.slug));
+
+      const mappedCoupons: CouponData[] = [];
+      for (const item of data.coupons) {
+        const storeSlug = this.slugify(item.merchant_name || '');
+        if (storeSlugs.has(storeSlug)) {
+          mappedCoupons.push({
+            title: item.coupon_title || 'Untitled Offer',
+            description: item.coupon_description || null,
+            code: item.coupon_code || null,
+            coupon_type: this.mapCouponType(item.coupon_type),
+            discount_value: item.coupon_title || '',
+            affiliate_url: item.tracking_url || '',
+            source: 'vcommission' as CouponSource,
+            external_id: String(item.coupon_id),
+            store_slug: storeSlug,
+            starts_at: null,
+            expires_at: item.valid_till ? new Date(item.valid_till) : null,
+            is_exclusive: false,
+          });
+        }
+      }
+
+      return mappedCoupons;
     } catch (error) {
       console.error('[vCommission] Sync error:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Sync coupons from Cuelinks API.
+   * Cuelinks provides coupons and deals data for Indian advertisers.
+   */
+  async syncCuelinks(apiKey: string): Promise<CouponData[]> {
+    console.log('[AffiliateService] Syncing Cuelinks coupons...');
+
+    try {
+      const response = await fetch('https://api.cuelinks.com/v1/coupons', {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          Accept: 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        console.error(`Cuelinks API returned ${response.status}`);
+        return [];
+      }
+
+      const data = (await response.json()) as {
+        coupons?: Array<{
+          coupon_id: string | number;
+          coupon_title: string;
+          coupon_code: string | null;
+          coupon_type: string;
+          valid_till: string | null;
+          tracking_url: string;
+          merchant_name: string;
+          coupon_description?: string;
+        }>;
+      };
+
+      if (!data.coupons || !Array.isArray(data.coupons)) {
+        console.log('[Cuelinks] No coupons found in response');
+        return [];
+      }
+
+      const dbStores = await this.db.select({ slug: stores.slug }).from(stores);
+      const storeSlugs = new Set(dbStores.map(s => s.slug));
+
+      const mappedCoupons: CouponData[] = [];
+      for (const item of data.coupons) {
+        const storeSlug = this.slugify(item.merchant_name || '');
+        if (storeSlugs.has(storeSlug)) {
+          mappedCoupons.push({
+            title: item.coupon_title || 'Untitled Offer',
+            description: item.coupon_description || null,
+            code: item.coupon_code || null,
+            coupon_type: this.mapCouponType(item.coupon_type),
+            discount_value: item.coupon_title || '',
+            affiliate_url: item.tracking_url || '',
+            source: 'cuelinks' as CouponSource,
+            external_id: String(item.coupon_id),
+            store_slug: storeSlug,
+            starts_at: null,
+            expires_at: item.valid_till ? new Date(item.valid_till) : null,
+            is_exclusive: false,
+          });
+        }
+      }
+
+      return mappedCoupons;
+    } catch (error) {
+      console.error('[Cuelinks] Sync error:', error);
       return [];
     }
   }

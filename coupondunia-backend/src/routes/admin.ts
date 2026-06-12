@@ -6,7 +6,7 @@ import { coupons, stores } from '../db/schema';
 import { authMiddleware, adminMiddleware } from '../middleware/auth';
 import { createCouponService } from '../services/couponService';
 import { createCacheService } from '../services/cacheService';
-import { createR2Service } from '../services/r2Service';
+import { createCloudinaryService } from '../services/cloudinaryService';
 import { createAffiliateService } from '../services/affiliateService';
 import type { AppBindings, ApiResponse, CouponResponse, StoreResponse } from '../types';
 
@@ -203,11 +203,15 @@ adminRouter.post('/stores', async (c) => {
     // Handle logo upload
     const logoFile = formData.get('logo') as File | null;
     if (logoFile && logoFile.size > 0) {
-      const r2Service = createR2Service(c.env.R2_BUCKET, c.env.R2_PUBLIC_URL);
+      const cloudinaryService = createCloudinaryService(
+        c.env.CLOUDINARY_CLOUD_NAME,
+        c.env.CLOUDINARY_API_KEY,
+        c.env.CLOUDINARY_API_SECRET
+      );
       const ext = logoFile.name.split('.').pop() || 'png';
       const key = `stores/logos/${storeData.slug}.${ext}`;
       const arrayBuffer = await logoFile.arrayBuffer();
-      logoUrl = await r2Service.uploadFile(key, arrayBuffer, logoFile.type);
+      logoUrl = await cloudinaryService.uploadFile(key, arrayBuffer, logoFile.type);
     }
   } else {
     const body = await c.req.json();
@@ -301,7 +305,11 @@ adminRouter.patch('/stores/:id', async (c) => {
     // Handle new logo upload
     const logoFile = formData.get('logo') as File | null;
     if (logoFile && logoFile.size > 0) {
-      const r2Service = createR2Service(c.env.R2_BUCKET, c.env.R2_PUBLIC_URL);
+      const cloudinaryService = createCloudinaryService(
+        c.env.CLOUDINARY_CLOUD_NAME,
+        c.env.CLOUDINARY_API_KEY,
+        c.env.CLOUDINARY_API_SECRET
+      );
 
       // Delete old logo if exists
       const [existingStore] = await db
@@ -311,9 +319,9 @@ adminRouter.patch('/stores/:id', async (c) => {
         .limit(1);
 
       if (existingStore?.logo_url) {
-        const oldKey = r2Service.getKeyFromUrl(existingStore.logo_url);
+        const oldKey = cloudinaryService.getKeyFromUrl(existingStore.logo_url);
         if (oldKey) {
-          await r2Service.deleteFile(oldKey);
+          await cloudinaryService.deleteFile(oldKey);
         }
       }
 
@@ -321,7 +329,7 @@ adminRouter.patch('/stores/:id', async (c) => {
       const ext = logoFile.name.split('.').pop() || 'png';
       const key = `stores/logos/${slug}.${ext}`;
       const arrayBuffer = await logoFile.arrayBuffer();
-      newLogoUrl = await r2Service.uploadFile(key, arrayBuffer, logoFile.type);
+      newLogoUrl = await cloudinaryService.uploadFile(key, arrayBuffer, logoFile.type);
     }
   } else {
     const body = await c.req.json();
@@ -446,6 +454,236 @@ adminRouter.post('/sync', async (c) => {
   ]);
 
   return c.json({ success: true, data: results });
+});
+
+// ─── GET /api/admin/stats ───────────────────────────────────────────────────
+
+adminRouter.get('/stats', async (c) => {
+  const db = createDb(c.env.DATABASE_URL);
+
+  const [couponsCount, storesCount, usersCount, expiringCount] = await Promise.all([
+    db.execute(sql`SELECT COUNT(*)::int AS total FROM coupons`),
+    db.execute(sql`SELECT COUNT(*)::int AS total FROM stores`),
+    db.execute(sql`SELECT COUNT(*)::int AS total FROM users`),
+    db.execute(sql`
+      SELECT COUNT(*)::int AS total 
+      FROM coupons 
+      WHERE expires_at > NOW() AND expires_at <= NOW() + INTERVAL '7 days'
+    `)
+  ]);
+
+  const totalCoupons = (couponsCount.rows[0] as any)?.total || 0;
+  const totalStores = (storesCount.rows[0] as any)?.total || 0;
+  const totalUsers = (usersCount.rows[0] as any)?.total || 0;
+  const expiringThisWeek = (expiringCount.rows[0] as any)?.total || 0;
+
+  return c.json({
+    success: true,
+    data: {
+      totalCoupons,
+      totalStores,
+      totalUsers,
+      expiringThisWeek,
+    }
+  });
+});
+
+// ─── GET /api/admin/coupons ─────────────────────────────────────────────────
+
+const listAdminCouponsSchema = z.object({
+  page: z
+    .string()
+    .optional()
+    .transform((v) => Math.max(1, parseInt(v || '1', 10))),
+  limit: z
+    .string()
+    .optional()
+    .transform((v) => Math.min(100, Math.max(1, parseInt(v || '20', 10)))),
+});
+
+adminRouter.get('/coupons', async (c) => {
+  const query = listAdminCouponsSchema.parse(c.req.query());
+  const db = createDb(c.env.DATABASE_URL);
+  const offset = (query.page - 1) * query.limit;
+
+  const dataQuery = sql`
+    SELECT
+      c.id, c.store_id, c.title, c.description, c.code, c.coupon_type,
+      c.discount_value, c.affiliate_url, c.source, c.is_verified, c.is_exclusive,
+      c.is_featured, c.expires_at, c.starts_at, c.success_rate, c.used_count, c.created_at,
+      s.name AS store_name, s.logo_url AS store_logo_url, s.slug AS store_slug
+    FROM coupons c
+    LEFT JOIN stores s ON s.id = c.store_id
+    ORDER BY c.created_at DESC
+    LIMIT ${query.limit} OFFSET ${offset}
+  `;
+
+  const countQuery = sql`SELECT COUNT(*)::int AS total FROM coupons`;
+
+  const [dataResult, countResult] = await Promise.all([
+    db.execute(dataQuery),
+    db.execute(countQuery),
+  ]);
+
+  const total = (countResult.rows[0] as any)?.total || 0;
+  const totalPages = Math.ceil(total / query.limit);
+
+  const data = (dataResult.rows as any[]).map((row) => ({
+    id: row.id,
+    store_id: row.store_id,
+    title: row.title,
+    description: row.description,
+    code: row.code,
+    coupon_type: row.coupon_type,
+    discount_value: row.discount_value,
+    affiliate_url: row.affiliate_url,
+    source: row.source,
+    is_verified: row.is_verified,
+    is_exclusive: row.is_exclusive,
+    is_featured: row.is_featured,
+    expires_at: row.expires_at ? new Date(row.expires_at).toISOString() : null,
+    starts_at: row.starts_at ? new Date(row.starts_at).toISOString() : null,
+    success_rate: row.success_rate,
+    used_count: row.used_count,
+    created_at: new Date(row.created_at).toISOString(),
+    store: {
+      id: row.store_id,
+      name: row.store_name,
+      slug: row.store_slug,
+      logo_url: row.store_logo_url,
+    },
+  }));
+
+  return c.json({
+    success: true,
+    data,
+    pagination: {
+      page: query.page,
+      limit: query.limit,
+      total,
+      totalPages,
+      hasNext: query.page < totalPages,
+      hasPrev: query.page > 1,
+    },
+  });
+});
+
+// ─── POST /api/admin/import ──────────────────────────────────────────────────
+
+const importCouponItemSchema = z.object({
+  store_slug: z.string().min(1),
+  title: z.string().min(1).max(500),
+  code: z.string().max(100).optional().nullable(),
+  coupon_type: z.enum(['code', 'deal', 'cashback']),
+  discount_value: z.string().min(1),
+  affiliate_url: z.string().url(),
+  expires_at: z.string().datetime().optional().nullable(),
+  is_verified: z.boolean().optional(),
+  is_exclusive: z.boolean().optional(),
+  is_featured: z.boolean().optional(),
+});
+
+const importCouponsSchema = z.array(importCouponItemSchema);
+
+adminRouter.post('/import', async (c) => {
+  const body = await c.req.json();
+  const parsed = importCouponsSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return c.json(
+      { success: false, error: 'Invalid request body structure', message: parsed.error.message } as ApiResponse,
+      400
+    );
+  }
+
+  const db = createDb(c.env.DATABASE_URL);
+  const cache = createCacheService(c.env.UPSTASH_REDIS_URL, c.env.UPSTASH_REDIS_TOKEN);
+
+  // Fetch all stores to build slug-to-id mapping
+  const allStores = await db.select({ id: stores.id, slug: stores.slug }).from(stores);
+  const storeMap = new Map(allStores.map((s) => [s.slug, s.id]));
+
+  let imported = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+
+  const couponsToInsert = [];
+
+  for (const item of parsed.data) {
+    const storeId = storeMap.get(item.store_slug);
+    if (!storeId) {
+      skipped++;
+      errors.push(`Store not found for slug: "${item.store_slug}" on coupon: "${item.title}"`);
+      console.warn(`[Import] Skipping coupon "${item.title}": store slug "${item.store_slug}" not found`);
+      continue;
+    }
+
+    couponsToInsert.push({
+      store_id: storeId,
+      title: item.title,
+      code: item.code || null,
+      coupon_type: item.coupon_type,
+      discount_value: item.discount_value,
+      affiliate_url: item.affiliate_url,
+      source: 'manual',
+      is_verified: item.is_verified ?? false,
+      is_exclusive: item.is_exclusive ?? false,
+      is_featured: item.is_featured ?? false,
+      expires_at: item.expires_at ? new Date(item.expires_at) : null,
+    });
+  }
+
+  if (couponsToInsert.length > 0) {
+    try {
+      // Insert in chunks of 50 to avoid database parameter size limit in Postgres
+      const chunkSize = 50;
+      for (let i = 0; i < couponsToInsert.length; i += chunkSize) {
+        const chunk = couponsToInsert.slice(i, i + chunkSize);
+        await db
+          .insert(coupons)
+          .values(chunk)
+          .onConflictDoUpdate({
+            target: [coupons.store_id, coupons.title],
+            set: {
+              code: sql`EXCLUDED.code`,
+              coupon_type: sql`EXCLUDED.coupon_type`,
+              discount_value: sql`EXCLUDED.discount_value`,
+              affiliate_url: sql`EXCLUDED.affiliate_url`,
+              is_verified: sql`EXCLUDED.is_verified`,
+              is_exclusive: sql`EXCLUDED.is_exclusive`,
+              is_featured: sql`EXCLUDED.is_featured`,
+              expires_at: sql`EXCLUDED.expires_at`,
+              updated_at: sql`NOW()`,
+            },
+          });
+        imported += chunk.length;
+      }
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.error('[Import] Database bulk insert failed:', error);
+      errors.push(`Database error: ${errMsg}`);
+      skipped += couponsToInsert.length;
+    }
+  }
+
+  // Invalidate all related caches
+  if (imported > 0) {
+    await Promise.all([
+      cache.delPattern('coupons:'),
+      cache.delPattern('stores:'),
+      cache.delPattern('store:'),
+      cache.delPattern('search:'),
+    ]);
+  }
+
+  return c.json({
+    success: true,
+    data: {
+      imported,
+      skipped,
+      errors,
+    },
+  });
 });
 
 export { adminRouter };

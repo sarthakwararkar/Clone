@@ -3,10 +3,6 @@ main = "src/index.ts"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
-[[r2_buckets]]
-binding = "R2_BUCKET"
-bucket_name = "coupondunia-assets"
-
 [vars]
 ENVIRONMENT = "production"
 
@@ -18,4 +14,9 @@ ENVIRONMENT = "production"
 # UPSTASH_REDIS_TOKEN
 # RESEND_API_KEY
 # SENTRY_DSN
-# R2_PUBLIC_URL
+# CLOUDINARY_CLOUD_NAME
+# CLOUDINARY_API_KEY
+# CLOUDINARY_API_SECRET
+# CJ_API_KEY
+# VCOMMISSION_API_KEY
+# CUELINKS_API_KEY

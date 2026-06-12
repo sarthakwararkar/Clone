@@ -1,0 +1,10 @@
+{
+  "name": "coupondunia-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node run-all.js",
+    "db:push": "npm run db:push --prefix coupondunia-backend",
+    "db:studio": "npm run db:studio --prefix coupondunia-backend"
+  }
+}

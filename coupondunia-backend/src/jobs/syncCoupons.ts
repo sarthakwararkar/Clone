@@ -97,6 +97,25 @@ async function main() {
     syncResults.cj = { count: 0, error: 'No API key configured' };
   }
 
+  // ─── Sync Cuelinks ───────────────────────────────────────────────────────
+
+  if (process.env.CUELINKS_API_KEY) {
+    console.log('\n📦 Syncing Cuelinks...');
+    try {
+      const coupons = await affiliateService.syncCuelinks(process.env.CUELINKS_API_KEY);
+      syncResults.cuelinks = { count: coupons.length };
+      allCoupons.push(...coupons);
+      console.log(`   ✅ Fetched ${coupons.length} coupons from Cuelinks`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      syncResults.cuelinks = { count: 0, error: message };
+      console.error(`   ❌ Cuelinks sync failed: ${message}`);
+    }
+  } else {
+    console.log('\n⏩ Skipping Cuelinks (no API key)');
+    syncResults.cuelinks = { count: 0, error: 'No API key configured' };
+  }
+
   // ─── Upsert Coupons ──────────────────────────────────────────────────
 
   console.log(`\n💾 Upserting ${allCoupons.length} total coupons...`);

@@ -12,7 +12,7 @@ A production-ready coupon & cashback aggregator backend for India, built with Ho
 | **ORM** | [Drizzle ORM](https://orm.drizzle.team/) |
 | **Cache** | [Upstash Redis](https://upstash.com/) |
 | **Auth** | [Supabase Auth](https://supabase.com/) (JWT verification) |
-| **Storage** | [Cloudflare R2](https://developers.cloudflare.com/r2/) |
+| **Storage** | [Cloudinary](https://cloudinary.com/) |
 | **Email** | [Resend](https://resend.com/) |
 | **Search** | PostgreSQL Full-Text Search |
 | **Cron Jobs** | GitHub Actions |
@@ -106,7 +106,7 @@ coupondunia-backend/
 │   │   ├── searchService.ts      # Postgres FTS
 │   │   ├── cacheService.ts       # Upstash Redis cache
 │   │   ├── emailService.ts       # Resend email sender
-│   │   ├── r2Service.ts          # Cloudflare R2 storage
+│   │   ├── cloudinaryService.ts    # Cloudinary image storage
 │   │   └── affiliateService.ts   # Affiliate API sync
 │   ├── jobs/
 │   │   ├── syncCoupons.ts        # Cron: sync affiliate feeds
@@ -175,7 +175,9 @@ wrangler secret put UPSTASH_REDIS_URL
 wrangler secret put UPSTASH_REDIS_TOKEN
 wrangler secret put RESEND_API_KEY
 wrangler secret put SENTRY_DSN
-wrangler secret put R2_PUBLIC_URL
+wrangler secret put CLOUDINARY_CLOUD_NAME
+wrangler secret put CLOUDINARY_API_KEY
+wrangler secret put CLOUDINARY_API_SECRET
 
 # Deploy
 npm run deploy

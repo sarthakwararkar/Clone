@@ -1,0 +1,33 @@
+name: Scrape Public Deals
+
+on:
+  schedule:
+    - cron: '0 */12 * * *' # Every 12 hours
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: coupondunia-backend/package-lock.json
+
+      - name: Install Dependencies
+        run: |
+          cd coupondunia-backend
+          npm ci
+
+      - name: Run Scraper Script
+        run: |
+          cd coupondunia-backend
+          npx tsx src/jobs/scrapePublicDeals.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

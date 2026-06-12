@@ -107,6 +107,8 @@ export const coupons = pgTable(
     store_id_idx: index('coupons_store_id_idx').on(table.store_id),
     expires_at_idx: index('coupons_expires_at_idx').on(table.expires_at),
     is_featured_idx: index('coupons_is_featured_idx').on(table.is_featured),
+    store_id_title_unique: uniqueIndex('coupons_store_id_title_idx').on(table.store_id, table.title),
+    external_id_source_unique: uniqueIndex('coupons_external_id_source_idx').on(table.external_id, table.source),
   })
 );
 
