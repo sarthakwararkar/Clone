@@ -2,7 +2,6 @@ const fs = require('fs');
 const path = require('path');
 
 const rootEnvPath = path.join(__dirname, '.env');
-const backendEnvPath = path.join(__dirname, 'coupondunia-backend', '.env');
 const backendDevVarsPath = path.join(__dirname, 'coupondunia-backend', '.dev.vars');
 const frontendEnvPath = path.join(__dirname, 'coupondunia-frontend', '.env.local');
 
@@ -46,9 +45,8 @@ if (!fs.existsSync(rootEnvPath)) {
   const envContent = fs.readFileSync(rootEnvPath, 'utf8');
 
   // Write to backend
-  fs.writeFileSync(backendEnvPath, envContent);
   fs.writeFileSync(backendDevVarsPath, envContent);
-  console.log('✓ Synced to coupondunia-backend/.env and .dev.vars');
+  console.log('✓ Synced to coupondunia-backend/.dev.vars');
 
   // Write to frontend
   fs.writeFileSync(frontendEnvPath, envContent);

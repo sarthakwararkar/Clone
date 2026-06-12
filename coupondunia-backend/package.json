@@ -10,11 +10,11 @@
     "db:push": "node ../sync-env.js && drizzle-kit push",
     "db:migrate": "node ../sync-env.js && drizzle-kit migrate",
     "db:studio": "node ../sync-env.js && drizzle-kit studio",
-    "seed": "node ../sync-env.js && npx tsx --env-file=.env src/jobs/seed.ts",
-    "scrape": "node ../sync-env.js && npx tsx --env-file=.env src/jobs/scrapePublicDeals.ts",
-    "sync": "node ../sync-env.js && npx tsx --env-file=.env src/jobs/syncCoupons.ts",
-    "jobs:sync": "node ../sync-env.js && npx tsx --env-file=.env src/jobs/syncCoupons.ts",
-    "jobs:expire": "node ../sync-env.js && npx tsx --env-file=.env src/jobs/expireCoupons.ts",
+    "seed": "node ../sync-env.js && npx tsx --env-file=../.env src/jobs/seed.ts",
+    "scrape": "node ../sync-env.js && npx tsx --env-file=../.env src/jobs/scrapePublicDeals.ts",
+    "sync": "node ../sync-env.js && npx tsx --env-file=../.env src/jobs/syncCoupons.ts",
+    "jobs:sync": "node ../sync-env.js && npx tsx --env-file=../.env src/jobs/syncCoupons.ts",
+    "jobs:expire": "node ../sync-env.js && npx tsx --env-file=../.env src/jobs/expireCoupons.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
