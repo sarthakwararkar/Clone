@@ -454,9 +454,7 @@ export async function main() {
   console.log('═══════════════════════════════════════════════════════');
 }
 
-if (require.main === module) {
-  main().catch((error) => {
-    console.error('Fatal error in seeding job:', error);
-    process.exit(1);
-  });
-}
+main().catch((error) => {
+  console.error('Fatal error in seeding job:', error);
+  process.exit(1);
+});
