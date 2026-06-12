@@ -25,6 +25,13 @@ jobs:
           cd coupondunia-backend
           npm ci
 
+      - name: Push Database Schema
+        run: |
+          cd coupondunia-backend
+          npx drizzle-kit push
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
       - name: Run Sync Script
         run: |
           cd coupondunia-backend
