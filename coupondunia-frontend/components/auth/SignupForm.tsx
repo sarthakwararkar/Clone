@@ -35,7 +35,7 @@ export function SignupForm() {
   }
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); void handleSubmit(onSubmit)(e) }} className="space-y-4">
+    <form onSubmit={(e) => { e.preventDefault(); void handleSubmit(onSubmit)(e) }} className="space-y-4" autoComplete="off">
       <div>
         <label htmlFor="signup-name" className="block text-sm font-medium text-gray-700 mb-1.5">
           Full Name
@@ -43,7 +43,7 @@ export function SignupForm() {
         <input
           id="signup-name"
           type="text"
-          autoComplete="name"
+          autoComplete="off"
           {...register('name')}
           className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
           placeholder="John Doe"
@@ -58,7 +58,7 @@ export function SignupForm() {
         <input
           id="signup-email"
           type="email"
-          autoComplete="email"
+          autoComplete="off"
           {...register('email')}
           className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
           placeholder="you@example.com"
@@ -74,7 +74,7 @@ export function SignupForm() {
           <input
             id="signup-password"
             type={showPwd ? 'text' : 'password'}
-            autoComplete="new-password"
+            autoComplete="off"
             {...register('password')}
             className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
             placeholder="••••••••"
@@ -98,7 +98,7 @@ export function SignupForm() {
         <input
           id="signup-confirm"
           type={showPwd ? 'text' : 'password'}
-          autoComplete="new-password"
+          autoComplete="off"
           {...register('confirmPassword')}
           className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
           placeholder="••••••••"

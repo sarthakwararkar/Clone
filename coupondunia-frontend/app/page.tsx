@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { api } from '@/lib/api'
 import { HeroBanner } from '@/components/home/HeroBanner'
-import { CategoryGrid } from '@/components/home/CategoryGrid'
+import { BigSavingCoupons } from '@/components/home/BigSavingCoupons'
 import { FeaturedStores } from '@/components/home/FeaturedStores'
 import { TrendingCoupons } from '@/components/home/TrendingCoupons'
 import { NewsletterBanner } from '@/components/home/NewsletterBanner'
@@ -35,14 +35,9 @@ export default async function Homepage() {
         <HeroBanner coupons={featuredCoupons.slice(0, 5)} />
       )}
 
-      {/* Category Grid */}
-      {categories.length > 0 && (
-        <section className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <h2 className="text-xl font-bold text-gray-800 mb-6">
-            Shop by Category
-          </h2>
-          <CategoryGrid categories={categories} />
-        </section>
+      {/* Big Saving Coupon Codes */}
+      {featuredCoupons.length > 0 && (
+        <BigSavingCoupons coupons={featuredCoupons} />
       )}
 
       {/* Top Stores */}

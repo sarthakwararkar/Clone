@@ -72,29 +72,51 @@ usersRouter.patch('/', async (c) => {
 
   const db = createDb(c.env.DATABASE_URL);
 
-  const updateData: Record<string, unknown> = {
-    updated_at: new Date(),
-  };
-  if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
-  if (parsed.data.avatar_url !== undefined) updateData.avatar_url = parsed.data.avatar_url;
-
-  const [updated] = await db
-    .update(users)
-    .set(updateData)
+  // Find or create user record
+  let [user] = await db
+    .select()
+    .from(users)
     .where(eq(users.supabase_uid, authUser.id))
-    .returning();
+    .limit(1);
 
-  if (!updated) {
-    return c.json({ success: false, error: 'User not found' } as ApiResponse, 404);
+  if (!user) {
+    // Auto-create user on first login/profile update if not exists
+    [user] = await db
+      .insert(users)
+      .values({
+        supabase_uid: authUser.id,
+        email: authUser.email,
+        role: authUser.role,
+        name: parsed.data.name,
+        avatar_url: parsed.data.avatar_url,
+      })
+      .returning();
+  } else {
+    // Update existing user record
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date(),
+    };
+    if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
+    if (parsed.data.avatar_url !== undefined) updateData.avatar_url = parsed.data.avatar_url;
+
+    [user] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.supabase_uid, authUser.id))
+      .returning();
+  }
+
+  if (!user) {
+    return c.json({ success: false, error: 'Failed to update or create user' } as ApiResponse, 500);
   }
 
   const profile: UserProfileResponse = {
-    id: updated.id,
-    email: updated.email,
-    name: updated.name,
-    avatar_url: updated.avatar_url,
-    role: updated.role,
-    created_at: updated.created_at.toISOString(),
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    avatar_url: user.avatar_url,
+    role: user.role,
+    created_at: user.created_at.toISOString(),
   };
 
   return c.json({ success: true, data: profile });

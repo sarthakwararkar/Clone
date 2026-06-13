@@ -1,17 +1,40 @@
 'use client'
+import { AvatarUpload } from '@/components/account/AvatarUpload'
+import { WalletOverview } from '@/components/account/WalletOverview'
 import { ProfileForm } from '@/components/account/ProfileForm'
+import { PasswordChangeForm } from '@/components/account/PasswordChangeForm'
 
 export default function ProfilePage() {
   return (
     <div className="space-y-6">
       <div className="border-b border-gray-100 pb-4">
-        <h1 className="text-xl font-bold text-gray-800">My Profile</h1>
+        <h1 className="text-xl font-bold text-gray-800">My Account Dashboard</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Manage your personal information and contact details.
+          Manage your personal profile, cashback wallet withdrawals, and security settings.
         </p>
       </div>
       
-      <ProfileForm />
+      {/* Top Section Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* User Profile Card & Avatar */}
+        <div className="lg:col-span-1">
+          <AvatarUpload />
+        </div>
+        
+        {/* Cashback Wallet */}
+        <div className="lg:col-span-2">
+          <WalletOverview />
+        </div>
+      </div>
+      
+      {/* Bottom Section Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Profile Details Form */}
+        <ProfileForm />
+        
+        {/* Change Password Form */}
+        <PasswordChangeForm />
+      </div>
     </div>
   )
 }

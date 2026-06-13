@@ -35,7 +35,7 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); void handleSubmit(onSubmit)(e) }} className="space-y-4">
+    <form onSubmit={(e) => { e.preventDefault(); void handleSubmit(onSubmit)(e) }} className="space-y-4" autoComplete="off">
       <div>
         <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-1.5">
           Email address
@@ -43,7 +43,7 @@ export function LoginForm() {
         <input
           id="login-email"
           type="email"
-          autoComplete="email"
+          autoComplete="off"
           {...register('email')}
           className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
           placeholder="you@example.com"
@@ -59,7 +59,7 @@ export function LoginForm() {
           <input
             id="login-password"
             type={showPwd ? 'text' : 'password'}
-            autoComplete="current-password"
+            autoComplete="off"
             {...register('password')}
             className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
             placeholder="••••••••"

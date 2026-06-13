@@ -17,6 +17,11 @@ const AUTH_RATE_LIMIT: RateLimitConfig = { maxRequests: 30, windowSeconds: 60 };
  * Returns 429 with Retry-After header when limit is exceeded.
  */
 export const rateLimitMiddleware = createMiddleware<AppBindings>(async (c, next) => {
+  if (c.env.ENVIRONMENT === 'development') {
+    await next();
+    return;
+  }
+
   const redis = new Redis({
     url: c.env.UPSTASH_REDIS_URL,
     token: c.env.UPSTASH_REDIS_TOKEN,

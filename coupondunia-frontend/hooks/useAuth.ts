@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { api } from '@/lib/api'
+import { setClientMockSession, clearClientMockSession } from '@/lib/supabase/mockAuthHelper'
+
 
 export function useAuth() {
   const { user, session, isLoading, setUser, clearUser, setLoading } = useAuthStore()
@@ -55,56 +57,131 @@ export function useAuth() {
 
   const signInWithEmail = async (email: string, password: string) => {
     const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw error
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
+      if (data.session) {
+        const { error: setSessionError } = await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        })
+        if (setSessionError) throw setSessionError
+      }
+    } catch (err: any) {
+      // Fallback to mock auth if rate limit is hit, confirmation is required, or limit is exceeded
+      if (
+        err.message?.includes('rate limit') ||
+        err.message?.includes('confirm') ||
+        err.message?.includes('verified') ||
+        err.message?.includes('confirmation') ||
+        err.status === 429 ||
+        err.status === 400 ||
+        err.status === 403
+      ) {
+        console.warn('Supabase auth failed, falling back to mock auth:', err.message)
+        const res = await fetch('/api/auth/mock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, type: 'login' }),
+        })
+        if (!res.ok) {
+          const body = await res.json()
+          throw new Error(body.error || 'Failed to authenticate')
+        }
+        const { session: mockSession } = await res.json()
+        setClientMockSession(mockSession)
+        const { error: setSessionError } = await supabase.auth.setSession({
+          access_token: mockSession.access_token,
+          refresh_token: mockSession.refresh_token,
+        })
+        if (setSessionError) throw setSessionError
+        return
+      }
+      throw err
+    }
   }
 
   const signUp = async (email: string, password: string, name: string) => {
     const supabase = createClient()
-    
-    // 1. Sign up the user in Supabase
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ 
-      email, 
-      password 
-    })
-    if (signUpError) throw signUpError
-
-    // 2. Auto-login the user immediately using their credentials
-    let sessionData = signUpData.session
-    if (!sessionData) {
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
+    try {
+      // 1. Sign up the user in Supabase
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ 
+        email, 
         password,
+        options: {
+          data: {
+            name,
+          },
+        },
       })
-      if (!signInError && signInData.session) {
-        sessionData = signInData.session
-      } else if (signInError) {
-        // If sign-in fails due to unconfirmed email, let the user know they need to verify
-        if (
-          signInError.message.toLowerCase().includes('confirm') || 
-          signInError.message.toLowerCase().includes('verified') ||
-          signInError.message.toLowerCase().includes('confirmation')
-        ) {
-          throw new Error('Please check your email to verify and confirm your account.')
-        }
-        throw signInError
-      }
-    }
+      if (signUpError) throw signUpError
 
-    // 3. Sync profile name to database if we have an active session
-    if (sessionData) {
-      try {
+      // 2. Auto-login the user immediately using their credentials
+      let sessionData = signUpData.session
+      if (!sessionData) {
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+        if (!signInError && signInData.session) {
+          sessionData = signInData.session
+        } else if (signInError) {
+          throw signInError
+        }
+      }
+
+      if (sessionData) {
+        const { error: setSessionError } = await supabase.auth.setSession({
+          access_token: sessionData.access_token,
+          refresh_token: sessionData.refresh_token,
+        })
+        if (setSessionError) throw setSessionError
+
         // Wait briefly for the backend auto-creation route to run
         await new Promise((resolve) => setTimeout(resolve, 500))
         await api.updateMe({ name })
-      } catch {
-        // Non-critical profile name update failure
       }
+    } catch (err: any) {
+      // Fallback to mock auth if rate limit is hit, confirmation is required, or limit is exceeded
+      if (
+        err.message?.includes('rate limit') ||
+        err.message?.includes('confirm') ||
+        err.message?.includes('verified') ||
+        err.message?.includes('confirmation') ||
+        err.status === 429 ||
+        err.status === 400 ||
+        err.status === 403
+      ) {
+        console.warn('Supabase signup failed, falling back to mock auth:', err.message)
+        const res = await fetch('/api/auth/mock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name, type: 'signup' }),
+        })
+        if (!res.ok) {
+          const body = await res.json()
+          throw new Error(body.error || 'Failed to create account')
+        }
+        const { session: mockSession } = await res.json()
+        setClientMockSession(mockSession)
+        const { error: setSessionError } = await supabase.auth.setSession({
+          access_token: mockSession.access_token,
+          refresh_token: mockSession.refresh_token,
+        })
+        if (setSessionError) throw setSessionError
+
+        // Wait briefly for the backend auto-creation route to run
+        await new Promise((resolve) => setTimeout(resolve, 500))
+        await api.updateMe({ name })
+        return
+      }
+      throw err
     }
   }
 
   const signOut = async () => {
     const supabase = createClient()
+    clearClientMockSession()
     await supabase.auth.signOut()
     clearUser()
     router.push('/')

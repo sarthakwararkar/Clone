@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { createDb } from '../db';
 import { categories, stores, coupons } from '../db/schema';
+import { createCacheService } from '../services/cacheService';
 
 // ─── Data Definitions ────────────────────────────────────────────────────────
 
@@ -56,7 +57,7 @@ const SEED_STORES = [
     affiliate_url: 'CUELINKS_AFFILIATE_URL_FLIPKART',
     cashback_rate: 'Up to 12%',
     category: 'electronics',
-    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/7/7a/Flipkart_logo.png',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/6/69/Flipkart_Logo_as_of_2025.png',
     banner_url: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80',
     description: "India's leading e-commerce marketplace for electronics, fashion, and groceries",
     coupons: [
@@ -89,7 +90,7 @@ const SEED_STORES = [
     affiliate_url: 'AMAZON_ASSOCIATES_AFFILIATE_URL',
     cashback_rate: 'Up to 8%',
     category: 'electronics',
-    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/600px-Amazon_logo.svg.png',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg',
     banner_url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80',
     description: 'Amazon India — shop electronics, books, fashion, and more with fast delivery',
     coupons: [
@@ -188,7 +189,7 @@ const SEED_STORES = [
     affiliate_url: 'CUELINKS_AFFILIATE_URL_NYKAA',
     cashback_rate: 'Up to 10%',
     category: 'beauty',
-    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Nykaa_Logo.svg/512px-Nykaa_Logo.svg.png',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Nykaa_New_Logo.svg',
     banner_url: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1200&q=80',
     description: "Nykaa — India's premier beauty and wellness destination",
     coupons: [
@@ -221,7 +222,7 @@ const SEED_STORES = [
     affiliate_url: 'CUELINKS_AFFILIATE_URL_MMT',
     cashback_rate: 'Up to ₹600 per booking',
     category: 'travel',
-    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/MakeMyTrip_Logo.svg/512px-MakeMyTrip_Logo.svg.png',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/6/61/Makemytrip_logo.svg',
     banner_url: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1200&q=80',
     description: 'MakeMyTrip — book flights, hotels, holiday packages across India and worldwide',
     coupons: [
@@ -254,7 +255,7 @@ const SEED_STORES = [
     affiliate_url: 'CUELINKS_AFFILIATE_URL_AJIO',
     cashback_rate: 'Up to 12%',
     category: 'fashion',
-    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/AJIO_logo.svg/512px-AJIO_logo.svg.png',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/9/9b/AJIO_Logo.svg',
     banner_url: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80',
     description: 'Ajio — curated fashion from top Indian and international brands',
     coupons: [
@@ -287,7 +288,7 @@ const SEED_STORES = [
     affiliate_url: 'CUELINKS_AFFILIATE_URL_BIGBASKET',
     cashback_rate: 'Up to 8%',
     category: 'grocery',
-    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Bigbasket_Logo.svg/512px-Bigbasket_Logo.svg.png',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/a/a2/BigBasket_Logo.png',
     banner_url: 'https://images.unsplash.com/photo-1543083503-087771d187cf?auto=format&fit=crop&w=1200&q=80',
     description: "BigBasket — India's largest online grocery and supermarket",
     coupons: [
@@ -320,7 +321,7 @@ const SEED_STORES = [
     affiliate_url: 'CUELINKS_AFFILIATE_URL_MEESHO',
     cashback_rate: 'Up to 15%',
     category: 'fashion',
-    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Meesho_Logo_2023.svg/512px-Meesho_Logo_2023.svg.png',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/8/80/Meesho_Logo_Full.png',
     banner_url: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=1200&q=80',
     description: 'Meesho — affordable fashion, home and kitchen products starting at ₹99',
     coupons: [
@@ -408,6 +409,7 @@ export async function main() {
         category_id: categoryId,
         logo_url: storeData.logo_url || null,
         banner_url: storeData.banner_url || null,
+        is_featured: true,
       }).onConflictDoUpdate({
         target: stores.slug,
         set: {
@@ -419,6 +421,7 @@ export async function main() {
           category_id: sql`EXCLUDED.category_id`,
           logo_url: sql`EXCLUDED.logo_url`,
           banner_url: sql`EXCLUDED.banner_url`,
+          is_featured: sql`EXCLUDED.is_featured`,
           updated_at: sql`NOW()`,
         }
       }).returning();
@@ -476,6 +479,19 @@ export async function main() {
   console.log(`  Seeded ${categoriesSeeded} categories, ${storesSeeded} stores, ${couponsSeeded} coupons`);
   console.log(`  Completed at: ${new Date().toISOString()}`);
   console.log('═══════════════════════════════════════════════════════');
+
+  if (process.env.UPSTASH_REDIS_URL && process.env.UPSTASH_REDIS_TOKEN) {
+    console.log('\n🧹 Clearing Cache...');
+    try {
+      const cache = createCacheService(process.env.UPSTASH_REDIS_URL, process.env.UPSTASH_REDIS_TOKEN);
+      await cache.delPattern('stores:');
+      await cache.delPattern('store:');
+      await cache.delPattern('coupons:');
+      console.log('   ✓ Cache cleared successfully.');
+    } catch (err) {
+      console.error('   ❌ Failed to clear cache:', err);
+    }
+  }
 }
 
 main().catch((error) => {
