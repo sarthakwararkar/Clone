@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { verifyJWT } from './lib/supabase/mockAuthHelper'
 
+// Force Vercel build trigger to bake in environment variables
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
