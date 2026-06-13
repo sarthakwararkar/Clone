@@ -73,7 +73,7 @@ export function CouponForm({ initialData, stores }: CouponFormProps) {
   }, [watchStoreId, selectedStore, form])
 
   const generateRandomCode = () => {
-    const prefixes = ['SAVE', 'GET', 'OFFER', 'DEAL', 'CD', 'FLAT', 'DISCOUNT']
+    const prefixes = ['SAVE', 'GET', 'OFFER', 'DEAL', 'DD', 'FLAT', 'DISCOUNT']
     const prefix = prefixes[Math.floor(Math.random() * prefixes.length)]
     const numbers = Math.floor(10 + Math.random() * 90) // e.g. 10 - 99
     const suffix = Math.random().toString(36).substring(2, 5).toUpperCase() // 3 letters

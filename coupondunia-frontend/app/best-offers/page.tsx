@@ -5,7 +5,7 @@ import { CouponCard } from '@/components/coupons/CouponCard'
 export const revalidate = 600 // Cache for 10 minutes
 
 export const metadata: Metadata = {
-  title: 'Top 10 Best Offers & Coupons | CouponDunia',
+  title: 'Top 10 Best Offers & Coupons | DealDhamal',
   description: 'Discover the top 10 handpicked best offers, verified promo codes, and exclusive deals from top stores to maximize your savings today.',
 }
 

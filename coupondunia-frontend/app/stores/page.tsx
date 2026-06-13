@@ -6,7 +6,7 @@ export const revalidate = 3600 // ISR hourly
 
 export const metadata: Metadata = {
   title: 'All Stores — Coupons & Cashback Offers',
-  description: 'Browse all stores on CouponIndia. Find active coupons, promo codes, deals, and cashback rates for your favorite brands.',
+  description: 'Browse all stores on DealDhamal. Find active coupons, promo codes, deals, and cashback rates for your favorite brands.',
 }
 
 interface PageProps {

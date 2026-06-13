@@ -34,7 +34,8 @@ export function setClientMockSession(session: MockSession) {
   try {
     localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
     // Set cookie with 7 days expiration
-    document.cookie = `${MOCK_SESSION_KEY}=${encodeURIComponent(JSON.stringify(session))}; path=/; max-age=604800; SameSite=Lax; Secure`;
+    const isSecure = window.location.protocol === 'https:';
+    document.cookie = `${MOCK_SESSION_KEY}=${encodeURIComponent(JSON.stringify(session))}; path=/; max-age=604800; SameSite=Lax${isSecure ? '; Secure' : ''}`;
   } catch (err) {
     console.error('Error setting client mock session:', err);
   }
@@ -72,7 +73,8 @@ export function clearClientMockSession() {
   if (typeof window === 'undefined') return;
   try {
     localStorage.removeItem(MOCK_SESSION_KEY);
-    document.cookie = `${MOCK_SESSION_KEY}=; path=/; max-age=0; SameSite=Lax; Secure`;
+    const isSecure = window.location.protocol === 'https:';
+    document.cookie = `${MOCK_SESSION_KEY}=; path=/; max-age=0; SameSite=Lax${isSecure ? '; Secure' : ''}`;
   } catch (err) {
     console.error('Error clearing client mock session:', err);
   }

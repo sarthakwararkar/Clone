@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 
 export function Footer() {
   return (
@@ -7,10 +8,14 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">CD</span>
-              </div>
-              <span className="font-bold text-xl text-white">CouponDunia</span>
+              <Image
+                src="/logo.png"
+                alt="DealDhamal Logo"
+                width={32}
+                height={32}
+                className="rounded-lg object-contain"
+              />
+              <span className="font-bold text-xl text-white">DealDhamal</span>
             </div>
             <p className="text-sm leading-relaxed text-gray-400">
               India&apos;s best destination for coupons, promo codes, and cashback offers. Save more on every purchase.
@@ -50,7 +55,7 @@ export function Footer() {
 
         <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-gray-500">
-            © {new Date().getFullYear()} CouponDunia. All rights reserved.
+            © {new Date().getFullYear()} DealDhamal. All rights reserved.
           </p>
           <div className="flex items-center gap-6 text-sm">
             <Link href={"/privacy" as any} className="text-gray-500 hover:text-white transition-colors">Privacy Policy</Link>

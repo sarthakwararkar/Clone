@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { Eye, EyeOff } from 'lucide-react'
@@ -14,6 +14,8 @@ export function SignupForm() {
   const [showPwd, setShowPwd] = useState(false)
   const { signUp } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const next = searchParams.get('next')
 
   const {
     register,
@@ -27,7 +29,7 @@ export function SignupForm() {
     try {
       await signUp(data.email, data.password, data.name)
       toast.success('Account created! Welcome 🎉')
-      router.push('/')
+      router.push((next || '/') as any)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create account'
       toast.error(message)

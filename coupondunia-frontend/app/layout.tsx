@@ -16,15 +16,15 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | CouponIndia',
-    default: 'Best Coupons, Promo Codes & Cashback Offers | CouponIndia',
+    template: '%s | DealDhamal',
+    default: 'Best Coupons, Promo Codes & Cashback Offers | DealDhamal',
   },
-  description: 'Find verified coupon codes, cashback offers, and top store discounts. Shop and save more today with CouponIndia.',
+  description: 'Find verified coupon codes, cashback offers, and top store discounts. Shop and save more today with DealDhamal.',
   openGraph: {
-    title: 'Best Coupons & Deals in India | CouponIndia',
-    description: 'Find verified coupon codes, cashback offers, and top store discounts. Shop and save more today with CouponIndia.',
+    title: 'Best Coupons & Deals in India | DealDhamal',
+    description: 'Find verified coupon codes, cashback offers, and top store discounts. Shop and save more today with DealDhamal.',
     url: 'http://localhost:3000',
-    siteName: 'CouponIndia',
+    siteName: 'DealDhamal',
     images: [
       {
         url: '/og-image.png',
@@ -35,8 +35,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Best Coupons & Deals in India | CouponIndia',
-    description: 'Find verified coupon codes, cashback offers, and top store discounts. Shop and save more today with CouponIndia.',
+    title: 'Best Coupons & Deals in India | DealDhamal',
+    description: 'Find verified coupon codes, cashback offers, and top store discounts. Shop and save more today with DealDhamal.',
     images: ['/og-image.png'],
   },
 }

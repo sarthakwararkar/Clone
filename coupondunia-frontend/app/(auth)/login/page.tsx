@@ -1,20 +1,27 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { LoginForm } from '@/components/auth/LoginForm'
 import { OAuthButtons } from '@/components/auth/OAuthButtons'
 
 export const metadata: Metadata = {
-  title: 'Sign In | CouponIndia',
-  description: 'Sign in to your CouponIndia account to save coupons, track cashback, and manage deal alerts.',
+  title: 'Sign In | DealDhamal',
+  description: 'Sign in to your DealDhamal account to save coupons, track cashback, and manage deal alerts.',
 }
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>
+}) {
+  const params = await searchParams
+  const next = params.next ?? '/'
   const supabase = await createClient()
   const { data: { session } } = await supabase.auth.getSession()
 
   if (session) {
-    redirect('/')
+    redirect(next as any)
   }
 
   return (
@@ -24,7 +31,9 @@ export default async function LoginPage() {
         <p className="text-sm text-gray-500">Sign in to access your saved coupons &amp; cashback</p>
       </div>
 
-      <LoginForm />
+      <Suspense fallback={<div className="h-48 flex items-center justify-center text-sm text-gray-400">Loading form...</div>}>
+        <LoginForm />
+      </Suspense>
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">

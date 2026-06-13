@@ -6,6 +6,7 @@ import type { Coupon } from '@/types'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { api } from '@/lib/api'
+import { ensureExternalLink } from '@/lib/utils'
 
 interface CouponModalProps {
   coupon: Coupon
@@ -67,7 +68,7 @@ export function CouponModal({ coupon, isOpen, onClose }: CouponModalProps) {
   }
 
   const handleVisitStore = () => {
-    window.open(coupon.affiliate_url, '_blank', 'noopener,noreferrer')
+    window.open(ensureExternalLink(coupon.affiliate_url), '_blank', 'noopener,noreferrer')
   }
 
   return (

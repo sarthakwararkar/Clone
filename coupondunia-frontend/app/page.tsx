@@ -10,10 +10,10 @@ export const revalidate = 3600 // ISR hourly
 
 export const metadata: Metadata = {
   title: 'Best Coupons & Deals in India | Save More Today',
-  description: 'Verified promo codes, cashback rewards, and hot deals for Amazon, Flipkart, Myntra & 100+ stores. Save big with CouponIndia!',
+  description: 'Verified promo codes, cashback rewards, and hot deals for Amazon, Flipkart, Myntra & 100+ stores. Save big with DealDhamal!',
   openGraph: {
     title: 'Best Coupons & Deals in India | Save More Today',
-    description: 'Verified promo codes, cashback rewards, and hot deals for Amazon, Flipkart, Myntra & 100+ stores. Save big with CouponIndia!',
+    description: 'Verified promo codes, cashback rewards, and hot deals for Amazon, Flipkart, Myntra & 100+ stores. Save big with DealDhamal!',
   },
 }
 

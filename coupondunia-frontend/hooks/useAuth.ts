@@ -28,6 +28,9 @@ export function useAuth() {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
+      // Skip INITIAL_SESSION events — we handle initialization via getSession() above
+      if (event === 'INITIAL_SESSION') return
+
       if (s) {
         try {
           const me = await api.getMe()
@@ -36,7 +39,12 @@ export function useAuth() {
           setUser(null, null)
         }
       } else {
-        clearUser()
+        // Don't clear user if a mock session still exists (the real Supabase
+        // listener may fire with null even though mock auth is valid)
+        const { getClientMockSession } = await import('@/lib/supabase/mockAuthHelper')
+        if (!getClientMockSession()) {
+          clearUser()
+        }
       }
       router.refresh()
     })

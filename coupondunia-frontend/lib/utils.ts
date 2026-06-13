@@ -49,3 +49,12 @@ export function formatNumber(n: number): string {
   }
   return String(n)
 }
+
+export function ensureExternalLink(url: string | null | undefined): string {
+  if (!url) return '#'
+  const trimmed = url.trim()
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('mailto:') || trimmed.startsWith('tel:')) {
+    return trimmed
+  }
+  return `https://${trimmed}`
+}

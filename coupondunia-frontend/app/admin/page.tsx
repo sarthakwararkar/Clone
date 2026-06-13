@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { AdminDashboard } from './AdminDashboard'
 
 export const metadata: Metadata = {
-  title: 'Admin Dashboard | CouponIndia',
+  title: 'Admin Dashboard | DealDhamal',
   robots: {
     index: false,
     follow: false,

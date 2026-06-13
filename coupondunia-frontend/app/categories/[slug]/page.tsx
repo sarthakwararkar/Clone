@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (!category) throw new Error('Category not found')
     
     return {
-      title: `${category.name} Coupons & Promo Codes | CouponIndia`,
+      title: `${category.name} Coupons & Promo Codes | DealDhamal`,
       description: `Get verified coupon codes, promo offers, and cashback deals for stores in the ${category.name} category. Save more today!`,
     }
   } catch {

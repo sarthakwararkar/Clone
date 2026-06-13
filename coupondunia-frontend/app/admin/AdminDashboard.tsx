@@ -35,7 +35,7 @@ export function AdminDashboard() {
     <div className="space-y-8">
       <div>
         <h1 className="text-xl font-bold text-gray-800 mb-1">Dashboard</h1>
-        <p className="text-xs text-gray-500">Overview of CouponDunia platform performance.</p>
+        <p className="text-xs text-gray-500">Overview of DealDhamal platform performance.</p>
       </div>
 
       {stats && <StatsCards stats={stats} />}

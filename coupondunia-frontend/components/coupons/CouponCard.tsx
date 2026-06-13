@@ -2,13 +2,15 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
-import { Bookmark, Clock, CheckCircle } from 'lucide-react'
+import { Bookmark, Clock, CheckCircle, Share2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import type { Coupon } from '@/types'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { CouponModal } from './CouponModal'
+import { ShareModal } from './ShareModal'
+import { LoginPromptModal } from '@/components/auth/LoginPromptModal'
 import { maskCode, timeAgo, formatNumber } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useSavedCoupons } from '@/hooks/useSavedCoupons'
@@ -21,6 +23,8 @@ interface CouponCardProps {
 
 export function CouponCard({ coupon, view = 'list' }: CouponCardProps) {
   const [modalOpen, setModalOpen] = useState(false)
+  const [shareModalOpen, setShareModalOpen] = useState(false)
+  const [loginPromptOpen, setLoginPromptOpen] = useState(false)
   const { user } = useAuthStore()
   const { isSaved, save, unsave } = useSavedCoupons()
   const router = useRouter()
@@ -32,8 +36,7 @@ export function CouponCard({ coupon, view = 'list' }: CouponCardProps) {
     e.preventDefault()
     e.stopPropagation()
     if (!user) {
-      toast.error('Login to save coupons')
-      router.push('/login')
+      setLoginPromptOpen(true)
       return
     }
     if (saved) unsave(coupon.id)
@@ -43,7 +46,25 @@ export function CouponCard({ coupon, view = 'list' }: CouponCardProps) {
   const handleReveal = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setModalOpen(true)
+    if (!user) {
+      setLoginPromptOpen(true)
+    } else {
+      setModalOpen(true)
+    }
+  }
+
+  const handleCardClick = () => {
+    if (!user) {
+      setLoginPromptOpen(true)
+    } else {
+      router.push(`/coupons/${coupon.id}`)
+    }
+  }
+
+  const handleShareClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setShareModalOpen(true)
   }
 
   if (view === 'grid') {
@@ -51,17 +72,26 @@ export function CouponCard({ coupon, view = 'list' }: CouponCardProps) {
       <>
         <div
           className="relative bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col items-center text-center group"
-          onClick={() => router.push(`/coupons/${coupon.id}`)}
+          onClick={handleCardClick}
         >
-          <button
-            onClick={handleSaveToggle}
-            className="absolute top-3 right-3 z-10"
-            aria-label={saved ? 'Unsave coupon' : 'Save coupon'}
-          >
-            <Bookmark
-              className={cn('w-5 h-5 transition-colors', saved ? 'fill-primary text-primary' : 'text-gray-300 group-hover:text-gray-400')}
-            />
-          </button>
+          <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+            <button
+              onClick={handleShareClick}
+              className="p-1.5 rounded-full bg-white/90 hover:bg-white border border-gray-100 shadow-sm transition-all text-gray-400 hover:text-primary"
+              aria-label="Share coupon"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleSaveToggle}
+              className="p-1.5 rounded-full bg-white/90 hover:bg-white border border-gray-100 shadow-sm transition-all"
+              aria-label={saved ? 'Unsave coupon' : 'Save coupon'}
+            >
+              <Bookmark
+                className={cn('w-3.5 h-3.5 transition-colors', saved ? 'fill-primary text-primary' : 'text-gray-400')}
+              />
+            </button>
+          </div>
 
           <div className="w-16 h-16 rounded-xl border border-gray-100 bg-white flex items-center justify-center overflow-hidden">
             {coupon.store.logo_url ? (
@@ -92,6 +122,8 @@ export function CouponCard({ coupon, view = 'list' }: CouponCardProps) {
         </div>
 
         <CouponModal coupon={coupon} isOpen={modalOpen} onClose={() => setModalOpen(false)} />
+        <ShareModal isOpen={shareModalOpen} onClose={() => setShareModalOpen(false)} shareUrl={`/coupons/${coupon.id}`} title={coupon.title} />
+        <LoginPromptModal isOpen={loginPromptOpen} onClose={() => setLoginPromptOpen(false)} redirectPath={`/coupons/${coupon.id}`} />
       </>
     )
   }
@@ -101,7 +133,7 @@ export function CouponCard({ coupon, view = 'list' }: CouponCardProps) {
     <>
       <div
         className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer group flex items-start gap-4"
-        onClick={() => router.push(`/coupons/${coupon.id}`)}
+        onClick={handleCardClick}
       >
         {/* Logo */}
         <div className="w-12 h-12 rounded-lg border border-gray-100 bg-white flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -178,18 +210,29 @@ export function CouponCard({ coupon, view = 'list' }: CouponCardProps) {
             </Button>
           )}
 
-          <button
-            onClick={handleSaveToggle}
-            aria-label={saved ? 'Unsave coupon' : 'Save coupon'}
-          >
-            <Bookmark
-              className={cn('w-5 h-5 transition-colors', saved ? 'fill-primary text-primary' : 'text-gray-300 hover:text-gray-400')}
-            />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleShareClick}
+              aria-label="Share coupon"
+              className="text-gray-300 hover:text-primary transition-colors"
+            >
+              <Share2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleSaveToggle}
+              aria-label={saved ? 'Unsave coupon' : 'Save coupon'}
+            >
+              <Bookmark
+                className={cn('w-5 h-5 transition-colors', saved ? 'fill-primary text-primary' : 'text-gray-300 hover:text-gray-400')}
+              />
+            </button>
+          </div>
         </div>
       </div>
 
       <CouponModal coupon={coupon} isOpen={modalOpen} onClose={() => setModalOpen(false)} />
+      <ShareModal isOpen={shareModalOpen} onClose={() => setShareModalOpen(false)} shareUrl={`/coupons/${coupon.id}`} title={coupon.title} />
+      <LoginPromptModal isOpen={loginPromptOpen} onClose={() => setLoginPromptOpen(false)} redirectPath={`/coupons/${coupon.id}`} />
     </>
   )
 }

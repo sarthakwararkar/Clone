@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { 
   Menu, 
   X, 
@@ -47,6 +48,7 @@ const getCategoryStyle = (slug: string) => {
 export function Header() {
   const { user } = useAuthStore()
   const { signOut } = useAuth()
+  const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<'categories' | 'stores' | 'offers' | null>(null)
@@ -65,10 +67,14 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">CD</span>
-          </div>
-          <span className="font-bold text-xl text-primary hidden sm:block">CouponDunia</span>
+          <Image
+            src="/logo.png"
+            alt="DealDhamal Logo"
+            width={32}
+            height={32}
+            className="rounded-lg object-contain"
+          />
+          <span className="font-bold text-xl text-primary hidden sm:block">DealDhamal</span>
         </Link>
 
         {/* Desktop search */}
@@ -104,35 +110,31 @@ export function Header() {
                       <p className="text-xs text-gray-500 truncate">{user.email}</p>
                     </div>
                     <div className="py-1">
-                      <Link
-                        href="/account"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                      <button
+                        onClick={() => { setUserMenuOpen(false); router.push('/account'); }}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 w-full"
                       >
                         <User className="w-4 h-4" /> Profile
-                      </Link>
-                      <Link
-                        href="/account/saved"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                      </button>
+                      <button
+                        onClick={() => { setUserMenuOpen(false); router.push('/account/saved'); }}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 w-full"
                       >
                         <Bookmark className="w-4 h-4" /> Saved Coupons
-                      </Link>
-                      <Link
-                        href="/account/alerts"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                      </button>
+                      <button
+                        onClick={() => { setUserMenuOpen(false); router.push('/account/alerts'); }}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 w-full"
                       >
                         <Bell className="w-4 h-4" /> Deal Alerts
-                      </Link>
+                      </button>
                       {user.role === 'admin' && (
-                        <Link
-                          href="/admin"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light"
+                        <button
+                          onClick={() => { setUserMenuOpen(false); router.push('/admin'); }}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-primary hover:bg-primary-light w-full"
                         >
                           <ShieldCheck className="w-4 h-4" /> Admin Panel
-                        </Link>
+                        </button>
                       )}
                       <button
                         onClick={() => { void signOut(); setUserMenuOpen(false) }}

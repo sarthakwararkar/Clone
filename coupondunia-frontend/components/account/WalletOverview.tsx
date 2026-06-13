@@ -21,19 +21,19 @@ interface WalletState {
   transactions: Transaction[]
 }
 
-const DEFAULT_TRANSACTIONS: Transaction[] = [
-  { id: 'tx-1', date: '2026-06-12', description: 'Swiggy Food Order Cashback', amount: 30.0, type: 'credit', status: 'Confirmed' },
-  { id: 'tx-2', date: '2026-06-10', description: 'Myntra Fashion Order Cashback', amount: 50.0, type: 'credit', status: 'Confirmed' },
-  { id: 'tx-3', date: '2026-06-08', description: 'AJIO Shoes Deal Cashback', amount: 60.0, type: 'credit', status: 'Pending' },
-  { id: 'tx-4', date: '2026-06-05', description: 'Flipkart Electronics Sale Cashback', amount: 100.0, type: 'credit', status: 'Confirmed' },
-]
+const EMPTY_WALLET: WalletState = {
+  total: 0,
+  available: 0,
+  pending: 0,
+  transactions: [],
+}
 
 export function WalletOverview() {
   const { user } = useAuthStore()
-  const [wallet, setWallet] = useState<WalletState>({ total: 240, available: 180, pending: 60, transactions: DEFAULT_TRANSACTIONS })
+  const [wallet, setWallet] = useState<WalletState>(EMPTY_WALLET)
   const [withdrawOpen, setWithdrawOpen] = useState(false)
   const [withdrawMethod, setWithdrawMethod] = useState<'upi' | 'bank' | 'paytm' | 'amazon'>('upi')
-  const [withdrawAmount, setWithdrawAmount] = useState<string>('180')
+  const [withdrawAmount, setWithdrawAmount] = useState<string>('')
   const [upiId, setUpiId] = useState('')
   const [bankAccount, setBankAccount] = useState('')
   const [bankIfsc, setBankIfsc] = useState('')
@@ -100,7 +100,7 @@ export function WalletOverview() {
     setWithdrawOpen(false)
     setWithdrawSuccess(false)
     // reset inputs
-    setWithdrawAmount('180')
+    setWithdrawAmount('')
     setUpiId('')
     setBankAccount('')
     setBankIfsc('')
@@ -159,31 +159,35 @@ export function WalletOverview() {
         </div>
 
         <div className="divide-y divide-gray-50 max-h-[240px] overflow-y-auto pr-1">
-          {wallet.transactions.map((tx) => (
-            <div key={tx.id} className="py-3 flex items-center justify-between gap-3 text-xs">
-              <div className="min-w-0 flex-1">
-                <p className="font-bold text-gray-800 truncate">{tx.description}</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">{tx.date}</p>
-              </div>
+          {wallet.transactions.length === 0 ? (
+            <p className="text-xs text-gray-400 text-center py-8">No transactions yet.</p>
+          ) : (
+            wallet.transactions.map((tx) => (
+              <div key={tx.id} className="py-3 flex items-center justify-between gap-3 text-xs">
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-gray-800 truncate">{tx.description}</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">{tx.date}</p>
+                </div>
 
-              <div className="flex items-center gap-2.5 flex-shrink-0 text-right">
-                <div>
-                  <p className={`font-black ${tx.type === 'credit' ? 'text-green-600' : 'text-gray-900'}`}>
-                    {tx.type === 'credit' ? '+' : '-'}₹{tx.amount.toFixed(2)}
-                  </p>
-                  <span className={`inline-block text-[9px] font-black px-1.5 py-0.5 rounded-md mt-0.5 ${
-                    tx.status === 'Confirmed' 
-                      ? 'bg-green-50 text-green-600 border border-green-100' 
-                      : tx.status === 'Pending' 
-                        ? 'bg-yellow-50 text-yellow-600 border border-yellow-100' 
-                        : 'bg-blue-50 text-blue-600 border border-blue-100'
-                  }`}>
-                    {tx.status}
-                  </span>
+                <div className="flex items-center gap-2.5 flex-shrink-0 text-right">
+                  <div>
+                    <p className={`font-black ${tx.type === 'credit' ? 'text-green-600' : 'text-gray-900'}`}>
+                      {tx.type === 'credit' ? '+' : '-'}₹{tx.amount.toFixed(2)}
+                    </p>
+                    <span className={`inline-block text-[9px] font-black px-1.5 py-0.5 rounded-md mt-0.5 ${
+                      tx.status === 'Confirmed' 
+                        ? 'bg-green-50 text-green-600 border border-green-100' 
+                        : tx.status === 'Pending' 
+                          ? 'bg-yellow-50 text-yellow-600 border border-yellow-100' 
+                          : 'bg-blue-50 text-blue-600 border border-blue-100'
+                    }`}>
+                      {tx.status}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 
