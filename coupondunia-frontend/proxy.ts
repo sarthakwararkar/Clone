@@ -4,7 +4,7 @@ import { verifyJWT } from './lib/supabase/mockAuthHelper'
 
 // Force Vercel build trigger to bake in environment variables
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   try {
     const { pathname } = request.nextUrl
 
