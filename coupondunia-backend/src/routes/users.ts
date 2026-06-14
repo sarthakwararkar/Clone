@@ -32,6 +32,27 @@ usersRouter.get('/', async (c) => {
     .where(eq(users.supabase_uid, authUser.id))
     .limit(1);
 
+  if (!user && authUser.email) {
+    // Check if user exists with the same email (e.g. from mock auth or previous registration)
+    const [existingUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, authUser.email))
+      .limit(1);
+
+    if (existingUser) {
+      // Link the existing user record with the new supabase_uid
+      [user] = await db
+        .update(users)
+        .set({
+          supabase_uid: authUser.id,
+          updated_at: new Date(),
+        })
+        .where(eq(users.id, existingUser.id))
+        .returning();
+    }
+  }
+
   if (!user) {
     // Auto-create user on first login
     [user] = await db
@@ -78,6 +99,27 @@ usersRouter.patch('/', async (c) => {
     .from(users)
     .where(eq(users.supabase_uid, authUser.id))
     .limit(1);
+
+  if (!user && authUser.email) {
+    // Check if user exists with the same email
+    const [existingUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, authUser.email))
+      .limit(1);
+
+    if (existingUser) {
+      // Link the existing user record with the new supabase_uid
+      [user] = await db
+        .update(users)
+        .set({
+          supabase_uid: authUser.id,
+          updated_at: new Date(),
+        })
+        .where(eq(users.id, existingUser.id))
+        .returning();
+    }
+  }
 
   if (!user) {
     // Auto-create user on first login/profile update if not exists
