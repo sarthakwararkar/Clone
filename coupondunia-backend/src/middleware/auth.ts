@@ -23,12 +23,14 @@ export const authMiddleware = createMiddleware<AppBindings>(async (c, next) => {
     });
 
     const metadata = (payload.user_metadata as Record<string, unknown>) || {};
+    const appMetadata = (payload.app_metadata as Record<string, unknown>) || {};
     const user: AuthUser = {
       id: payload.sub as string,
       email: (payload.email as string) || '',
       role: (metadata.role as 'user' | 'admin') || 'user',
       name: (metadata.name as string) || (metadata.full_name as string) || undefined,
       avatar_url: (metadata.avatar_url as string) || (metadata.picture as string) || undefined,
+      provider: (appMetadata.provider as string) || 'email',
     };
 
     c.set('user', user);
@@ -80,12 +82,14 @@ export const optionalAuthMiddleware = createMiddleware<AppBindings>(async (c, ne
     });
 
     const metadata = (payload.user_metadata as Record<string, unknown>) || {};
+    const appMetadata = (payload.app_metadata as Record<string, unknown>) || {};
     const user: AuthUser = {
       id: payload.sub as string,
       email: (payload.email as string) || '',
       role: (metadata.role as 'user' | 'admin') || 'user',
       name: (metadata.name as string) || (metadata.full_name as string) || undefined,
       avatar_url: (metadata.avatar_url as string) || (metadata.picture as string) || undefined,
+      provider: (appMetadata.provider as string) || 'email',
     };
 
     c.set('user', user);

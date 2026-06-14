@@ -1,10 +1,15 @@
 'use client'
+import { useAuthStore } from '@/stores/useAuthStore'
 import { AvatarUpload } from '@/components/account/AvatarUpload'
 import { WalletOverview } from '@/components/account/WalletOverview'
 import { ProfileForm } from '@/components/account/ProfileForm'
 import { PasswordChangeForm } from '@/components/account/PasswordChangeForm'
 
 export default function ProfilePage() {
+  const { session } = useAuthStore()
+  const provider = session?.user?.app_metadata?.provider
+  const isOAuth = provider && provider !== 'email'
+
   return (
     <div className="space-y-6">
       <div className="border-b border-gray-100 pb-4">
@@ -28,12 +33,12 @@ export default function ProfilePage() {
       </div>
       
       {/* Bottom Section Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={isOAuth ? "w-full" : "grid grid-cols-1 lg:grid-cols-2 gap-6"}>
         {/* Profile Details Form */}
         <ProfileForm />
         
         {/* Change Password Form */}
-        <PasswordChangeForm />
+        {!isOAuth && <PasswordChangeForm />}
       </div>
     </div>
   )

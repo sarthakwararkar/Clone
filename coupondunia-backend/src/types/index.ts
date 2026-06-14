@@ -15,6 +15,7 @@ export interface AuthUser {
   role: 'user' | 'admin';
   name?: string;
   avatar_url?: string;
+  provider?: string;
 }
 
 // ─── Pagination ─────────────────────────────────────────────────────────────

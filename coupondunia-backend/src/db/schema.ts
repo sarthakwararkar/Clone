@@ -31,10 +31,11 @@ export const couponTypeEnum = pgEnum('coupon_type', ['code', 'deal', 'cashback']
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   supabase_uid: text('supabase_uid').unique(),
-  email: text('email').notNull().unique(),
+  email: text('email').notNull(),
   name: text('name'),
   avatar_url: text('avatar_url'),
   role: userRoleEnum('role').default('user').notNull(),
+  provider: text('provider').default('email').notNull(),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true }),
 });
