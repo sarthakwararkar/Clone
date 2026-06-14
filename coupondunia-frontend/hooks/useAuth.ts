@@ -1,7 +1,7 @@
 'use client'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createClient, clearMockSessionAndReset } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { api } from '@/lib/api'
 import { setClientMockSession, clearClientMockSession } from '@/lib/supabase/mockAuthHelper'
@@ -80,6 +80,7 @@ export function useAuth() {
   }, [])
 
   const signInWithGoogle = async () => {
+    clearMockSessionAndReset()
     const supabase = createClient()
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '')
     await supabase.auth.signInWithOAuth({
@@ -95,6 +96,7 @@ export function useAuth() {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
+      clearMockSessionAndReset()
       if (data.session) {
         const { error: setSessionError } = await supabase.auth.setSession({
           access_token: data.session.access_token,
@@ -150,6 +152,7 @@ export function useAuth() {
         },
       })
       if (signUpError) throw signUpError
+      clearMockSessionAndReset()
 
       // 2. Auto-login the user immediately using their credentials
       let sessionData = signUpData.session
@@ -207,8 +210,8 @@ export function useAuth() {
   }
 
   const signOut = async () => {
+    clearMockSessionAndReset()
     const supabase = createClient()
-    clearClientMockSession()
     await supabase.auth.signOut()
     clearUser()
     router.push('/')

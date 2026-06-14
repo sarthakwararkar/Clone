@@ -4,12 +4,29 @@ import { getClientMockSession, clearClientMockSession } from './mockAuthHelper'
 
 let clientInstance: ReturnType<typeof createBrowserClient> | null = null
 
+export function clearMockSessionAndReset() {
+  clearClientMockSession()
+  clientInstance = null
+}
+
 export function createClient(): ReturnType<typeof createBrowserClient> {
   if (typeof window === 'undefined') {
     return createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
+  }
+
+  // Check if we have a real Supabase session cookie
+  const hasRealCookie = typeof document !== 'undefined' && document.cookie.split(';').some(c => {
+    const name = c.trim().split('=')[0]
+    return name.startsWith('sb-') && name.endsWith('-auth-token')
+  })
+
+  if (hasRealCookie) {
+    // Clear mock session and reset the cached instance
+    clearClientMockSession()
+    clientInstance = null
   }
 
   if (clientInstance) {

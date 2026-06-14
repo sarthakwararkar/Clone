@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: Request) {
@@ -11,6 +12,8 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (!error) {
+      const cookieStore = await cookies()
+      cookieStore.set('sb-mock-session', '', { maxAge: 0, path: '/' })
       return NextResponse.redirect(new URL(next, request.url))
     } else {
       console.error('Supabase code exchange error:', error)
