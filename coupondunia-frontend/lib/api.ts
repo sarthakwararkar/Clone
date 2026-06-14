@@ -29,10 +29,26 @@ class ApiClient {
   }
 
   private async getAuthHeader(): Promise<HeadersInit> {
-    const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.access_token) {
-      return { Authorization: `Bearer ${session.access_token}` }
+    let token: string | undefined = undefined
+    try {
+      const { useAuthStore } = await import('@/stores/useAuthStore')
+      token = useAuthStore.getState().session?.access_token ?? undefined
+    } catch {
+      // ignore
+    }
+
+    if (!token) {
+      try {
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        token = session?.access_token ?? undefined
+      } catch {
+        // ignore
+      }
+    }
+
+    if (token) {
+      return { Authorization: `Bearer ${token}` }
     }
     return {}
   }

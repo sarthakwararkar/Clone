@@ -2,7 +2,20 @@
 import { createBrowserClient } from '@supabase/ssr'
 import { getClientMockSession, clearClientMockSession } from './mockAuthHelper'
 
-export function createClient() {
+let clientInstance: ReturnType<typeof createBrowserClient> | null = null
+
+export function createClient(): ReturnType<typeof createBrowserClient> {
+  if (typeof window === 'undefined') {
+    return createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+  }
+
+  if (clientInstance) {
+    return clientInstance
+  }
+
   const client = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -82,6 +95,7 @@ export function createClient() {
     }
   })
 
-  return client
+  clientInstance = client
+  return clientInstance
 }
 
