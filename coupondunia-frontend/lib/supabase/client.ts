@@ -21,6 +21,12 @@ export function createClient(): ReturnType<typeof createBrowserClient> {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
+  const mockSession = getClientMockSession()
+  if (!mockSession) {
+    clientInstance = client
+    return clientInstance
+  }
+
   const originalAuth = client.auth
 
   const mockAuth = new Proxy(originalAuth, {

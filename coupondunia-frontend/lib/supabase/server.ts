@@ -46,6 +46,10 @@ export async function createClient() {
     }
   }
 
+  if (!verifiedSession) {
+    return client
+  }
+
   const mockAuth = new Proxy(originalAuth, {
     get(target, prop, receiver) {
       if (prop === 'getSession') {
