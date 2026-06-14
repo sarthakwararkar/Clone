@@ -15,11 +15,24 @@ export function useAuth() {
     const supabase = createClient()
 
     supabase.auth.getSession().then(async ({ data: { session: s } }) => {
+      console.log('useAuth: getSession returned session:', s ? {
+        user: s.user.email,
+        expires_at: s.expires_at,
+        token_type: s.token_type
+      } : null)
+
       if (s) {
         try {
+          console.log('useAuth: getSession fetching user profile from backend...')
           const me = await api.getMe()
+          console.log('useAuth: getSession successfully fetched user profile:', me)
           setUser(me, s)
-        } catch {
+        } catch (err: any) {
+          console.error('useAuth: getSession failed to fetch user profile from backend:', {
+            message: err.message,
+            status: err.status,
+            error: err
+          })
           setUser(null, null)
         }
       } else {
@@ -28,14 +41,26 @@ export function useAuth() {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
+      console.log('useAuth: onAuthStateChange event:', event, 'session:', s ? {
+        user: s.user.email,
+        expires_at: s.expires_at
+      } : null)
+
       // Skip INITIAL_SESSION events — we handle initialization via getSession() above
       if (event === 'INITIAL_SESSION') return
 
       if (s) {
         try {
+          console.log('useAuth: onAuthStateChange fetching user profile from backend...')
           const me = await api.getMe()
+          console.log('useAuth: onAuthStateChange successfully fetched user profile:', me)
           setUser(me, s)
-        } catch {
+        } catch (err: any) {
+          console.error('useAuth: onAuthStateChange failed to fetch user profile:', {
+            message: err.message,
+            status: err.status,
+            error: err
+          })
           setUser(null, null)
         }
       } else {
@@ -43,6 +68,7 @@ export function useAuth() {
         // listener may fire with null even though mock auth is valid)
         const { getClientMockSession } = await import('@/lib/supabase/mockAuthHelper')
         if (!getClientMockSession()) {
+          console.log('useAuth: onAuthStateChange clearing user because session is null and no mock session exists')
           clearUser()
         }
       }
