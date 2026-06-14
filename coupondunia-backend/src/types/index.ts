@@ -13,6 +13,8 @@ export interface AuthUser {
   id: string;
   email: string;
   role: 'user' | 'admin';
+  name?: string;
+  avatar_url?: string;
 }
 
 // ─── Pagination ─────────────────────────────────────────────────────────────

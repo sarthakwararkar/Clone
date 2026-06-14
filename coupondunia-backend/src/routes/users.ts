@@ -42,12 +42,17 @@ usersRouter.get('/', async (c) => {
 
     if (existingUser) {
       // Link the existing user record with the new supabase_uid
+      // and fill in name/avatar_url if not already present
+      const updateData: Record<string, any> = {
+        supabase_uid: authUser.id,
+        updated_at: new Date(),
+      };
+      if (!existingUser.name && authUser.name) updateData.name = authUser.name;
+      if (!existingUser.avatar_url && authUser.avatar_url) updateData.avatar_url = authUser.avatar_url;
+
       [user] = await db
         .update(users)
-        .set({
-          supabase_uid: authUser.id,
-          updated_at: new Date(),
-        })
+        .set(updateData)
         .where(eq(users.id, existingUser.id))
         .returning();
     }
@@ -61,6 +66,8 @@ usersRouter.get('/', async (c) => {
         supabase_uid: authUser.id,
         email: authUser.email,
         role: authUser.role,
+        name: authUser.name || null,
+        avatar_url: authUser.avatar_url || null,
       })
       .returning();
   }
@@ -110,12 +117,25 @@ usersRouter.patch('/', async (c) => {
 
     if (existingUser) {
       // Link the existing user record with the new supabase_uid
+      const updateData: Record<string, any> = {
+        supabase_uid: authUser.id,
+        updated_at: new Date(),
+      };
+      if (parsed.data.name !== undefined) {
+        updateData.name = parsed.data.name;
+      } else if (!existingUser.name && authUser.name) {
+        updateData.name = authUser.name;
+      }
+
+      if (parsed.data.avatar_url !== undefined) {
+        updateData.avatar_url = parsed.data.avatar_url;
+      } else if (!existingUser.avatar_url && authUser.avatar_url) {
+        updateData.avatar_url = authUser.avatar_url;
+      }
+
       [user] = await db
         .update(users)
-        .set({
-          supabase_uid: authUser.id,
-          updated_at: new Date(),
-        })
+        .set(updateData)
         .where(eq(users.id, existingUser.id))
         .returning();
     }
@@ -129,8 +149,8 @@ usersRouter.patch('/', async (c) => {
         supabase_uid: authUser.id,
         email: authUser.email,
         role: authUser.role,
-        name: parsed.data.name,
-        avatar_url: parsed.data.avatar_url,
+        name: parsed.data.name !== undefined ? parsed.data.name : (authUser.name || null),
+        avatar_url: parsed.data.avatar_url !== undefined ? parsed.data.avatar_url : (authUser.avatar_url || null),
       })
       .returning();
   } else {
