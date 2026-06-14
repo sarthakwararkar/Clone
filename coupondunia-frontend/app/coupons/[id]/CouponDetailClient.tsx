@@ -106,15 +106,17 @@ export function CouponDetailClient({ coupon, moreCoupons }: CouponDetailClientPr
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2 w-full">
-              <Link href={`/login?next=/coupons/${coupon.id}`} className="flex-1">
-                <Button variant="primary" className="w-full font-bold shadow-lg shadow-primary/20">
-                  Login to Reveal
-                </Button>
+              <Link
+                href={`/login?next=/coupons/${coupon.id}`}
+                className="flex-1 inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-primary text-white hover:bg-primary-dark focus:ring-primary shadow-lg shadow-primary/20 px-4 py-2 text-sm w-full font-bold text-center"
+              >
+                Login to Reveal
               </Link>
-              <Link href={`/signup?next=/coupons/${coupon.id}`} className="flex-1">
-                <Button variant="secondary" className="w-full font-semibold">
-                  Sign Up Free
-                </Button>
+              <Link
+                href={`/signup?next=/coupons/${coupon.id}`}
+                className="flex-1 inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white text-primary border-2 border-primary hover:bg-primary-light focus:ring-primary px-4 py-2 text-sm w-full font-semibold text-center"
+              >
+                Sign Up Free
               </Link>
             </div>
           </div>

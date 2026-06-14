@@ -149,11 +149,17 @@ export function Header() {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Link href="/login">
-                <Button variant="ghost" size="sm">Login</Button>
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300 px-3 py-1.5 text-sm"
+              >
+                Login
               </Link>
-              <Link href="/signup">
-                <Button variant="primary" size="sm">Sign Up</Button>
+              <Link
+                href="/signup"
+                className="inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-primary text-white hover:bg-primary-dark focus:ring-primary shadow-sm hover:shadow-md px-3 py-1.5 text-sm"
+              >
+                Sign Up
               </Link>
             </div>
           )}
@@ -460,11 +466,19 @@ export function Header() {
             </>
           ) : (
             <div className="flex gap-2 pt-2">
-              <Link href="/login" className="flex-1" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="secondary" size="sm" className="w-full">Login</Button>
+              <Link
+                href="/login"
+                className="flex-1 inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white text-primary border-2 border-primary hover:bg-primary-light focus:ring-primary px-3 py-1.5 text-sm w-full text-center"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Login
               </Link>
-              <Link href="/signup" className="flex-1" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="primary" size="sm" className="w-full">Sign Up</Button>
+              <Link
+                href="/signup"
+                className="flex-1 inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-primary text-white hover:bg-primary-dark focus:ring-primary shadow-sm hover:shadow-md px-3 py-1.5 text-sm w-full text-center"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Sign Up
               </Link>
             </div>
           )}
