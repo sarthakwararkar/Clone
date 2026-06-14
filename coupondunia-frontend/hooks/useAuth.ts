@@ -171,10 +171,6 @@ export function useAuth() {
           refresh_token: sessionData.refresh_token,
         })
         if (setSessionError) throw setSessionError
-
-        // Wait briefly for the backend auto-creation route to run
-        await new Promise((resolve) => setTimeout(resolve, 500))
-        await api.updateMe({ name })
       }
     } catch (err: any) {
       // Fallback to mock auth if rate limit is hit, confirmation is required, or limit is exceeded
@@ -204,10 +200,6 @@ export function useAuth() {
           refresh_token: mockSession.refresh_token,
         })
         if (setSessionError) throw setSessionError
-
-        // Wait briefly for the backend auto-creation route to run
-        await new Promise((resolve) => setTimeout(resolve, 500))
-        await api.updateMe({ name })
         return
       }
       throw err
