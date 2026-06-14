@@ -14,10 +14,11 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>
+  searchParams: Promise<{ next?: string; error?: string }>
 }) {
   const params = await searchParams
   const next = params.next ?? '/'
+  const authError = params.error
   const supabase = await createClient()
   const { data: { session } } = await supabase.auth.getSession()
 
@@ -32,7 +33,13 @@ export default async function LoginPage({
         <p className="text-sm text-gray-500">Sign in to access your saved coupons &amp; cashback</p>
       </div>
 
-      <OAuthButtons />
+      {authError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          Sign in failed: {authError}
+        </div>
+      )}
+
+      <OAuthButtons next={next} />
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">

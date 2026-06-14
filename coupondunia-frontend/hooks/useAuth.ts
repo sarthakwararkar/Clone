@@ -4,8 +4,30 @@ import { useRouter } from 'next/navigation'
 import { createClient, clearMockSessionAndReset } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { api } from '@/lib/api'
-import { setClientMockSession, clearClientMockSession } from '@/lib/supabase/mockAuthHelper'
+import { setClientMockSession } from '@/lib/supabase/mockAuthHelper'
+import type { Session } from '@supabase/supabase-js'
+import type { User } from '@/types'
 
+function sessionToFallbackUser(session: Session): User {
+  const metadata = session.user.user_metadata ?? {}
+  return {
+    id: session.user.id,
+    supabase_uid: session.user.id,
+    email: session.user.email ?? '',
+    name: (metadata.name as string) || (metadata.full_name as string) || null,
+    avatar_url: (metadata.avatar_url as string) || (metadata.picture as string) || null,
+    role: (metadata.role as 'user' | 'admin') || 'user',
+    created_at: session.user.created_at ?? new Date().toISOString(),
+  }
+}
+
+async function resolveUserProfile(session: Session): Promise<User> {
+  try {
+    return await api.getMe()
+  } catch {
+    return sessionToFallbackUser(session)
+  }
+}
 
 export function useAuth() {
   const { user, session, isLoading, setUser, clearUser, setLoading } = useAuthStore()
@@ -15,60 +37,23 @@ export function useAuth() {
     const supabase = createClient()
 
     supabase.auth.getSession().then(async ({ data: { session: s } }: any) => {
-      console.log('useAuth: getSession returned session:', s ? {
-        user: s.user.email,
-        expires_at: s.expires_at,
-        token_type: s.token_type
-      } : null)
-
       if (s) {
-        try {
-          console.log('useAuth: getSession fetching user profile from backend...')
-          const me = await api.getMe()
-          console.log('useAuth: getSession successfully fetched user profile:', me)
-          setUser(me, s)
-        } catch (err: any) {
-          console.error('useAuth: getSession failed to fetch user profile from backend:', {
-            message: err.message,
-            status: err.status,
-            error: err
-          })
-          setUser(null, null)
-        }
+        const profile = await resolveUserProfile(s)
+        setUser(profile, s)
       } else {
         setLoading(false)
       }
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, s: any) => {
-      console.log('useAuth: onAuthStateChange event:', event, 'session:', s ? {
-        user: s.user.email,
-        expires_at: s.expires_at
-      } : null)
-
-      // Skip INITIAL_SESSION events — we handle initialization via getSession() above
       if (event === 'INITIAL_SESSION') return
 
       if (s) {
-        try {
-          console.log('useAuth: onAuthStateChange fetching user profile from backend...')
-          const me = await api.getMe()
-          console.log('useAuth: onAuthStateChange successfully fetched user profile:', me)
-          setUser(me, s)
-        } catch (err: any) {
-          console.error('useAuth: onAuthStateChange failed to fetch user profile:', {
-            message: err.message,
-            status: err.status,
-            error: err
-          })
-          setUser(null, null)
-        }
+        const profile = await resolveUserProfile(s)
+        setUser(profile, s)
       } else {
-        // Don't clear user if a mock session still exists (the real Supabase
-        // listener may fire with null even though mock auth is valid)
         const { getClientMockSession } = await import('@/lib/supabase/mockAuthHelper')
         if (!getClientMockSession()) {
-          console.log('useAuth: onAuthStateChange clearing user because session is null and no mock session exists')
           clearUser()
         }
       }
@@ -79,14 +64,20 @@ export function useAuth() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (next?: string) => {
     clearMockSessionAndReset()
     const supabase = createClient()
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '')
+    const baseUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      (typeof window !== 'undefined' ? window.location.origin : '')
+    const callbackUrl = new URL('/auth/callback', baseUrl)
+    if (next && next.startsWith('/')) {
+      callbackUrl.searchParams.set('next', next)
+    }
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${baseUrl}/auth/callback`,
+        redirectTo: callbackUrl.toString(),
       },
     })
   }
@@ -105,7 +96,6 @@ export function useAuth() {
         if (setSessionError) throw setSessionError
       }
     } catch (err: any) {
-      // Fallback to mock auth if rate limit is hit, confirmation is required, or limit is exceeded
       if (
         err.message?.includes('rate limit') ||
         err.message?.includes('confirm') ||
@@ -141,9 +131,8 @@ export function useAuth() {
   const signUp = async (email: string, password: string, name: string) => {
     const supabase = createClient()
     try {
-      // 1. Sign up the user in Supabase
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ 
-        email, 
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
         password,
         options: {
           data: {
@@ -154,7 +143,6 @@ export function useAuth() {
       if (signUpError) throw signUpError
       clearMockSessionAndReset()
 
-      // 2. Auto-login the user immediately using their credentials
       let sessionData = signUpData.session
       if (!sessionData) {
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -176,7 +164,6 @@ export function useAuth() {
         if (setSessionError) throw setSessionError
       }
     } catch (err: any) {
-      // Fallback to mock auth if rate limit is hit, confirmation is required, or limit is exceeded
       if (
         err.message?.includes('rate limit') ||
         err.message?.includes('confirm') ||

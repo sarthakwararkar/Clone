@@ -32,7 +32,7 @@ export default async function SignupPage({
         <p className="text-sm text-gray-500">Sign up to unlock cashback benefits and exclusive deals</p>
       </div>
 
-      <OAuthButtons />
+      <OAuthButtons next={next} />
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">

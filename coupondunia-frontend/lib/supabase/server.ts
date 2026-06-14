@@ -29,6 +29,11 @@ export async function createClient() {
   const originalAuth = client.auth
   const jwtSecret = process.env.SUPABASE_JWT_SECRET
 
+  const { data: { session: realSession } } = await client.auth.getSession()
+  if (realSession) {
+    return client
+  }
+
   // Get mock session from cookie and verify
   let verifiedSession: any = null
   const mockSessionCookie = cookieStore.get(MOCK_SESSION_KEY)?.value

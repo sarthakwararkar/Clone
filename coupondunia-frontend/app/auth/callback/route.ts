@@ -1,26 +1,63 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { createClient } from '@/lib/supabase/server'
+import { createServerClient } from '@supabase/ssr'
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
-  const next = requestUrl.searchParams.get('next') ?? '/'
+  const oauthError = requestUrl.searchParams.get('error')
+  const oauthErrorDescription = requestUrl.searchParams.get('error_description')
+  let next = requestUrl.searchParams.get('next') ?? '/'
 
-  if (code) {
-    const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    
-    if (!error) {
-      const cookieStore = await cookies()
-      cookieStore.set('sb-mock-session', '', { maxAge: 0, path: '/' })
-      return NextResponse.redirect(new URL(next, request.url))
-    } else {
-      console.error('Supabase code exchange error:', error)
-    }
+  if (!next.startsWith('/')) {
+    next = '/'
   }
 
-  // Redirect to homepage if OAuth exchange fails
-  // We can also append the error parameter to the homepage if we want to show a toast, but redirecting is safer.
-  return NextResponse.redirect(new URL('/', request.url))
+  const origin = requestUrl.origin
+
+  if (oauthError) {
+    console.error('OAuth provider error:', oauthError, oauthErrorDescription)
+    const loginUrl = new URL('/login', origin)
+    loginUrl.searchParams.set(
+      'error',
+      oauthErrorDescription || oauthError || 'oauth_failed'
+    )
+    return NextResponse.redirect(loginUrl)
+  }
+
+  if (code) {
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          },
+        },
+      }
+    )
+
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (!error) {
+      cookieStore.set('sb-mock-session', '', { maxAge: 0, path: '/' })
+      return NextResponse.redirect(new URL(next, origin))
+    }
+
+    console.error('Supabase code exchange error:', error)
+    const loginUrl = new URL('/login', origin)
+    loginUrl.searchParams.set('error', error.message)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  const loginUrl = new URL('/login', origin)
+  loginUrl.searchParams.set('error', 'missing_code')
+  return NextResponse.redirect(loginUrl)
 }

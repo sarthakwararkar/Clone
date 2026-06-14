@@ -17,10 +17,10 @@ export function createClient(): ReturnType<typeof createBrowserClient> {
     )
   }
 
-  // Check if we have a real Supabase session cookie
+  // Check if we have a real Supabase session cookie (including chunked cookies)
   const hasRealCookie = typeof document !== 'undefined' && document.cookie.split(';').some(c => {
     const name = c.trim().split('=')[0]
-    return name.startsWith('sb-') && name.endsWith('-auth-token')
+    return name.startsWith('sb-') && name.includes('-auth-token')
   })
 
   if (hasRealCookie) {

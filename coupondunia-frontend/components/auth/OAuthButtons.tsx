@@ -1,14 +1,21 @@
 'use client'
 import { useAuth } from '@/hooks/useAuth'
-import { Button } from '@/components/ui/Button'
 
-export function OAuthButtons() {
+interface OAuthButtonsProps {
+  next?: string
+}
+
+export function OAuthButtons({ next }: OAuthButtonsProps) {
   const { signInWithGoogle } = useAuth()
+
+  const handleGoogleSignIn = () => {
+    void signInWithGoogle(next && next.startsWith('/') ? next : undefined)
+  }
 
   return (
     <div className="space-y-3">
       <button
-        onClick={() => void signInWithGoogle()}
+        onClick={handleGoogleSignIn}
         className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors shadow-sm"
       >
         {/* Google Logo SVG */}
