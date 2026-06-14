@@ -11,13 +11,13 @@ export function StorePageSchema({ store, coupons }: StorePageSchemaProps) {
     "@context": "https://schema.org",
     "@type": "ItemList",
     "name": `${store.name} Coupons & Promo Codes`,
-    "url": `https://www.dealdhamal.in/stores/${store.slug}`,
+    "url": `https://dealdhamal.vercel.app/stores/${store.slug}`,
     "numberOfItems": coupons.length,
     "itemListElement": coupons.map((coupon, index) => {
       const offer = {
         "@type": "Offer",
         "name": coupon.title,
-        "url": `https://www.dealdhamal.in/coupons/${coupon.id}`,
+        "url": `https://dealdhamal.vercel.app/coupons/${coupon.id}`,
         "seller": {
           "@type": "Organization",
           "name": store.name,
@@ -44,19 +44,19 @@ export function StorePageSchema({ store, coupons }: StorePageSchemaProps) {
         "@type": "ListItem",
         "position": 1,
         "name": "Home",
-        "item": "https://www.dealdhamal.in"
+        "item": "https://dealdhamal.vercel.app"
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "Stores",
-        "item": "https://www.dealdhamal.in/stores"
+        "item": "https://dealdhamal.vercel.app/stores"
       },
       {
         "@type": "ListItem",
         "position": 3,
         "name": `${store.name} Coupons`,
-        "item": `https://www.dealdhamal.in/stores/${store.slug}`
+        "item": `https://dealdhamal.vercel.app/stores/${store.slug}`
       }
     ]
   }

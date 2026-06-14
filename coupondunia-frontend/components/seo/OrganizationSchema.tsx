@@ -3,8 +3,8 @@ export function OrganizationSchema() {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "DealDhamal",
-    "url": "https://www.dealdhamal.in",
-    "logo": "https://www.dealdhamal.in/logo.png",
+    "url": "https://dealdhamal.vercel.app",
+    "logo": "https://dealdhamal.vercel.app/logo.png",
     "description": "India's best coupon and cashback aggregator",
     "sameAs": [
       "https://twitter.com/dealdhamal",

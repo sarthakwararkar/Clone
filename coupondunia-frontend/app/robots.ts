@@ -14,7 +14,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/admin/', '/account/', '/api/'],
       },
     ],
-    sitemap: 'https://www.dealdhamal.in/sitemap.xml',
-    host: 'https://www.dealdhamal.in',
+    sitemap: 'https://dealdhamal.vercel.app/sitemap.xml',
+    host: 'https://dealdhamal.vercel.app',
   }
 }

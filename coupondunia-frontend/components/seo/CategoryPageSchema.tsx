@@ -17,7 +17,7 @@ export function CategoryPageSchema({ category, stores }: CategoryPageSchemaProps
       "item": {
         "@type": "Organization",
         "name": store.name,
-        "url": `https://www.dealdhamal.in/stores/${store.slug}`,
+        "url": `https://dealdhamal.vercel.app/stores/${store.slug}`,
         ...(store.logo_url ? { "logo": store.logo_url } : {})
       }
     }))
@@ -32,19 +32,19 @@ export function CategoryPageSchema({ category, stores }: CategoryPageSchemaProps
         "@type": "ListItem",
         "position": 1,
         "name": "Home",
-        "item": "https://www.dealdhamal.in"
+        "item": "https://dealdhamal.vercel.app"
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "Categories",
-        "item": "https://www.dealdhamal.in/categories"
+        "item": "https://dealdhamal.vercel.app/categories"
       },
       {
         "@type": "ListItem",
         "position": 3,
         "name": category.name,
-        "item": `https://www.dealdhamal.in/categories/${category.slug}`
+        "item": `https://dealdhamal.vercel.app/categories/${category.slug}`
       }
     ]
   }

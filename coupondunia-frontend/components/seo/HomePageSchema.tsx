@@ -15,7 +15,7 @@ export function HomePageSchema({ featuredStores }: HomePageSchemaProps) {
       "item": {
         "@type": "Organization",
         "name": store.name,
-        "url": `https://www.dealdhamal.in/stores/${store.slug}`,
+        "url": `https://dealdhamal.vercel.app/stores/${store.slug}`,
         ...(store.logo_url ? { "logo": store.logo_url } : {})
       }
     }))

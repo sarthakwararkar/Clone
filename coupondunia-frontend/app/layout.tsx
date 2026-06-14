@@ -18,7 +18,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.dealdhamal.in'),
+  metadataBase: new URL('https://dealdhamal.vercel.app'),
   title: {
     default: 'DealDhamal — Best Coupons, Promo Codes & Deals in India',
     template: '%s | DealDhamal',
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_IN',
-    url: 'https://www.dealdhamal.in',
+    url: 'https://dealdhamal.vercel.app',
     siteName: 'DealDhamal',
     title: 'DealDhamal — Best Coupons & Deals in India',
     description: 'Find the best coupon codes, promo codes, and cashback deals from 500+ Indian stores.',
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: 'https://www.dealdhamal.in',
+    canonical: 'https://dealdhamal.vercel.app',
   },
 }
 
