@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Best Coupons & Deals in India | DealDhamal',
     description: 'Find verified coupon codes, cashback offers, and top store discounts. Shop and save more today with DealDhamal.',
-    url: 'http://localhost:3000',
+    url: 'https://dealdhamal.vercel.app',
     siteName: 'DealDhamal',
     images: [
       {
