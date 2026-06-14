@@ -5,8 +5,9 @@ import { StoresPageClient } from './StoresPageClient'
 export const revalidate = 3600 // ISR hourly
 
 export const metadata: Metadata = {
-  title: 'All Stores — Coupons & Cashback Offers',
-  description: 'Browse all stores on DealDhamal. Find active coupons, promo codes, deals, and cashback rates for your favorite brands.',
+  title: 'All Stores — Coupons & Cashback Offers | DealDhamal',
+  description: 'Browse coupons and cashback offers from 500+ Indian stores. Find deals from Flipkart, Amazon, Myntra, Swiggy, Zomato, Nykaa and more.',
+  alternates: { canonical: 'https://www.dealdhamal.in/stores' },
 }
 
 interface PageProps {

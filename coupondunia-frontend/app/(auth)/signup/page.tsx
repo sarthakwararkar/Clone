@@ -6,8 +6,9 @@ import { SignupForm } from '@/components/auth/SignupForm'
 import { OAuthButtons } from '@/components/auth/OAuthButtons'
 
 export const metadata: Metadata = {
-  title: 'Sign Up | DealDhamal',
-  description: 'Create a DealDhamal account to start saving, tracking cashback rates, and customizing deal alerts.',
+  title: 'Sign Up Free — DealDhamal',
+  description: 'Create a free DealDhamal account to save coupons and get deal alerts.',
+  robots: { index: false, follow: false },
 }
 
 export default async function SignupPage({

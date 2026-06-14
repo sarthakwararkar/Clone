@@ -1,4 +1,5 @@
 'use client'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search } from 'lucide-react'
 import { useSearch } from '@/hooks/useSearch'
@@ -8,6 +9,7 @@ import { CouponGrid } from '@/components/coupons/CouponGrid'
 import { CouponFilters } from '@/components/coupons/CouponFilters'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { trackSearch } from '@/lib/analytics'
 import type { Coupon } from '@/types'
 
 interface SearchResultsProps {
@@ -18,6 +20,13 @@ export function SearchResults({ query }: SearchResultsProps) {
   const router = useRouter()
   const { data, isLoading, isError } = useSearch(query)
   const { type, sortBy } = useCouponFilterStore()
+
+  useEffect(() => {
+    if (!isLoading && data) {
+      const totalResults = (data.stores?.length ?? 0) + (data.coupons?.length ?? 0)
+      trackSearch(query, totalResults)
+    }
+  }, [isLoading, data, query])
 
   if (isLoading) {
     return (

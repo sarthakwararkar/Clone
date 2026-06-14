@@ -6,8 +6,9 @@ import { LoginForm } from '@/components/auth/LoginForm'
 import { OAuthButtons } from '@/components/auth/OAuthButtons'
 
 export const metadata: Metadata = {
-  title: 'Sign In | DealDhamal',
-  description: 'Sign in to your DealDhamal account to save coupons, track cashback, and manage deal alerts.',
+  title: 'Login to DealDhamal — Access Your Saved Coupons',
+  description: 'Login to your DealDhamal account to access saved coupons and deal alerts.',
+  robots: { index: false, follow: false },
 }
 
 export default async function LoginPage({

@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { api } from '@/lib/api'
 import { StoreGrid } from '@/components/stores/StoreGrid'
 import { CategoryCouponsList } from './CategoryCouponsList'
+import { CategoryPageSchema } from '@/components/seo/CategoryPageSchema'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
 
 export const revalidate = 3600 // ISR hourly
 
@@ -18,16 +20,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const categories = await api.getCategories()
     const category = categories.find((c) => c.slug === p.slug)
     if (!category) throw new Error('Category not found')
-    
+    const year = new Date().getFullYear()
     return {
-      title: `${category.name} Coupons & Promo Codes | DealDhamal`,
-      description: `Get verified coupon codes, promo offers, and cashback deals for stores in the ${category.name} category. Save more today!`,
+      title: `Best ${category.name} Coupons & Deals ${year} | DealDhamal`,
+      description: `Find the best ${category.name} coupons and promo codes for ${year}. Browse verified offers from top ${category.name.toLowerCase()} brands in India.`,
+      keywords: [`${category.name.toLowerCase()} coupons`, `${category.name.toLowerCase()} deals`, `${category.name.toLowerCase()} promo codes`],
+      openGraph: {
+        title: `Best ${category.name} Coupons ${year} | DealDhamal`,
+        url: `https://www.dealdhamal.in/categories/${p.slug}`,
+      },
+      alternates: { canonical: `https://www.dealdhamal.in/categories/${p.slug}` },
     }
   } catch {
-    return {
-      title: 'Category Coupons & Deals',
-      description: 'Browse top category coupons and deals.',
-    }
+    return { title: 'Category Coupons & Deals | DealDhamal' }
   }
 }
 
@@ -53,6 +58,15 @@ export default async function CategoryPage({ params }: PageProps) {
 
   return (
     <div className="space-y-10">
+      <CategoryPageSchema category={category} stores={categoryStores} />
+      <Breadcrumb
+        items={[
+          { label: 'Home', href: '/' },
+          { label: 'Categories', href: '/categories' },
+          { label: category.name },
+        ]}
+      />
+
       {/* Category Heading */}
       <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
         <h1 className="text-2xl font-bold text-gray-800">

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
 import { Mail } from 'lucide-react'
+import { trackAlertSubscribe } from '@/lib/analytics'
 
 export function NewsletterBanner() {
   const [email, setEmail] = useState('')
@@ -18,6 +19,7 @@ export function NewsletterBanner() {
     try {
       await api.subscribeAlert({ email })
       setSubscribed(true)
+      trackAlertSubscribe()
       toast.success('Subscribed! You\'ll get the best deals in your inbox ✓')
     } catch {
       toast.error('Failed to subscribe. Please try again.')

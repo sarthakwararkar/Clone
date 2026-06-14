@@ -9,7 +9,8 @@ import { CouponModal } from '@/components/coupons/CouponModal'
 import { ShareModal } from '@/components/coupons/ShareModal'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
-import { timeAgo, formatDiscount } from '@/lib/utils'
+import { Breadcrumb } from '@/components/ui/Breadcrumb'
+import { timeAgo, formatDiscount, truncate } from '@/lib/utils'
 import { useSavedCoupons } from '@/hooks/useSavedCoupons'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
@@ -37,7 +38,7 @@ export function CouponDetailClient({ coupon, moreCoupons }: CouponDetailClientPr
     if (saved) {
       unsave(coupon.id)
     } else {
-      save(coupon.id)
+      save(coupon.id, coupon.store.name)
     }
   }
 
@@ -60,21 +61,17 @@ export function CouponDetailClient({ coupon, moreCoupons }: CouponDetailClientPr
     )
   }
 
+  const breadcrumbItems = [
+    { label: 'Home', href: '/' },
+    { label: 'Stores', href: '/stores' },
+    { label: coupon.store.name, href: `/stores/${coupon.store.slug}` },
+    { label: truncate(coupon.title, 40) }
+  ]
+
   if (!user) {
     return (
       <div className="space-y-8">
-        {/* Breadcrumbs */}
-        <nav className="text-xs text-gray-500 flex items-center gap-2">
-          <Link href="/" className="hover:text-primary transition-colors">Home</Link>
-          <span>&gt;</span>
-          <Link href="/stores" className="hover:text-primary transition-colors">Stores</Link>
-          <span>&gt;</span>
-          <Link href={`/stores/${coupon.store.slug}`} className="hover:text-primary transition-colors">
-            {coupon.store.name}
-          </Link>
-          <span>&gt;</span>
-          <span className="text-gray-700 font-medium truncate max-w-xs">{coupon.title}</span>
-        </nav>
+        <Breadcrumb items={breadcrumbItems} />
 
         {/* Lock Screen detail card */}
         <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden p-6 md:p-10 flex flex-col items-center justify-center text-center min-h-[350px]">
@@ -142,18 +139,7 @@ export function CouponDetailClient({ coupon, moreCoupons }: CouponDetailClientPr
 
   return (
     <div className="space-y-8">
-      {/* Breadcrumbs */}
-      <nav className="text-xs text-gray-500 flex items-center gap-2">
-        <Link href="/" className="hover:text-primary transition-colors">Home</Link>
-        <span>&gt;</span>
-        <Link href="/stores" className="hover:text-primary transition-colors">Stores</Link>
-        <span>&gt;</span>
-        <Link href={`/stores/${coupon.store.slug}`} className="hover:text-primary transition-colors">
-          {coupon.store.name}
-        </Link>
-        <span>&gt;</span>
-        <span className="text-gray-700 font-medium truncate max-w-xs">{coupon.title}</span>
-      </nav>
+      <Breadcrumb items={breadcrumbItems} />
 
       {/* Main Detail Card */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden p-6 md:p-8 flex flex-col md:flex-row gap-6 items-start relative">

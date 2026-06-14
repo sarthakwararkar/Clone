@@ -7,6 +7,9 @@ import { Footer } from '@/components/layout/Footer'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { Toaster } from 'sonner'
 import { Analytics } from '@vercel/analytics/react'
+import { GoogleAnalytics } from '@next/third-parties/google'
+import { OrganizationSchema } from '@/components/seo/OrganizationSchema'
+import { WebsiteSchema } from '@/components/seo/WebsiteSchema'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -15,29 +18,44 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://www.dealdhamal.in'),
   title: {
+    default: 'DealDhamal — Best Coupons, Promo Codes & Deals in India',
     template: '%s | DealDhamal',
-    default: 'Best Coupons, Promo Codes & Cashback Offers | DealDhamal',
   },
-  description: 'Find verified coupon codes, cashback offers, and top store discounts. Shop and save more today with DealDhamal.',
+  description: 'Find the best coupon codes, promo codes, and cashback deals from top Indian brands like Flipkart, Amazon, Myntra, Swiggy, Zomato and 500+ more stores.',
+  keywords: ['coupons india', 'promo codes', 'discount codes', 'cashback offers', 'deals india', 'dealdhamal', 'flipkart coupons', 'amazon coupons', 'myntra coupons'],
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+  },
   openGraph: {
-    title: 'Best Coupons & Deals in India | DealDhamal',
-    description: 'Find verified coupon codes, cashback offers, and top store discounts. Shop and save more today with DealDhamal.',
-    url: 'https://dealdhamal.vercel.app',
+    type: 'website',
+    locale: 'en_IN',
+    url: 'https://www.dealdhamal.in',
     siteName: 'DealDhamal',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-      },
-    ],
+    title: 'DealDhamal — Best Coupons & Deals in India',
+    description: 'Find the best coupon codes, promo codes, and cashback deals from 500+ Indian stores.',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'DealDhamal' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Best Coupons & Deals in India | DealDhamal',
-    description: 'Find verified coupon codes, cashback offers, and top store discounts. Shop and save more today with DealDhamal.',
+    title: 'DealDhamal — Best Coupons & Deals in India',
+    description: 'Find the best coupon codes and cashback deals from 500+ Indian stores.',
     images: ['/og-image.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: 'https://www.dealdhamal.in',
   },
 }
 
@@ -59,6 +77,11 @@ export default function RootLayout({
           <Toaster position="top-right" richColors />
           <Analytics />
         </Providers>
+        <OrganizationSchema />
+        <WebsiteSchema />
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
+        )}
       </body>
     </html>
   )

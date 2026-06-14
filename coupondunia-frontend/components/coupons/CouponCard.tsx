@@ -40,7 +40,7 @@ export function CouponCard({ coupon, view = 'list' }: CouponCardProps) {
       return
     }
     if (saved) unsave(coupon.id)
-    else save(coupon.id)
+    else save(coupon.id, coupon.store.name)
   }
 
   const handleReveal = (e: React.MouseEvent) => {

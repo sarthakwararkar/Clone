@@ -4,11 +4,8 @@ import { SearchPageContent } from './SearchPageContent'
 import { Skeleton } from '@/components/ui/Skeleton'
 
 export const metadata: Metadata = {
-  title: 'Search Results',
-  robots: {
-    index: false,
-    follow: false,
-  },
+  title: 'Search Coupons & Deals | DealDhamal',
+  robots: { index: false, follow: false },
 }
 
 export default function SearchPage() {

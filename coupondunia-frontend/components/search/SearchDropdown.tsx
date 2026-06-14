@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -7,6 +7,7 @@ import { useSearch } from '@/hooks/useSearch'
 import { useSearchStore } from '@/stores/useSearchStore'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { formatDiscount } from '@/lib/utils'
+import { trackSearch } from '@/lib/analytics'
 
 interface SearchDropdownProps {
   query: string
@@ -17,6 +18,13 @@ export function SearchDropdown({ query }: SearchDropdownProps) {
   const { closeDropdown } = useSearchStore()
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const router = useRouter()
+
+  useEffect(() => {
+    if (!isLoading && results) {
+      const totalResults = (results.stores?.length ?? 0) + (results.coupons?.length ?? 0)
+      trackSearch(query, totalResults)
+    }
+  }, [isLoading, results, query])
 
   const stores = results?.stores?.slice(0, 3) ?? []
   const coupons = results?.coupons?.slice(0, 5) ?? []

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { trackSaveCoupon } from '@/lib/analytics'
 
 export function useSavedCoupons() {
   const queryClient = useQueryClient()
@@ -15,20 +16,21 @@ export function useSavedCoupons() {
   })
 
   const saveMutation = useMutation({
-    mutationFn: (id: string) => api.saveCoupon(id),
-    onMutate: async (id) => {
+    mutationFn: ({ id }: { id: string; storeName: string }) => api.saveCoupon(id),
+    onMutate: async ({ id }) => {
       await queryClient.cancelQueries({ queryKey: ['savedCoupons'] })
       const previous = queryClient.getQueryData(['savedCoupons'])
       return { previous }
     },
-    onError: (_err, _id, context) => {
+    onError: (_err, _variables, context) => {
       if (context?.previous) {
         queryClient.setQueryData(['savedCoupons'], context.previous)
       }
       toast.error('Failed to save coupon')
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['savedCoupons'] })
+      trackSaveCoupon(variables.id, variables.storeName)
       toast.success('Coupon saved! ✓')
     },
   })
@@ -59,7 +61,9 @@ export function useSavedCoupons() {
     savedCoupons,
     isLoading,
     isSaved,
-    save: saveMutation.mutate,
+    save: (id: string, storeName: string = '') => {
+      saveMutation.mutate({ id, storeName })
+    },
     unsave: unsaveMutation.mutate,
     isSaving: saveMutation.isPending,
     isUnsaving: unsaveMutation.isPending,

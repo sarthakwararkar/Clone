@@ -109,3 +109,9 @@ export interface ApiError {
   status: number
   message: string
 }
+
+declare global {
+  interface Window {
+    gtag: (command: string, targetId: string, config?: Record<string, unknown>) => void
+  }
+}

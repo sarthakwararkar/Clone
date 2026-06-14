@@ -7,6 +7,12 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { api } from '@/lib/api'
 import { ensureExternalLink } from '@/lib/utils'
+import {
+  trackCouponReveal,
+  trackCouponCopy,
+  trackCouponClick,
+  trackCouponReport,
+} from '@/lib/analytics'
 
 interface CouponModalProps {
   coupon: Coupon
@@ -24,8 +30,9 @@ export function CouponModal({ coupon, isOpen, onClose }: CouponModalProps) {
   useEffect(() => {
     if (isOpen) {
       api.clickCoupon(coupon.id).catch(() => {})
+      trackCouponReveal(coupon.id, coupon.store.name, coupon.coupon_type)
     }
-  }, [isOpen, coupon.id])
+  }, [isOpen, coupon.id, coupon.store.name, coupon.coupon_type])
 
   // Countdown to auto-close
   useEffect(() => {
@@ -51,16 +58,18 @@ export function CouponModal({ coupon, isOpen, onClose }: CouponModalProps) {
     try {
       await navigator.clipboard.writeText(coupon.code)
       setCopied(true)
+      trackCouponCopy(coupon.id, coupon.store.name)
       toast.success('Coupon code copied! ✓')
       setTimeout(() => setCopied(false), 2000)
     } catch {
       toast.error('Failed to copy code')
     }
-  }, [coupon.code])
+  }, [coupon.code, coupon.id, coupon.store.name])
 
   const handleReport = async (worked: boolean) => {
     try {
       await api.reportCoupon(coupon.id, worked)
+      trackCouponReport(coupon.id, worked)
       setReported(true)
     } catch {
       toast.error('Failed to submit feedback')
@@ -68,6 +77,7 @@ export function CouponModal({ coupon, isOpen, onClose }: CouponModalProps) {
   }
 
   const handleVisitStore = () => {
+    trackCouponClick(coupon.id, coupon.store.name)
     window.open(ensureExternalLink(coupon.affiliate_url), '_blank', 'noopener,noreferrer')
   }
 
@@ -149,3 +159,4 @@ export function CouponModal({ coupon, isOpen, onClose }: CouponModalProps) {
     </Modal>
   )
 }
+

@@ -7,8 +7,9 @@ import { Tag } from 'lucide-react'
 export const revalidate = 3600 // ISR hourly
 
 export const metadata: Metadata = {
-  title: 'Browse Coupons by Category',
-  description: 'Shop by category and find the best verified discount codes, coupon deals, and cashback rewards for fashion, electronics, travel & more.',
+  title: 'All Categories — Fashion, Food, Travel & More | DealDhamal',
+  description: 'Browse deals by category — Fashion, Electronics, Food, Beauty, Travel, Grocery and more.',
+  alternates: { canonical: 'https://www.dealdhamal.in/categories' },
 }
 
 export default async function CategoriesPage() {

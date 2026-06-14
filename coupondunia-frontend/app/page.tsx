@@ -5,6 +5,7 @@ import { BigSavingCoupons } from '@/components/home/BigSavingCoupons'
 import { FeaturedStores } from '@/components/home/FeaturedStores'
 import { TrendingCoupons } from '@/components/home/TrendingCoupons'
 import { NewsletterBanner } from '@/components/home/NewsletterBanner'
+import { HomePageSchema } from '@/components/seo/HomePageSchema'
 
 export const revalidate = 3600 // ISR hourly
 
@@ -30,6 +31,7 @@ export default async function Homepage() {
 
   return (
     <div className="space-y-12">
+      <HomePageSchema featuredStores={featuredStores} />
       {/* Hero banner carousel */}
       {featuredCoupons.length > 0 && (
         <HeroBanner coupons={featuredCoupons.slice(0, 5)} />
