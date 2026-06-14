@@ -328,7 +328,7 @@ export default function PrivacyPolicyPage() {
           </div>
           <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mt-4 text-xs text-gray-700">
             <strong>To exercise any of these rights,</strong> please contact us at{' '}
-            <a href="mailto:privacy@dealdhamal.in" className="text-primary font-semibold hover:underline">privacy@dealdhamal.in</a>. We will respond within 30 days. We may need to verify your identity before processing your request.
+            <a href="mailto:sarthakwararkar2@gmail.com" className="text-primary font-semibold hover:underline">sarthakwararkar2@gmail.com</a>. We will respond within 30 days. We may need to verify your identity before processing your request.
           </div>
         </Section>
 
@@ -337,7 +337,7 @@ export default function PrivacyPolicyPage() {
         {/* Section 9 */}
         <Section id="childrens-privacy" number="9" title="Children's Privacy">
           <p>DealDhamal is not intended for use by individuals under the age of 18. We do not knowingly collect personal data from children under 18. If we become aware that we have inadvertently collected personal data from a child under 18, we will take immediate steps to delete such data.</p>
-          <p>If you are a parent or guardian and believe your child has provided us with personal data, please contact us at <a href="mailto:privacy@dealdhamal.in" className="text-primary font-semibold hover:underline">privacy@dealdhamal.in</a>.</p>
+          <p>If you are a parent or guardian and believe your child has provided us with personal data, please contact us at <a href="mailto:sarthakwararkar2@gmail.com" className="text-primary font-semibold hover:underline">sarthakwararkar2@gmail.com</a>.</p>
         </Section>
 
         <Divider />
@@ -372,7 +372,7 @@ export default function PrivacyPolicyPage() {
           <p>In accordance with the Information Technology Act, 2000 and the Digital Personal Data Protection Act, 2023, we have appointed a Grievance Officer to address any concerns or complaints regarding the processing of your personal data.</p>
           <div className="bg-gray-50 rounded-xl p-5 border border-gray-200 mt-3 space-y-1">
             <p className="font-extrabold text-gray-900 text-sm">Grievance Officer — DealDhamal</p>
-            <p>Email: <a href="mailto:grievance@dealdhamal.in" className="text-primary hover:underline font-medium">grievance@dealdhamal.in</a></p>
+            <p>Email: <a href="mailto:sarthakwararkar2@gmail.com" className="text-primary hover:underline font-medium">sarthakwararkar2@gmail.com</a></p>
             <p className="text-gray-500 text-xs">Response time: Within 30 days of receipt of complaint</p>
           </div>
           <p>If you are not satisfied with our response, you may approach the Data Protection Board of India once it is operational under the DPDP Act, 2023.</p>
@@ -385,8 +385,8 @@ export default function PrivacyPolicyPage() {
           <p>For any questions, concerns, or requests regarding this Privacy Policy or how we handle your personal data, please contact us:</p>
           <div className="bg-gray-50 rounded-xl p-5 border border-gray-200 mt-3 space-y-1">
             <p className="font-extrabold text-gray-900 text-sm">DealDhamal Privacy Team</p>
-            <p>Email: <a href="mailto:privacy@dealdhamal.in" className="text-primary hover:underline font-medium">privacy@dealdhamal.in</a></p>
-            <p>Support: <a href="mailto:support@dealdhamal.in" className="text-primary hover:underline font-medium">support@dealdhamal.in</a></p>
+            <p>Email: <a href="mailto:sarthakwararkar2@gmail.com" className="text-primary hover:underline font-medium">sarthakwararkar2@gmail.com</a></p>
+            <p>Support: <a href="mailto:sarthakwararkar2@gmail.com" className="text-primary hover:underline font-medium">sarthakwararkar2@gmail.com</a></p>
             <p>Website: <a href="https://www.dealdhamal.in" className="text-primary hover:underline font-medium" target="_blank" rel="noopener noreferrer">www.dealdhamal.in</a></p>
           </div>
         </Section>

@@ -97,7 +97,7 @@ export default function TermsOfServicePage() {
             <ul className="list-disc pl-5 space-y-1">
               <li>Maintaining the confidentiality of your account credentials</li>
               <li>All activity that occurs under your account</li>
-              <li>Notifying us immediately at <a href="mailto:support@dealdhamal.in" className="text-primary hover:underline font-medium">support@dealdhamal.in</a> if you suspect any unauthorised access</li>
+              <li>Notifying us immediately at <a href="mailto:sarthakwararkar2@gmail.com" className="text-primary hover:underline font-medium">sarthakwararkar2@gmail.com</a> if you suspect any unauthorised access</li>
             </ul>
           </SubSection>
           <SubSection title="5.2 Account Restrictions">
@@ -248,7 +248,7 @@ export default function TermsOfServicePage() {
         {/* Section 13 */}
         <Section id="governing-law" number="13" title="Governing Law and Dispute Resolution">
           <p>These Terms shall be governed by and construed in accordance with the laws of India. Any disputes arising out of or in connection with these Terms shall be subject to the exclusive jurisdiction of the courts located in India.</p>
-          <p>Before initiating any legal proceedings, you agree to first attempt to resolve any dispute by contacting us at <a href="mailto:legal@dealdhamal.in" className="text-primary hover:underline font-medium">legal@dealdhamal.in</a>. We will make reasonable efforts to resolve the dispute amicably within 30 days.</p>
+          <p>Before initiating any legal proceedings, you agree to first attempt to resolve any dispute by contacting us at <a href="mailto:sarthakwararkar2@gmail.com" className="text-primary hover:underline font-medium">sarthakwararkar2@gmail.com</a>. We will make reasonable efforts to resolve the dispute amicably within 30 days.</p>
         </Section>
 
         <Divider />
@@ -271,8 +271,8 @@ export default function TermsOfServicePage() {
           <p>For any questions, concerns, or requests regarding these Terms of Service, please contact us:</p>
           <div className="bg-gray-50 rounded-xl p-5 border border-gray-200 mt-3 space-y-1">
             <p className="font-extrabold text-gray-900 text-sm">DealDhamal</p>
-            <p>Email: <a href="mailto:legal@dealdhamal.in" className="text-primary hover:underline font-medium">legal@dealdhamal.in</a></p>
-            <p>Support: <a href="mailto:support@dealdhamal.in" className="text-primary hover:underline font-medium">support@dealdhamal.in</a></p>
+            <p>Email: <a href="mailto:sarthakwararkar2@gmail.com" className="text-primary hover:underline font-medium">sarthakwararkar2@gmail.com</a></p>
+            <p>Support: <a href="mailto:sarthakwararkar2@gmail.com" className="text-primary hover:underline font-medium">sarthakwararkar2@gmail.com</a></p>
             <p>Website: <a href="https://www.dealdhamal.in" className="text-primary hover:underline font-medium" target="_blank" rel="noopener noreferrer">www.dealdhamal.in</a></p>
           </div>
         </Section>
