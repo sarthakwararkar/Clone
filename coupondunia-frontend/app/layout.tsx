@@ -6,7 +6,6 @@ import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { Toaster } from 'sonner'
-import { Analytics } from '@vercel/analytics/react'
 import { GoogleAnalytics } from '@next/third-parties/google'
 import { OrganizationSchema } from '@/components/seo/OrganizationSchema'
 import { WebsiteSchema } from '@/components/seo/WebsiteSchema'
@@ -75,7 +74,6 @@ export default function RootLayout({
           <Footer />
           <MobileNav />
           <Toaster position="top-right" richColors />
-          <Analytics />
         </Providers>
         <OrganizationSchema />
         <WebsiteSchema />

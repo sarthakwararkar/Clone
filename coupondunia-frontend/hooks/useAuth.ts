@@ -30,34 +30,26 @@ async function resolveUserProfile(session: Session): Promise<User> {
 }
 
 export function useAuth() {
-  const { user, session, isLoading, setUser, clearUser, setLoading } = useAuthStore()
+  const { user, session, isLoading, setUser, clearUser } = useAuthStore()
   const router = useRouter()
 
   useEffect(() => {
     const supabase = createClient()
 
-    supabase.auth.getSession().then(async ({ data: { session: s } }: any) => {
-      if (s) {
-        const profile = await resolveUserProfile(s)
-        setUser(profile, s)
-      } else {
-        setLoading(false)
-      }
-    })
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, s: any) => {
-      if (event === 'INITIAL_SESSION') return
-
       if (s) {
         const profile = await resolveUserProfile(s)
         setUser(profile, s)
-      } else {
+      } else if (event === 'INITIAL_SESSION' || event === 'SIGNED_OUT') {
         const { getClientMockSession } = await import('@/lib/supabase/mockAuthHelper')
         if (!getClientMockSession()) {
           clearUser()
         }
       }
-      router.refresh()
+
+      if (event !== 'INITIAL_SESSION') {
+        router.refresh()
+      }
     })
 
     return () => subscription.unsubscribe()
@@ -67,9 +59,11 @@ export function useAuth() {
   const signInWithGoogle = async (next?: string) => {
     clearMockSessionAndReset()
     const supabase = createClient()
+    // Always use the live browser origin in production — env may still point at localhost.
     const baseUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      (typeof window !== 'undefined' ? window.location.origin : '')
+      typeof window !== 'undefined'
+        ? window.location.origin
+        : (process.env.NEXT_PUBLIC_SITE_URL || 'https://dealdhamal.vercel.app')
     const callbackUrl = new URL('/auth/callback', baseUrl)
     if (next && next.startsWith('/')) {
       callbackUrl.searchParams.set('next', next)
