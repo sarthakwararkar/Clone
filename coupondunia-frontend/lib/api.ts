@@ -69,7 +69,7 @@ class ApiClient {
     }
 
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 3000)
+    const timeoutId = setTimeout(() => controller.abort(), 15000)
 
     let res
     try {
@@ -80,7 +80,7 @@ class ApiClient {
       })
     } catch (err: any) {
       if (err.name === 'AbortError') {
-        throw new Error('API Request timed out after 3 seconds')
+        throw new Error('API Request timed out after 15 seconds')
       }
       throw err
     } finally {
