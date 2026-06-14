@@ -12,9 +12,12 @@ export async function GET(request: Request) {
     
     if (!error) {
       return NextResponse.redirect(new URL(next, request.url))
+    } else {
+      console.error('Supabase code exchange error:', error)
     }
   }
 
   // Redirect to homepage if OAuth exchange fails
+  // We can also append the error parameter to the homepage if we want to show a toast, but redirecting is safer.
   return NextResponse.redirect(new URL('/', request.url))
 }
