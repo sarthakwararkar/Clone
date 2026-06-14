@@ -55,10 +55,11 @@ export function useAuth() {
 
   const signInWithGoogle = async () => {
     const supabase = createClient()
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '')
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+        redirectTo: `${baseUrl}/auth/callback`,
       },
     })
   }
