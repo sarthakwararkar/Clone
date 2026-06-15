@@ -2,35 +2,16 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { eq, and } from 'drizzle-orm';
 import { createDb } from '../db';
-import { dealAlerts, users, googleUsers, normalUsers } from '../db/schema';
+import { dealAlerts, users } from '../db/schema';
 import { authMiddleware } from '../middleware/auth';
 import { createEmailService } from '../services/emailService';
 import type { AppBindings, DealAlertResponse, ApiResponse } from '../types';
+import { getInternalUserId } from './users';
 
 const alertsRouter = new Hono<AppBindings>();
 
 // Apply auth middleware to all alert routes
 alertsRouter.use('*', authMiddleware);
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-async function getInternalUserId(db: any, authUser: { id: string; provider?: string }) {
-  if (authUser.provider === 'google') {
-    const [res] = await db
-      .select({ id: googleUsers.id })
-      .from(googleUsers)
-      .where(eq(googleUsers.firebase_uid, authUser.id))
-      .limit(1);
-    return res?.id || null;
-  } else {
-    const [res] = await db
-      .select({ id: normalUsers.id })
-      .from(normalUsers)
-      .where(eq(normalUsers.firebase_uid, authUser.id))
-      .limit(1);
-    return res?.id || null;
-  }
-}
 
 // ─── Validation schemas ─────────────────────────────────────────────────────
 

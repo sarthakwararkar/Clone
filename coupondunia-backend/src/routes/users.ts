@@ -14,21 +14,77 @@ usersRouter.use('*', authMiddleware);
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-async function getInternalUserId(db: any, authUser: { id: string; provider?: string }) {
-  if (authUser.provider === 'google') {
+export async function getInternalUserId(db: any, authUser: { id: string; email: string; provider?: string; name?: string; avatar_url?: string; role?: 'user' | 'admin' }) {
+  const isGoogle = authUser.provider === 'google';
+  
+  if (isGoogle) {
     const [res] = await db
       .select({ id: googleUsers.id })
       .from(googleUsers)
       .where(eq(googleUsers.firebase_uid, authUser.id))
       .limit(1);
-    return res?.id || null;
+    if (res?.id) return res.id;
   } else {
     const [res] = await db
       .select({ id: normalUsers.id })
       .from(normalUsers)
       .where(eq(normalUsers.firebase_uid, authUser.id))
       .limit(1);
-    return res?.id || null;
+    if (res?.id) return res.id;
+  }
+
+  // Auto-create user profile if not exists
+  try {
+    const [existingUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, authUser.email))
+      .limit(1);
+
+    let baseUser = existingUser;
+
+    if (!baseUser) {
+      const [newBase] = await db
+        .insert(users)
+        .values({
+          email: authUser.email,
+          role: authUser.role || 'user',
+          name: authUser.name || null,
+          avatar_url: authUser.avatar_url || null,
+          provider: authUser.provider || 'email',
+        })
+        .returning();
+      baseUser = newBase;
+    }
+
+    if (isGoogle) {
+      await db
+        .insert(googleUsers)
+        .values({
+          id: baseUser.id,
+          firebase_uid: authUser.id,
+          email: authUser.email,
+          name: authUser.name || null,
+          avatar_url: authUser.avatar_url || null,
+        })
+        .onConflictDoNothing();
+    } else {
+      await db
+        .insert(normalUsers)
+        .values({
+          id: baseUser.id,
+          firebase_uid: authUser.id,
+          email: authUser.email,
+          name: authUser.name || null,
+          avatar_url: authUser.avatar_url || null,
+        })
+        .onConflictDoNothing();
+    }
+
+    return baseUser.id;
+  } catch (err) {
+    console.error('Error auto-creating user in getInternalUserId:', err);
+    return null;
   }
 }
 
