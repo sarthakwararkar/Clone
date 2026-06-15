@@ -23,8 +23,8 @@ export const authMiddleware = createMiddleware<AppBindings>(async (c, next) => {
   try {
     let payload: any = null;
 
-    // In development, allow mock tokens verified using the mock secret
-    if (c.env.ENVIRONMENT === 'development' && c.env.FIREBASE_MOCK_JWT_SECRET) {
+    // Allow mock tokens if the mock secret is configured
+    if (c.env.FIREBASE_MOCK_JWT_SECRET) {
       try {
         const secret = new TextEncoder().encode(c.env.FIREBASE_MOCK_JWT_SECRET);
         const { payload: mockPayload } = await jwtVerify(token, secret);
@@ -99,7 +99,7 @@ export const optionalAuthMiddleware = createMiddleware<AppBindings>(async (c, ne
   try {
     let payload: any = null;
 
-    if (c.env.ENVIRONMENT === 'development' && c.env.FIREBASE_MOCK_JWT_SECRET) {
+    if (c.env.FIREBASE_MOCK_JWT_SECRET) {
       try {
         const secret = new TextEncoder().encode(c.env.FIREBASE_MOCK_JWT_SECRET);
         const { payload: mockPayload } = await jwtVerify(token, secret);
