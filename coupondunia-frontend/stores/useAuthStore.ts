@@ -1,12 +1,15 @@
 import { create } from 'zustand'
-import type { Session } from '@supabase/supabase-js'
 import type { User } from '@/types'
+
+export interface FirebaseSession {
+  access_token: string
+}
 
 interface AuthState {
   user: User | null
-  session: Session | null
+  session: FirebaseSession | null
   isLoading: boolean
-  setUser: (user: User | null, session: Session | null) => void
+  setUser: (user: User | null, session: FirebaseSession | null) => void
   clearUser: () => void
   setLoading: (loading: boolean) => void
 }

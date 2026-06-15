@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
-import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
 import { SignupForm } from '@/components/auth/SignupForm'
 import { OAuthButtons } from '@/components/auth/OAuthButtons'
 
@@ -18,8 +18,8 @@ export default async function SignupPage({
 }) {
   const params = await searchParams
   const next = params.next ?? '/'
-  const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const cookieStore = await cookies()
+  const session = cookieStore.get('firebase-auth-token')?.value
 
   if (session) {
     redirect(next as any)

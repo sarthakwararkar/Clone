@@ -1,9 +1,13 @@
 import { createMiddleware } from 'hono/factory';
-import { jwtVerify } from 'jose';
+import { jwtVerify, createRemoteJWKSet } from 'jose';
 import type { AppBindings, AuthUser } from '../types';
 
+const JWKS = createRemoteJWKSet(
+  new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken-system@system.gserviceaccount.com')
+);
+
 /**
- * Auth middleware — verifies Supabase JWT from Authorization header.
+ * Auth middleware — verifies Firebase ID Token from Authorization header.
  * Sets c.set('user', { id, email, role }) on success.
  * Returns 401 if token is missing or invalid.
  */
@@ -17,20 +21,37 @@ export const authMiddleware = createMiddleware<AppBindings>(async (c, next) => {
   const token = authHeader.slice(7);
 
   try {
-    const secret = new TextEncoder().encode(c.env.SUPABASE_JWT_SECRET);
-    const { payload } = await jwtVerify(token, secret, {
-      issuer: `${c.env.SUPABASE_URL}/auth/v1`,
-    });
+    let payload: any = null;
 
-    const metadata = (payload.user_metadata as Record<string, unknown>) || {};
-    const appMetadata = (payload.app_metadata as Record<string, unknown>) || {};
+    // In development, allow mock tokens verified using the mock secret
+    if (c.env.ENVIRONMENT === 'development' && c.env.FIREBASE_MOCK_JWT_SECRET) {
+      try {
+        const secret = new TextEncoder().encode(c.env.FIREBASE_MOCK_JWT_SECRET);
+        const { payload: mockPayload } = await jwtVerify(token, secret);
+        payload = mockPayload;
+      } catch {
+        // Fall back to live verification if mock verification fails
+      }
+    }
+
+    if (!payload) {
+      const { payload: livePayload } = await jwtVerify(token, JWKS, {
+        issuer: `https://securetoken.google.com/${c.env.FIREBASE_PROJECT_ID}`,
+        audience: c.env.FIREBASE_PROJECT_ID,
+      });
+      payload = livePayload;
+    }
+
+    const firebaseData = (payload.firebase as Record<string, unknown>) || {};
+    const signInProvider = (firebaseData.sign_in_provider as string) || 'password';
+
     const user: AuthUser = {
       id: payload.sub as string,
       email: (payload.email as string) || '',
-      role: (metadata.role as 'user' | 'admin') || 'user',
-      name: (metadata.name as string) || (metadata.full_name as string) || undefined,
-      avatar_url: (metadata.avatar_url as string) || (metadata.picture as string) || undefined,
-      provider: (appMetadata.provider as string) || 'email',
+      role: (payload.role as 'user' | 'admin') || 'user',
+      name: (payload.name as string) || undefined,
+      avatar_url: (payload.picture as string) || undefined,
+      provider: signInProvider === 'google.com' ? 'google' : 'email',
     };
 
     c.set('user', user);
@@ -76,20 +97,36 @@ export const optionalAuthMiddleware = createMiddleware<AppBindings>(async (c, ne
   const token = authHeader.slice(7);
 
   try {
-    const secret = new TextEncoder().encode(c.env.SUPABASE_JWT_SECRET);
-    const { payload } = await jwtVerify(token, secret, {
-      issuer: `${c.env.SUPABASE_URL}/auth/v1`,
-    });
+    let payload: any = null;
 
-    const metadata = (payload.user_metadata as Record<string, unknown>) || {};
-    const appMetadata = (payload.app_metadata as Record<string, unknown>) || {};
+    if (c.env.ENVIRONMENT === 'development' && c.env.FIREBASE_MOCK_JWT_SECRET) {
+      try {
+        const secret = new TextEncoder().encode(c.env.FIREBASE_MOCK_JWT_SECRET);
+        const { payload: mockPayload } = await jwtVerify(token, secret);
+        payload = mockPayload;
+      } catch {
+        // Fall back to live
+      }
+    }
+
+    if (!payload) {
+      const { payload: livePayload } = await jwtVerify(token, JWKS, {
+        issuer: `https://securetoken.google.com/${c.env.FIREBASE_PROJECT_ID}`,
+        audience: c.env.FIREBASE_PROJECT_ID,
+      });
+      payload = livePayload;
+    }
+
+    const firebaseData = (payload.firebase as Record<string, unknown>) || {};
+    const signInProvider = (firebaseData.sign_in_provider as string) || 'password';
+
     const user: AuthUser = {
       id: payload.sub as string,
       email: (payload.email as string) || '',
-      role: (metadata.role as 'user' | 'admin') || 'user',
-      name: (metadata.name as string) || (metadata.full_name as string) || undefined,
-      avatar_url: (metadata.avatar_url as string) || (metadata.picture as string) || undefined,
-      provider: (appMetadata.provider as string) || 'email',
+      role: (payload.role as 'user' | 'admin') || 'user',
+      name: (payload.name as string) || undefined,
+      avatar_url: (payload.picture as string) || undefined,
+      provider: signInProvider === 'google.com' ? 'google' : 'email',
     };
 
     c.set('user', user);

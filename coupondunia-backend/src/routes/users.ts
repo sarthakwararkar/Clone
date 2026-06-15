@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { eq, and } from 'drizzle-orm';
 import { createDb } from '../db';
-import { users, savedCoupons, coupons, stores } from '../db/schema';
+import { users, googleUsers, normalUsers, savedCoupons, coupons, stores } from '../db/schema';
 import { authMiddleware } from '../middleware/auth';
 import type { AppBindings, UserProfileResponse, CouponResponse, ApiResponse } from '../types';
 import { sql } from 'drizzle-orm';
@@ -11,6 +11,26 @@ const usersRouter = new Hono<AppBindings>();
 
 // Apply auth middleware to all user routes
 usersRouter.use('*', authMiddleware);
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+async function getInternalUserId(db: any, authUser: { id: string; provider?: string }) {
+  if (authUser.provider === 'google') {
+    const [res] = await db
+      .select({ id: googleUsers.id })
+      .from(googleUsers)
+      .where(eq(googleUsers.firebase_uid, authUser.id))
+      .limit(1);
+    return res?.id || null;
+  } else {
+    const [res] = await db
+      .select({ id: normalUsers.id })
+      .from(normalUsers)
+      .where(eq(normalUsers.firebase_uid, authUser.id))
+      .limit(1);
+    return res?.id || null;
+  }
+}
 
 // ─── Validation schemas ─────────────────────────────────────────────────────
 
@@ -25,19 +45,26 @@ usersRouter.get('/', async (c) => {
   const authUser = c.get('user')!;
   const db = createDb(c.env.DATABASE_URL);
 
-  // Find or create user record
-  let [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.supabase_uid, authUser.id))
-    .limit(1);
+  // Find user by provider
+  let internalUserId = await getInternalUserId(db, authUser);
+  let user: any = null;
+
+  if (internalUserId) {
+    [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, internalUserId))
+      .limit(1);
+  }
 
   if (!user) {
     // Auto-create user on first login
-    [user] = await db
+    const isGoogle = authUser.provider === 'google';
+    
+    // Create base user record
+    const [baseUser] = await db
       .insert(users)
       .values({
-        supabase_uid: authUser.id,
         email: authUser.email,
         role: authUser.role,
         name: authUser.name || null,
@@ -45,6 +72,31 @@ usersRouter.get('/', async (c) => {
         provider: authUser.provider || 'email',
       })
       .returning();
+
+    user = baseUser;
+
+    // Create provider-specific profile record
+    if (isGoogle) {
+      await db
+        .insert(googleUsers)
+        .values({
+          id: baseUser.id,
+          firebase_uid: authUser.id,
+          email: authUser.email,
+          name: authUser.name || null,
+          avatar_url: authUser.avatar_url || null,
+        });
+    } else {
+      await db
+        .insert(normalUsers)
+        .values({
+          id: baseUser.id,
+          firebase_uid: authUser.id,
+          email: authUser.email,
+          name: authUser.name || null,
+          avatar_url: authUser.avatar_url || null,
+        });
+    }
   }
 
   const profile: UserProfileResponse = {
@@ -53,6 +105,7 @@ usersRouter.get('/', async (c) => {
     name: user.name,
     avatar_url: user.avatar_url,
     role: user.role,
+    provider: user.provider,
     created_at: user.created_at.toISOString(),
   };
 
@@ -74,20 +127,15 @@ usersRouter.patch('/', async (c) => {
   }
 
   const db = createDb(c.env.DATABASE_URL);
+  let internalUserId = await getInternalUserId(db, authUser);
+  let user: any = null;
 
-  // Find or create user record
-  let [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.supabase_uid, authUser.id))
-    .limit(1);
-
-  if (!user) {
-    // Auto-create user on first login/profile update if not exists
-    [user] = await db
+  if (!internalUserId) {
+    // If not exists, create the entire records first
+    const isGoogle = authUser.provider === 'google';
+    const [baseUser] = await db
       .insert(users)
       .values({
-        supabase_uid: authUser.id,
         email: authUser.email,
         role: authUser.role,
         name: parsed.data.name !== undefined ? parsed.data.name : (authUser.name || null),
@@ -95,19 +143,57 @@ usersRouter.patch('/', async (c) => {
         provider: authUser.provider || 'email',
       })
       .returning();
+
+    user = baseUser;
+
+    if (isGoogle) {
+      await db
+        .insert(googleUsers)
+        .values({
+          id: baseUser.id,
+          firebase_uid: authUser.id,
+          email: authUser.email,
+          name: parsed.data.name !== undefined ? parsed.data.name : (authUser.name || null),
+          avatar_url: parsed.data.avatar_url !== undefined ? parsed.data.avatar_url : (authUser.avatar_url || null),
+        });
+    } else {
+      await db
+        .insert(normalUsers)
+        .values({
+          id: baseUser.id,
+          firebase_uid: authUser.id,
+          email: authUser.email,
+          name: parsed.data.name !== undefined ? parsed.data.name : (authUser.name || null),
+          avatar_url: parsed.data.avatar_url !== undefined ? parsed.data.avatar_url : (authUser.avatar_url || null),
+        });
+    }
   } else {
-    // Update existing user record
+    // Update existing records
     const updateData: Record<string, unknown> = {
       updated_at: new Date(),
     };
     if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
     if (parsed.data.avatar_url !== undefined) updateData.avatar_url = parsed.data.avatar_url;
 
+    // Update main users table
     [user] = await db
       .update(users)
       .set(updateData)
-      .where(eq(users.supabase_uid, authUser.id))
+      .where(eq(users.id, internalUserId))
       .returning();
+
+    // Update provider profile
+    if (authUser.provider === 'google') {
+      await db
+        .update(googleUsers)
+        .set(updateData)
+        .where(eq(googleUsers.id, internalUserId));
+    } else {
+      await db
+        .update(normalUsers)
+        .set(updateData)
+        .where(eq(normalUsers.id, internalUserId));
+    }
   }
 
   if (!user) {
@@ -120,6 +206,7 @@ usersRouter.patch('/', async (c) => {
     name: user.name,
     avatar_url: user.avatar_url,
     role: user.role,
+    provider: user.provider,
     created_at: user.created_at.toISOString(),
   };
 
@@ -133,13 +220,9 @@ usersRouter.get('/saved', async (c) => {
   const db = createDb(c.env.DATABASE_URL);
 
   // Get user's internal ID
-  const [user] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.supabase_uid, authUser.id))
-    .limit(1);
+  const internalUserId = await getInternalUserId(db, authUser);
 
-  if (!user) {
+  if (!internalUserId) {
     return c.json({ success: true, data: [] });
   }
 
@@ -155,7 +238,7 @@ usersRouter.get('/saved', async (c) => {
     FROM saved_coupons sc
     JOIN coupons c ON c.id = sc.coupon_id
     JOIN stores s ON s.id = c.store_id
-    WHERE sc.user_id = ${user.id}
+    WHERE sc.user_id = ${internalUserId}
     ORDER BY sc.saved_at DESC
   `);
 
@@ -206,13 +289,9 @@ usersRouter.post('/saved/:couponId', async (c) => {
   const db = createDb(c.env.DATABASE_URL);
 
   // Get user's internal ID
-  const [user] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.supabase_uid, authUser.id))
-    .limit(1);
+  const internalUserId = await getInternalUserId(db, authUser);
 
-  if (!user) {
+  if (!internalUserId) {
     return c.json({ success: false, error: 'User not found' } as ApiResponse, 404);
   }
 
@@ -229,7 +308,7 @@ usersRouter.post('/saved/:couponId', async (c) => {
 
   try {
     await db.insert(savedCoupons).values({
-      user_id: user.id,
+      user_id: internalUserId,
       coupon_id: couponId,
     });
 
@@ -248,13 +327,9 @@ usersRouter.delete('/saved/:couponId', async (c) => {
   const db = createDb(c.env.DATABASE_URL);
 
   // Get user's internal ID
-  const [user] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.supabase_uid, authUser.id))
-    .limit(1);
+  const internalUserId = await getInternalUserId(db, authUser);
 
-  if (!user) {
+  if (!internalUserId) {
     return c.json({ success: false, error: 'User not found' } as ApiResponse, 404);
   }
 
@@ -262,7 +337,7 @@ usersRouter.delete('/saved/:couponId', async (c) => {
     .delete(savedCoupons)
     .where(
       and(
-        eq(savedCoupons.user_id, user.id),
+        eq(savedCoupons.user_id, internalUserId),
         eq(savedCoupons.coupon_id, couponId)
       )
     )

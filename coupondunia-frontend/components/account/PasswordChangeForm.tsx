@@ -2,7 +2,8 @@
 import { useState } from 'react'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { createClient } from '@/lib/supabase/client'
+import { updatePassword } from 'firebase/auth'
+import { auth } from '@/lib/firebase'
 import { Button } from '@/components/ui/Button'
 
 export function PasswordChangeForm() {
@@ -25,12 +26,22 @@ export function PasswordChangeForm() {
     }
 
     setSubmitting(true)
-    const supabase = createClient()
 
     try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword })
-      if (error) throw error
-      
+      const user = auth.currentUser
+      if (!user) {
+        // Support mock session update
+        const isMock = localStorage.getItem('mock_firebase_session') !== null
+        if (isMock) {
+          toast.success('Password updated successfully (Mock)!')
+          setNewPassword('')
+          setConfirmPassword('')
+          return
+        }
+        throw new Error('No authenticated user found')
+      }
+
+      await updatePassword(user, newPassword)
       toast.success('Password updated successfully!')
       setNewPassword('')
       setConfirmPassword('')

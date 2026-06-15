@@ -30,12 +30,31 @@ export const couponTypeEnum = pgEnum('coupon_type', ['code', 'deal', 'cashback']
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
-  supabase_uid: text('supabase_uid').unique(),
   email: text('email').notNull(),
   name: text('name'),
   avatar_url: text('avatar_url'),
   role: userRoleEnum('role').default('user').notNull(),
   provider: text('provider').default('email').notNull(),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true }),
+});
+
+export const googleUsers = pgTable('google_users', {
+  id: uuid('id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  firebase_uid: text('firebase_uid').unique().notNull(),
+  email: text('email').notNull(),
+  name: text('name'),
+  avatar_url: text('avatar_url'),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true }),
+});
+
+export const normalUsers = pgTable('normal_users', {
+  id: uuid('id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  firebase_uid: text('firebase_uid').unique().notNull(),
+  email: text('email').notNull(),
+  name: text('name'),
+  avatar_url: text('avatar_url'),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true }),
 });
@@ -173,7 +192,23 @@ export const dealAlerts = pgTable('deal_alerts', {
 
 // ─── Relations ──────────────────────────────────────────────────────────────
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const googleUsersRelations = relations(googleUsers, ({ one }) => ({
+  user: one(users, {
+    fields: [googleUsers.id],
+    references: [users.id],
+  }),
+}));
+
+export const normalUsersRelations = relations(normalUsers, ({ one }) => ({
+  user: one(users, {
+    fields: [normalUsers.id],
+    references: [users.id],
+  }),
+}));
+
+export const usersRelations = relations(users, ({ one, many }) => ({
+  googleProfile: one(googleUsers),
+  normalProfile: one(normalUsers),
   savedCoupons: many(savedCoupons),
   couponClicks: many(couponClicks),
   couponReports: many(couponReports),

@@ -6,9 +6,8 @@ import { ProfileForm } from '@/components/account/ProfileForm'
 import { PasswordChangeForm } from '@/components/account/PasswordChangeForm'
 
 export default function ProfilePage() {
-  const { session } = useAuthStore()
-  const provider = session?.user?.app_metadata?.provider
-  const isOAuth = provider && provider !== 'email'
+  const { user } = useAuthStore()
+  const isOAuth = user?.provider === 'google'
 
   return (
     <div className="space-y-6">

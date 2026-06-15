@@ -174,6 +174,7 @@ export interface UserProfileResponse {
   name: string | null;
   avatar_url: string | null;
   role: string;
+  provider: string;
   created_at: string;
 }
 

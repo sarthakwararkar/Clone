@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/supabase/client'
 import type {
   Category,
   Store,
@@ -39,9 +38,23 @@ class ApiClient {
 
     if (!token) {
       try {
-        const supabase = createClient()
-        const { data: { session } } = await supabase.auth.getSession()
-        token = session?.access_token ?? undefined
+        const { auth } = await import('@/lib/firebase')
+        const firebaseUser = auth.currentUser
+        if (firebaseUser) {
+          token = await firebaseUser.getIdToken()
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!token) {
+      try {
+        const mockSessionStr = localStorage.getItem('mock_firebase_session')
+        if (mockSessionStr) {
+          const mockData = JSON.parse(mockSessionStr)
+          token = mockData.access_token
+        }
       } catch {
         // ignore
       }
@@ -248,12 +261,7 @@ class ApiClient {
   }
 
   async adminCreateStore(data: FormData): Promise<Store> {
-    const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    const headers: HeadersInit = {}
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`
-    }
+    const headers = await this.getAuthHeader()
     const res = await fetch(`${this.baseUrl}/api/admin/stores`, {
       method: 'POST',
       headers,
@@ -268,12 +276,7 @@ class ApiClient {
   }
 
   async adminUpdateStore(id: string, data: FormData): Promise<Store> {
-    const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    const headers: HeadersInit = {}
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`
-    }
+    const headers = await this.getAuthHeader()
     const res = await fetch(`${this.baseUrl}/api/admin/stores/${id}`, {
       method: 'PATCH',
       headers,

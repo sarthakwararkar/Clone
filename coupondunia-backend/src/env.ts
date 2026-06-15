@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 export const envSchema = z.object({
   DATABASE_URL: z.string().url(),
-  SUPABASE_URL: z.string().url(),
-  SUPABASE_JWT_SECRET: z.string().min(1),
+  FIREBASE_PROJECT_ID: z.string().min(1),
+  FIREBASE_MOCK_JWT_SECRET: z.string().optional(),
   UPSTASH_REDIS_URL: z.string().url(),
   UPSTASH_REDIS_TOKEN: z.string().min(1),
   RESEND_API_KEY: z.string().min(1),

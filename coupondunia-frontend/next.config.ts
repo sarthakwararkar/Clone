@@ -20,7 +20,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    cpus: 1,
+    workerThreads: false,
+  },
   typedRoutes: true,
 }
 
 export default nextConfig
+

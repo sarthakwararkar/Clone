@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { eq, and } from 'drizzle-orm';
 import { createDb } from '../db';
-import { dealAlerts, users } from '../db/schema';
+import { dealAlerts, users, googleUsers, normalUsers } from '../db/schema';
 import { authMiddleware } from '../middleware/auth';
 import { createEmailService } from '../services/emailService';
 import type { AppBindings, DealAlertResponse, ApiResponse } from '../types';
@@ -11,6 +11,26 @@ const alertsRouter = new Hono<AppBindings>();
 
 // Apply auth middleware to all alert routes
 alertsRouter.use('*', authMiddleware);
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+async function getInternalUserId(db: any, authUser: { id: string; provider?: string }) {
+  if (authUser.provider === 'google') {
+    const [res] = await db
+      .select({ id: googleUsers.id })
+      .from(googleUsers)
+      .where(eq(googleUsers.firebase_uid, authUser.id))
+      .limit(1);
+    return res?.id || null;
+  } else {
+    const [res] = await db
+      .select({ id: normalUsers.id })
+      .from(normalUsers)
+      .where(eq(normalUsers.firebase_uid, authUser.id))
+      .limit(1);
+    return res?.id || null;
+  }
+}
 
 // ─── Validation schemas ─────────────────────────────────────────────────────
 
@@ -45,21 +65,23 @@ alertsRouter.post('/', async (c) => {
   const db = createDb(c.env.DATABASE_URL);
 
   // Get user's internal ID
-  const [user] = await db
-    .select({ id: users.id, name: users.name })
-    .from(users)
-    .where(eq(users.supabase_uid, authUser.id))
-    .limit(1);
+  const internalUserId = await getInternalUserId(db, authUser);
 
-  if (!user) {
+  if (!internalUserId) {
     return c.json({ success: false, error: 'User not found' } as ApiResponse, 404);
   }
+
+  const [user] = await db
+    .select({ name: users.name })
+    .from(users)
+    .where(eq(users.id, internalUserId))
+    .limit(1);
 
   // Create the alert
   const [alert] = await db
     .insert(dealAlerts)
     .values({
-      user_id: user.id,
+      user_id: internalUserId,
       email: parsed.data.email,
       store_id: parsed.data.store_id ?? null,
       category_id: parsed.data.category_id ?? null,
@@ -71,7 +93,7 @@ alertsRouter.post('/', async (c) => {
     const emailService = createEmailService(c.env.RESEND_API_KEY);
     await emailService.sendWelcomeEmail(
       parsed.data.email,
-      user.name || authUser.email.split('@')[0]
+      user?.name || authUser.email.split('@')[0]
     );
   } catch (error) {
     console.error('Failed to send welcome email:', error);
@@ -97,20 +119,16 @@ alertsRouter.get('/', async (c) => {
   const db = createDb(c.env.DATABASE_URL);
 
   // Get user's internal ID
-  const [user] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.supabase_uid, authUser.id))
-    .limit(1);
+  const internalUserId = await getInternalUserId(db, authUser);
 
-  if (!user) {
+  if (!internalUserId) {
     return c.json({ success: true, data: [] });
   }
 
   const alerts = await db
     .select()
     .from(dealAlerts)
-    .where(and(eq(dealAlerts.user_id, user.id), eq(dealAlerts.is_active, true)));
+    .where(and(eq(dealAlerts.user_id, internalUserId), eq(dealAlerts.is_active, true)));
 
   const data: DealAlertResponse[] = alerts.map((alert) => ({
     id: alert.id,
@@ -132,13 +150,9 @@ alertsRouter.delete('/:id', async (c) => {
   const db = createDb(c.env.DATABASE_URL);
 
   // Get user's internal ID
-  const [user] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.supabase_uid, authUser.id))
-    .limit(1);
+  const internalUserId = await getInternalUserId(db, authUser);
 
-  if (!user) {
+  if (!internalUserId) {
     return c.json({ success: false, error: 'User not found' } as ApiResponse, 404);
   }
 
@@ -146,7 +160,7 @@ alertsRouter.delete('/:id', async (c) => {
   const [updated] = await db
     .update(dealAlerts)
     .set({ is_active: false })
-    .where(and(eq(dealAlerts.id, alertId), eq(dealAlerts.user_id, user.id)))
+    .where(and(eq(dealAlerts.id, alertId), eq(dealAlerts.user_id, internalUserId)))
     .returning();
 
   if (!updated) {

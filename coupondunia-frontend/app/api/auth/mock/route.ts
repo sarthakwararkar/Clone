@@ -59,72 +59,55 @@ async function getDeterministicUuid(email: string): Promise<string> {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { email, password, name, type } = body
+    const { email, password, name, type, provider } = body
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
     }
 
-    const secret = process.env.SUPABASE_JWT_SECRET
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+    const secret = process.env.FIREBASE_MOCK_JWT_SECRET
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'coupondunia-mock'
 
     if (!secret) {
-      return NextResponse.json({ error: 'SUPABASE_JWT_SECRET environment variable is missing' }, { status: 500 })
-    }
-
-    if (!supabaseUrl) {
-      return NextResponse.json({ error: 'SUPABASE_URL environment variable is missing' }, { status: 500 })
+      return NextResponse.json({ error: 'FIREBASE_MOCK_JWT_SECRET environment variable is missing' }, { status: 500 })
     }
 
     const sub = await getDeterministicUuid(email)
     const role = 'user' // default role
 
-    // Sign a mock Supabase JWT token
+    // Sign a mock Firebase JWT token
     const now = Math.floor(Date.now() / 1000)
     const jwtPayload = {
       sub,
       email,
-      role: 'authenticated',
-      aud: 'authenticated',
-      iss: `${supabaseUrl}/auth/v1`,
+      aud: projectId,
+      iss: `https://securetoken.google.com/${projectId}`,
       iat: now,
       exp: now + 60 * 60 * 24 * 7, // 7 days expiration
-      user_metadata: {
-        name: name || email.split('@')[0],
-        role: role,
-      },
-      app_metadata: {
-        provider: 'email',
-        providers: ['email'],
-      },
+      name: name || email.split('@')[0],
+      picture: provider === 'google.com' ? 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face' : null,
+      role: role,
+      firebase: {
+        sign_in_provider: provider === 'google.com' ? 'google.com' : 'password',
+        identities: {
+          email: [email]
+        }
+      }
     }
 
     const access_token = await signHS256(jwtPayload, secret)
 
     const session = {
       access_token,
-      token_type: 'bearer',
-      expires_in: 604800,
-      refresh_token: 'mock_refresh_token_value',
       user: {
         id: sub,
-        aud: 'authenticated',
-        role: 'authenticated',
+        supabase_uid: sub, // kept for type compatibility
         email,
-        email_confirmed_at: new Date().toISOString(),
-        confirmed_at: new Date().toISOString(),
-        last_sign_in_at: new Date().toISOString(),
-        user_metadata: {
-          name: name || email.split('@')[0],
-          role: role,
-        },
-        app_metadata: {
-          provider: 'email',
-          providers: ['email'],
-        },
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
+        name: name || email.split('@')[0],
+        avatar_url: null,
+        role: role,
+        created_at: new Date().toISOString()
+      }
     }
 
     return NextResponse.json({ success: true, session })
