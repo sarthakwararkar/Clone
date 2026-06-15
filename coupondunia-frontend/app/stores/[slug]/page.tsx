@@ -14,17 +14,6 @@ interface PageProps {
   }>
 }
 
-export async function generateStaticParams() {
-  try {
-    const storesResponse = await api.getStores({ limit: 50 })
-    return storesResponse.data.map((store) => ({
-      slug: store.slug,
-    }))
-  } catch {
-    return []
-  }
-}
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const p = await params
   try {

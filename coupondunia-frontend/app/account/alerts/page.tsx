@@ -1,4 +1,5 @@
-'use client'
+export const dynamic = 'force-dynamic'
+
 import { AlertsList } from '@/components/account/AlertsList'
 
 export default function AlertsPage() {
@@ -15,3 +16,4 @@ export default function AlertsPage() {
     </div>
   )
 }
+
