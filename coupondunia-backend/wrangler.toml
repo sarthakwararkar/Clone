@@ -6,7 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 ENVIRONMENT = "production"
 FIREBASE_MOCK_JWT_SECRET = "my-super-secret-local-firebase-token-key-123456"
-FIREBASE_PROJECT_ID = "coupondunia-mock"
+FIREBASE_PROJECT_ID = "dealdhamal-a44b6"
 
 # Secrets (set via `wrangler secret put <NAME>`):
 # DATABASE_URL
