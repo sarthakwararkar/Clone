@@ -56,8 +56,8 @@ export const authMiddleware = createMiddleware<AppBindings>(async (c, next) => {
 
     c.set('user', user);
     await next();
-  } catch (error) {
-    return c.json({ success: false, error: 'Invalid or expired token' }, 401);
+  } catch (error: any) {
+    return c.json({ success: false, error: 'Invalid or expired token', message: error?.message || String(error) }, 401);
   }
 });
 
