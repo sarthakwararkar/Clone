@@ -62,7 +62,7 @@ export function AccountSidebar() {
             <div className="text-center mb-5">
               <h3 className="text-base font-black text-gray-900">Sign out?</h3>
               <p className="text-xs text-gray-500 mt-1.5">
-                You'll need to sign in again to access your account, saved coupons, and cashback wallet.
+                You'll need to sign in again to access your account, saved coupons, and deal alerts.
               </p>
             </div>
 
