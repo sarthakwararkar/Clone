@@ -17,7 +17,7 @@ export function NewsletterBanner() {
     }
     setLoading(true)
     try {
-      await api.subscribeAlert({ email })
+      await api.subscribeNewsletter(email)
       setSubscribed(true)
       trackAlertSubscribe()
       toast.success('Subscribed! You\'ll get the best deals in your inbox ✓')

@@ -190,6 +190,15 @@ export const dealAlerts = pgTable('deal_alerts', {
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+// ─── Newsletter Subscribers Table ──────────────────────────────────────────
+
+export const newsletterSubscribers = pgTable('newsletter_subscribers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: text('email').notNull().unique(),
+  is_active: boolean('is_active').default(true).notNull(),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 // ─── Relations ──────────────────────────────────────────────────────────────
 
 export const googleUsersRelations = relations(googleUsers, ({ one }) => ({

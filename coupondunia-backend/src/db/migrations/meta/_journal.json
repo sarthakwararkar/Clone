@@ -15,6 +15,13 @@
       "when": 1781505370783,
       "tag": "0001_zippy_secret_warriors",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781522597889,
+      "tag": "0002_cool_wraith",
+      "breakpoints": true
     }
   ]
 }

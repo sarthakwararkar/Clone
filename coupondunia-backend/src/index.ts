@@ -10,6 +10,7 @@ import { categoriesRouter } from './routes/categories';
 import { usersRouter } from './routes/users';
 import { alertsRouter } from './routes/alerts';
 import { adminRouter } from './routes/admin';
+import { newsletterRouter } from './routes/newsletter';
 import { createDb } from './db';
 import { createCacheService } from './services/cacheService';
 import { createSearchService } from './services/searchService';
@@ -94,6 +95,7 @@ app.route('/api/categories', categoriesRouter);
 app.route('/api/me', usersRouter);
 app.route('/api/alerts', alertsRouter);
 app.route('/api/admin', adminRouter);
+app.route('/api/newsletter', newsletterRouter);
 
 // ─── 404 Handler ────────────────────────────────────────────────────────────
 

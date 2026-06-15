@@ -231,6 +231,13 @@ class ApiClient {
     }, true)
   }
 
+  async subscribeNewsletter(email: string): Promise<void> {
+    await this.request<unknown>('/api/newsletter', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }, false)
+  }
+
   async deleteAlert(id: string): Promise<void> {
     await this.request<unknown>(`/api/alerts/${id}`, { method: 'DELETE' }, true)
   }
