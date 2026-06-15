@@ -38,7 +38,7 @@ newsletterRouter.post('/', async (c) => {
 
     // Send welcome email
     try {
-      const emailService = createEmailService(c.env.RESEND_API_KEY);
+      const emailService = createEmailService(c.env.RESEND_API_KEY, c.env.FROM_EMAIL);
       await emailService.sendWelcomeEmail(email, email.split('@')[0]);
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError);

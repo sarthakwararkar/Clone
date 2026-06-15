@@ -90,7 +90,7 @@ alertsRouter.post('/', async (c) => {
 
   // Send welcome email
   try {
-    const emailService = createEmailService(c.env.RESEND_API_KEY);
+    const emailService = createEmailService(c.env.RESEND_API_KEY, c.env.FROM_EMAIL);
     await emailService.sendWelcomeEmail(
       parsed.data.email,
       user?.name || authUser.email.split('@')[0]

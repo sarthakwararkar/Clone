@@ -12,6 +12,7 @@ export const envSchema = z.object({
   CLOUDINARY_API_KEY: z.string().min(1),
   CLOUDINARY_API_SECRET: z.string().min(1),
   ENVIRONMENT: z.enum(['development', 'production', 'staging']).default('development'),
+  FROM_EMAIL: z.string().optional(),
   VCOMMISSION_API_KEY: z.string().optional(),
   CUELINKS_API_KEY: z.string().optional(),
   ADMITAD_CLIENT_ID: z.string().optional(),

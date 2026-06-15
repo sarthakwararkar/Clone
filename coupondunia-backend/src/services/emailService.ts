@@ -17,12 +17,15 @@ export class EmailService {
    * Send a welcome email when a user subscribes to deal alerts.
    */
   async sendWelcomeEmail(to: string, name: string): Promise<void> {
-    await this.resend.emails.send({
+    const { data, error } = await this.resend.emails.send({
       from: this.fromEmail,
       to,
       subject: 'Welcome to CouponDunia Deal Alerts! 🎉',
       html: this.getWelcomeEmailTemplate(name),
     });
+    if (error) {
+      throw new Error(`Resend error: ${error.message} (${error.name})`);
+    }
   }
 
   /**
@@ -37,12 +40,15 @@ export class EmailService {
       ? `🔥 New deals from ${storeName} on CouponDunia!`
       : '🔥 New deals matching your alerts on CouponDunia!';
 
-    await this.resend.emails.send({
+    const { data, error } = await this.resend.emails.send({
       from: this.fromEmail,
       to,
       subject,
       html: this.getDealAlertTemplate(coupons, storeName),
     });
+    if (error) {
+      throw new Error(`Resend error: ${error.message} (${error.name})`);
+    }
   }
 
   /**
@@ -54,7 +60,7 @@ export class EmailService {
     // Send in batches of 50 (Resend limit)
     for (let i = 0; i < to.length; i += 50) {
       const batch = to.slice(i, i + 50);
-      await Promise.all(
+      const results = await Promise.all(
         batch.map((email) =>
           this.resend.emails.send({
             from: this.fromEmail,
@@ -64,6 +70,10 @@ export class EmailService {
           })
         )
       );
+      const failed = results.find((r) => r.error);
+      if (failed) {
+        throw new Error(`Resend error: ${failed.error?.message} (${failed.error?.name})`);
+      }
     }
   }
 
@@ -191,6 +201,6 @@ export class EmailService {
   }
 }
 
-export function createEmailService(apiKey: string): EmailService {
-  return new EmailService(apiKey);
+export function createEmailService(apiKey: string, fromEmail?: string): EmailService {
+  return new EmailService(apiKey, fromEmail);
 }
