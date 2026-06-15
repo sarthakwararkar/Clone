@@ -1,7 +1,9 @@
 import { MetadataRoute } from 'next'
 
 const BASE_URL = 'https://dealdhamal.vercel.app'
-const API_URL = process.env.NEXT_PUBLIC_API_URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL?.endsWith('/')
+  ? process.env.NEXT_PUBLIC_API_URL.slice(0, -1)
+  : process.env.NEXT_PUBLIC_API_URL
 
 export const revalidate = 3600
 
