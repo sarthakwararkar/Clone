@@ -3,7 +3,7 @@ import { jwtVerify, createRemoteJWKSet } from 'jose';
 import type { AppBindings, AuthUser } from '../types';
 
 const JWKS = createRemoteJWKSet(
-  new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken-system@system.gserviceaccount.com')
+  new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com')
 );
 
 /**
