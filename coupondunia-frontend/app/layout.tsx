@@ -6,7 +6,7 @@ import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { Toaster } from 'sonner'
-import { GoogleAnalytics } from '@next/third-parties/google'
+import Script from 'next/script'
 import { OrganizationSchema } from '@/components/seo/OrganizationSchema'
 import { WebsiteSchema } from '@/components/seo/WebsiteSchema'
 
@@ -68,6 +68,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
+      <head>
+        {/* Google tag (gtag.js) */}
+        <Script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-93D34R6XN1"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-93D34R6XN1');
+          `}
+        </Script>
+      </head>
       <body className="min-h-full flex flex-col bg-background text-text-primary">
         <Providers>
           <Header />
@@ -80,9 +97,6 @@ export default function RootLayout({
         </Providers>
         <OrganizationSchema />
         <WebsiteSchema />
-        {process.env.NEXT_PUBLIC_GA_ID && (
-          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
-        )}
       </body>
     </html>
   )
