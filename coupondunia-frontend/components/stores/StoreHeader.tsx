@@ -64,6 +64,7 @@ export function StoreHeader({ store, couponCount }: StoreHeaderProps) {
                 href={targetUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                referrerPolicy="no-referrer"
                 className="flex-shrink-0 inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary bg-primary text-white hover:bg-primary-dark shadow-sm hover:shadow-md px-6 py-3 text-base"
               >
                 <ExternalLink className="w-4 h-4" />

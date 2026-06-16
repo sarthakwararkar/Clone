@@ -79,7 +79,16 @@ export function CouponModal({ coupon, isOpen, onClose }: CouponModalProps) {
   const handleVisitStore = () => {
     trackCouponClick(coupon.id, coupon.store.name)
     const targetUrl = getOutboundLink(coupon.affiliate_url, coupon.store.website_url, coupon.store.slug)
-    window.open(targetUrl, '_blank', 'noopener,noreferrer')
+    
+    // Create a temporary link to force no-referrer policy and bypass CDN/bot-manager blocks
+    const link = document.createElement('a')
+    link.href = targetUrl
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
+    link.referrerPolicy = 'no-referrer'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   return (
