@@ -58,3 +58,42 @@ export function ensureExternalLink(url: string | null | undefined): string {
   }
   return `https://${trimmed}`
 }
+
+export function getOutboundLink(
+  affiliateUrl: string | null | undefined,
+  websiteUrl: string | null | undefined,
+  storeSlug?: string
+): string {
+  // 1. Check if affiliateUrl is a valid external URL
+  if (affiliateUrl) {
+    const trimmed = affiliateUrl.trim()
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed
+    }
+  }
+
+  // 2. Fall back to websiteUrl if it looks like a valid URL or domain
+  if (websiteUrl) {
+    const trimmed = websiteUrl.trim()
+    if (trimmed && !trimmed.includes('_AFFILIATE_URL') && !trimmed.includes('your_')) {
+      return ensureExternalLink(trimmed)
+    }
+  }
+
+  // 3. If both are missing or placeholders, try to construct one from the slug as a fallback
+  if (storeSlug) {
+    const cleanSlug = storeSlug.toLowerCase().trim()
+    if (cleanSlug) {
+      if (cleanSlug.includes('amazon')) return 'https://www.amazon.in'
+      if (cleanSlug.includes('flipkart')) return 'https://www.flipkart.com'
+      if (cleanSlug.includes('myntra')) return 'https://www.myntra.com'
+      if (cleanSlug.includes('ajio')) return 'https://www.ajio.com'
+      if (cleanSlug.includes('zomato')) return 'https://www.zomato.com'
+      if (cleanSlug.includes('swiggy')) return 'https://www.swiggy.com'
+      return `https://www.${cleanSlug}.com`
+    }
+  }
+
+  return '#'
+}
+

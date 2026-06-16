@@ -6,7 +6,7 @@ import type { Coupon } from '@/types'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { api } from '@/lib/api'
-import { ensureExternalLink } from '@/lib/utils'
+import { getOutboundLink } from '@/lib/utils'
 import {
   trackCouponReveal,
   trackCouponCopy,
@@ -78,7 +78,8 @@ export function CouponModal({ coupon, isOpen, onClose }: CouponModalProps) {
 
   const handleVisitStore = () => {
     trackCouponClick(coupon.id, coupon.store.name)
-    window.open(ensureExternalLink(coupon.affiliate_url), '_blank', 'noopener,noreferrer')
+    const targetUrl = getOutboundLink(coupon.affiliate_url, coupon.store.website_url, coupon.store.slug)
+    window.open(targetUrl, '_blank', 'noopener,noreferrer')
   }
 
   return (

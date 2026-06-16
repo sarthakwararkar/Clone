@@ -3,7 +3,7 @@ import type { Store } from '@/types'
 import { StoreCashbackBadge } from './StoreCashbackBadge'
 import { Button } from '@/components/ui/Button'
 import { ExternalLink, Tag } from 'lucide-react'
-import { ensureExternalLink } from '@/lib/utils'
+import { getOutboundLink } from '@/lib/utils'
 
 interface StoreHeaderProps {
   store: Store
@@ -57,17 +57,20 @@ export function StoreHeader({ store, couponCount }: StoreHeaderProps) {
           </div>
 
           {/* CTA */}
-          {store.affiliate_url && (
-            <a
-              href={ensureExternalLink(store.affiliate_url)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-shrink-0 inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary bg-primary text-white hover:bg-primary-dark shadow-sm hover:shadow-md px-6 py-3 text-base"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Visit Store
-            </a>
-          )}
+          {(() => {
+            const targetUrl = getOutboundLink(store.affiliate_url, store.website_url, store.slug)
+            return targetUrl !== '#' ? (
+              <a
+                href={targetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-shrink-0 inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary bg-primary text-white hover:bg-primary-dark shadow-sm hover:shadow-md px-6 py-3 text-base"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Visit Store
+              </a>
+            ) : null
+          })()}
         </div>
       </div>
     </div>
