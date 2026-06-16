@@ -1,0 +1,37 @@
+name: Scrape Public Deals Daily
+
+on:
+  schedule:
+    # Run daily at 2:00 AM IST (20:30 UTC previous day)
+    - cron: '30 20 * * *'
+  workflow_dispatch:
+    # Allow manual trigger from GitHub UI
+
+jobs:
+  scrape:
+    name: Scrape and Ingest Public Deals
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: coupondunia-backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: coupondunia-backend
+
+      - name: Run scraper pipeline
+        run: npx tsx src/jobs/scrapePublicDeals.ts
+        working-directory: coupondunia-backend
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          UPSTASH_REDIS_URL: ${{ secrets.UPSTASH_REDIS_URL }}
+          UPSTASH_REDIS_TOKEN: ${{ secrets.UPSTASH_REDIS_TOKEN }}

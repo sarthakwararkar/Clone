@@ -50,6 +50,18 @@ async function main() {
   const expiredCount = result.rows.length;
   console.log(`   ✅ Marked ${expiredCount} coupons as expired`);
 
+  // ─── Clean up Expired Coupons ─────────────────────────────────────────
+
+  console.log('\n🧹 Cleaning up old expired coupons with no clicks/reports...');
+  const deleteResult = await db.execute(sql`
+    DELETE FROM coupons
+    WHERE expires_at < NOW()
+      AND id NOT IN (SELECT DISTINCT coupon_id FROM coupon_clicks)
+      AND id NOT IN (SELECT DISTINCT coupon_id FROM coupon_reports)
+  `);
+  const deletedCount = deleteResult.rowCount || 0;
+  console.log(`   ✅ Deleted ${deletedCount} expired coupons from database`);
+
   // ─── Invalidate All Cache ─────────────────────────────────────────────
 
   console.log('\n🗑️  Invalidating Upstash cache...');

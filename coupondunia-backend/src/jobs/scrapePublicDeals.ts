@@ -1,353 +1,627 @@
 import * as cheerio from 'cheerio';
 import { sql, eq } from 'drizzle-orm';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as crypto from 'crypto';
 import { createDb } from '../db';
-import { stores, coupons } from '../db/schema';
+import { stores, coupons, categories } from '../db/schema';
 
-// ─── Constants & Configuration ──────────────────────────────────────────────
+// ─── Directories & Paths ──────────────────────────────────────────────────────
 
-const TARGET_STORES = [
-  { dbSlug: 'myntra', urlSlug: 'myntra' },
-  { dbSlug: 'flipkart', urlSlug: 'flipkart' },
-  { dbSlug: 'amazon-india', urlSlug: 'amazon' },
-  { dbSlug: 'swiggy', urlSlug: 'swiggy' },
-  { dbSlug: 'zomato', urlSlug: 'zomato' },
-  { dbSlug: 'nykaa', urlSlug: 'nykaa' },
-  { dbSlug: 'ajio', urlSlug: 'ajio' },
-  { dbSlug: 'makemytrip', urlSlug: 'makemytrip' },
-];
+const outputDir = path.join(process.cwd(), 'output');
+const logsDir = path.join(process.cwd(), 'logs');
+
+if (!fs.existsSync(outputDir)) {
+  fs.mkdirSync(outputDir, { recursive: true });
+}
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir, { recursive: true });
+}
+
+const logFilePath = path.join(logsDir, 'scraper.log');
+const outputFilePath = path.join(outputDir, 'deals_latest.json');
+
+// ─── Logger Function ─────────────────────────────────────────────────────────
+
+function log(msg: string) {
+  const line = `[${new Date().toISOString()}] ${msg}\n`;
+  console.log(msg);
+  fs.appendFileSync(logFilePath, line);
+}
 
 // ─── Helper Functions ────────────────────────────────────────────────────────
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export function cleanText(str: string): string {
+const cleanText = (str: string): string => {
   return str ? str.trim().replace(/\s+/g, ' ') : '';
+};
+
+const USER_AGENTS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2.1 Safari/605.1.15',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+];
+
+function getRandomUserAgent(): string {
+  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
 }
 
-export function detectCouponType(code: string | null): 'code' | 'deal' {
-  return code && code.length > 0 ? 'code' : 'deal';
-}
-
-export function isExpired(dateStr: string | null): boolean {
-  if (!dateStr) return false; // Assume active if null
-  try {
-    const parsedDate = new Date(dateStr);
-    return parsedDate.getTime() < Date.now();
-  } catch {
-    return false;
+// Levenshtein Similarity for title deduplication (>85%)
+function levenshtein(a: string, b: string): number {
+  const tmp: number[][] = [];
+  const alen = a.length;
+  const blen = b.length;
+  if (alen === 0) return blen;
+  if (blen === 0) return alen;
+  for (let i = 0; i <= alen; i++) tmp[i] = [i];
+  for (let j = 0; j <= blen; j++) tmp[0][j] = j;
+  for (let i = 1; i <= alen; i++) {
+    for (let j = 1; j <= blen; j++) {
+      tmp[i][j] = Math.min(
+        tmp[i - 1][j] + 1,
+        tmp[i][j - 1] + 1,
+        tmp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
+    }
   }
+  return tmp[alen][blen];
 }
 
-// Fetch with a simple 1-retry mechanism for robustness
-async function fetchPage(url: string, retries = 1): Promise<string | null> {
+function titleSimilarity(a: string, b: string): number {
+  a = a.toLowerCase().trim();
+  b = b.toLowerCase().trim();
+  const maxLen = Math.max(a.length, b.length);
+  if (maxLen === 0) return 1.0;
+  const dist = levenshtein(a, b);
+  return (maxLen - dist) / maxLen;
+}
+
+// Category Normalizer
+function normalizeCategory(slug: string | null): string {
+  if (!slug) return 'Other';
+  const mapping: Record<string, string> = {
+    'fashion': 'Fashion',
+    'electronics': 'Electronics',
+    'food': 'Food & Dining',
+    'beauty': 'Beauty',
+    'travel': 'Travel',
+    'grocery': 'Grocery',
+    'health': 'Health',
+    'home-living': 'Home & Kitchen',
+  };
+  return mapping[slug.toLowerCase()] || 'Other';
+}
+
+// ─── Fetch Page with Timeout & User-Agent ────────────────────────────────────
+
+async function fetchPage(url: string, timeoutMs = 15000, retries = 1): Promise<string> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
+        'User-Agent': getRandomUserAgent(),
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache'
       },
+      signal: controller.signal
     });
+    clearTimeout(id);
 
     if (response.status === 404) {
-      console.warn(`   ⚠️ 404 Not Found: ${url}`);
-      return null;
+      throw new Error(`HTTP 404 Not Found`);
     }
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`HTTP ${response.status} ${response.statusText}`);
     }
 
     return await response.text();
-  } catch (error) {
+  } catch (error: any) {
+    clearTimeout(id);
     if (retries > 0) {
-      console.warn(`   ⚠️ Fetch failed for ${url}, retrying in 2 seconds... Error: ${error}`);
-      await sleep(2000);
-      return fetchPage(url, retries - 1);
+      log(`⚠️ Fetch failed for ${url}. Retrying in 10s... Error: ${error.message || error}`);
+      await sleep(10000);
+      return fetchPage(url, timeoutMs, retries - 1);
     }
-    console.error(`   ❌ Failed to fetch ${url} after retries. Error:`, error);
-    return null;
+    throw error;
   }
 }
 
-// ─── Selector Parsing Logic ──────────────────────────────────────────────────
+// ─── Site URL Mappings ───────────────────────────────────────────────────────
 
-/**
- * Parses GrabOn coupon listing pages.
- * targets:
- * - Card elements: '.gc-card' or 'li.gc-card' (each card represents one deal)
- * - Coupon Title: '.gc-title' or '.go-coupon-title' or 'h3'
- * - Coupon Code: '.gc-code' or 'span.code' (button that reveals the code)
- * - Discount Text: '.gc-disc' or '.coupon-discount'
- */
-function parseGrabOn(html: string): Array<{ title: string; code: string | null; discount: string }> {
-  const $ = cheerio.load(html);
-  const items: Array<{ title: string; code: string | null; discount: string }> = [];
+function getUrlSlugs(dbSlug: string) {
+  let cashkaro = dbSlug;
+  let grabon = dbSlug;
+  let coupondunia = dbSlug;
 
-  $('.gc-card, li.gc-card, .coupon-card').each((_, el) => {
-    const title = cleanText($(el).find('.gc-title, .coupon-title, h3, .go-coupon-title').first().text());
-    let codeText = cleanText($(el).find('.gc-code, .coupon-code, span.code, .cpn-btn, [data-code]').first().text() || $(el).attr('data-code') || '');
-    const discount = cleanText($(el).find('.gc-disc, .coupon-discount, .discount-text').first().text());
+  if (dbSlug === 'amazon-india') {
+    cashkaro = 'amazon';
+    grabon = 'amazon';
+    coupondunia = 'amazon';
+  } else if (dbSlug === 'ajio') {
+    cashkaro = 'ajio-coupons';
+  } else if (dbSlug === 'makemytrip') {
+    cashkaro = 'makemytrip-domesticflights';
+  }
 
-    // Filter out mock code placeholders like "Show Code", "Reveal", "Activate"
-    const isMockCode = /show|reveal|activate|click|deal|get/i.test(codeText);
-    const code = codeText && !isMockCode ? codeText : null;
-
-    if (title) {
-      items.push({ title, code, discount: discount || 'Get Offer' });
-    }
-  });
-
-  return items;
+  return { cashkaro, grabon, coupondunia };
 }
 
-/**
- * Parses CashKaro store pages.
- * targets:
- * - Card elements: '.ck-card' or '.coupon-box' or '.card-container'
- * - Title: '.ck-title' or 'h3' or '.coupon-title'
- * - Code: '.ck-code' or '.coupon-code' or 'span.code'
- * - Discount: '.ck-discount' or '.discount'
- */
-function parseCashKaro(html: string): Array<{ title: string; code: string | null; discount: string }> {
+// ─── Site-Specific Scraping and Parsing ──────────────────────────────────────
+
+// 1. CouponDunia Parser
+function parseCouponDunia(html: string, storeName: string, storeLogo: string | null, category: string, storeUrl: string, storeSlug: string): any[] {
   const $ = cheerio.load(html);
-  const items: Array<{ title: string; code: string | null; discount: string }> = [];
+  const deals: any[] = [];
 
-  $('.ck-card, .coupon-box, .card-container, div[data-coupon-id]').each((_, el) => {
-    const title = cleanText($(el).find('h3, .ck-title, .coupon-title, .coupon-name, .offer-title').first().text());
-    let codeText = cleanText($(el).find('.ck-code, .coupon-code, .promo-code, span.code, [data-code]').first().text() || $(el).attr('data-code') || '');
-    const discount = cleanText($(el).find('.ck-discount, .discount, .coupon-discount, .cashback-rate').first().text());
+  $('.offer-card-ctr').each((_, el) => {
+    const title = cleanText($(el).find('.offer-desc').attr('data-offer-value') || $(el).find('.offer-desc').text());
+    if (!title) return;
 
-    const isMockCode = /show|reveal|activate|click|deal|get/i.test(codeText);
-    const code = codeText && !isMockCode ? codeText : null;
-
-    if (title) {
-      items.push({ title, code, discount: discount || 'Get Cashback' });
+    let code = $(el).find('.get-offer-code').attr('data-offer-value') || null;
+    if (code) {
+      code = cleanText(code);
+      if (/show|reveal|activate|click|deal|get/i.test(code)) code = null;
     }
+
+    const discount = cleanText($(el).find('.offer-title').attr('data-offer-value') || $(el).find('.ofr-value').text()) || 'Get Deal';
+    
+    let description = cleanText($(el).find('.full-desc').text() || $(el).find('.offer-desc-list').text());
+    if (!description) description = title;
+
+    const offerId = $(el).find('.offer-desc').attr('data-offer-id') || $(el).find('.get-offer-code').parent().attr('data-offer-value') || '';
+    const deal_url = offerId ? `https://www.coupondunia.in/${storeSlug}?h=${offerId}` : storeUrl;
+
+    const is_verified = $(el).find('.verified-tag').length > 0 || $(el).text().toLowerCase().includes('verified');
+
+    deals.push({
+      id: crypto.randomUUID(),
+      title,
+      description,
+      code,
+      discount,
+      store_name: storeName,
+      store_logo_url: storeLogo,
+      deal_url,
+      category,
+      source_site: 'coupondunia',
+      expiry_date: null,
+      is_verified,
+      unverified_expiry: true,
+      scraped_at: new Date().toISOString()
+    });
   });
 
-  return items;
+  return deals;
 }
 
-/**
- * Parses Desidime store pages.
- * targets:
- * - Card elements: '.deal-box' or '.deal-card' or '.d-card'
- * - Title: '.deal-title' or 'h3' or '.coupon-title' or '.deal-heading'
- * - Code: '.deal-code' or '.coupon-code' or '.promo-code'
- * - Discount: '.deal-discount' or '.discount'
- */
-function parseDesidime(html: string): Array<{ title: string; code: string | null; discount: string }> {
+// 2. CashKaro Parser
+function parseCashKaro(html: string, storeName: string, storeLogo: string | null, category: string, dealUrl: string): any[] {
   const $ = cheerio.load(html);
-  const items: Array<{ title: string; code: string | null; discount: string }> = [];
+  const deals: any[] = [];
+  
+  const nextDataHtml = $('script#__NEXT_DATA__').html();
+  if (!nextDataHtml) return deals;
 
-  $('.deal-box, .deal-card, .d-card, .coupon-box').each((_, el) => {
-    const title = cleanText($(el).find('h3, .deal-title, .coupon-title, .deal-heading, .title').first().text());
-    let codeText = cleanText($(el).find('.deal-code, .coupon-code, .promo-code, span.code').first().text() || $(el).attr('data-code') || '');
-    const discount = cleanText($(el).find('.deal-discount, .discount, .coupon-discount, .deal-price').first().text());
+  try {
+    const parsed = JSON.parse(nextDataHtml);
+    const included = parsed.props?.pageProps?.apiData?.included || [];
+    
+    const couponsItem = included.find((item: any) => item && item.coupons);
+    const coupons = couponsItem ? couponsItem.coupons : [];
 
-    const isMockCode = /show|reveal|activate|click|deal|get/i.test(codeText);
-    const code = codeText && !isMockCode ? codeText : null;
+    for (const coupon of coupons) {
+      const attr = coupon.attributes || {};
+      const title = cleanText(attr.title || '');
+      if (!title) continue;
 
-    if (title) {
-      items.push({ title, code, discount: discount || 'Get Deal' });
+      let code = attr.code || attr.coupon_code || attr.promo_code || null;
+      if (code) {
+        code = cleanText(code);
+        if (/show|reveal|activate|click|deal|get/i.test(code)) code = null;
+      }
+
+      let description = attr.description || '';
+      description = description.replace(/<[^>]*>/g, '');
+      description = cleanText(description) || title;
+
+      const discount = cleanText(attr.exclusive_text || attr.cashback_text || '') || 'Get Cashback';
+      
+      let expiry_date: string | null = attr.expiry_date || null;
+      if (expiry_date) {
+        try {
+          expiry_date = new Date(expiry_date).toISOString();
+        } catch {
+          expiry_date = null;
+        }
+      }
+
+      deals.push({
+        id: crypto.randomUUID(),
+        title,
+        description,
+        code,
+        discount,
+        store_name: storeName,
+        store_logo_url: storeLogo,
+        deal_url: attr.cashback_url || dealUrl,
+        category,
+        source_site: 'cashkaro',
+        expiry_date,
+        is_verified: true,
+        unverified_expiry: expiry_date === null,
+        scraped_at: new Date().toISOString()
+      });
     }
+  } catch (err) {
+    log(`⚠️ Error parsing CashKaro NextData: ${err}`);
+  }
+
+  return deals;
+}
+
+// 3. GrabOn Parser
+function parseGrabOn(html: string, storeName: string, storeLogo: string | null, category: string, dealUrl: string, sourceSite: 'grabon' | 'grabon_coupons'): any[] {
+  const $ = cheerio.load(html);
+  const deals: any[] = [];
+
+  $('.gc-box').each((_, el) => {
+    const title = cleanText($(el).find('.title').first().text());
+    if (!title) return;
+
+    let code = $(el).attr('data-code') || $(el).find('[data-code]').attr('data-code') || null;
+    if (code) {
+      code = cleanText(code);
+      if (/show|reveal|activate|click|deal|get/i.test(code)) code = null;
+    }
+
+    const discount = cleanText($(el).find('.bm').first().text()) || 'Get Deal';
+    const description = cleanText($(el).find('.details-desc, .desc-txt').first().text()) || title;
+    const is_verified = $(el).text().toLowerCase().includes('verified') || $(el).find('[data-type="verified-view"]').length > 0;
+
+    deals.push({
+      id: crypto.randomUUID(),
+      title,
+      description,
+      code,
+      discount,
+      store_name: storeName,
+      store_logo_url: storeLogo,
+      deal_url: dealUrl,
+      category,
+      source_site: sourceSite,
+      expiry_date: null,
+      is_verified,
+      unverified_expiry: true,
+      scraped_at: new Date().toISOString()
+    });
   });
 
-  return items;
+  return deals;
 }
 
-// ─── Main Execution Scraper ──────────────────────────────────────────────────
+// ─── Expiry & Validation Rules ──────────────────────────────────────────────
+
+function validateDeal(deal: any): { valid: boolean; reason?: string } {
+  if (deal.expiry_date) {
+    const exp = new Date(deal.expiry_date);
+    if (exp.getTime() < Date.now()) {
+      return { valid: false, reason: 'EXPIRED_DATE' };
+    }
+  }
+  if (deal.code) {
+    if (/expired/i.test(deal.code) || /not working/i.test(deal.code)) {
+      return { valid: false, reason: 'EXPIRED_CODE_TEXT' };
+    }
+  }
+  const expiredPattern = /expired|past deal|not available/i;
+  if (expiredPattern.test(deal.title) || expiredPattern.test(deal.description) || expiredPattern.test(deal.discount)) {
+    return { valid: false, reason: 'EXPIRED_BADGE_TEXT' };
+  }
+  return { valid: true };
+}
+
+// ─── Deduplication Rules ────────────────────────────────────────────────────
+
+function getCompletenessScore(d: any): number {
+  let score = 0;
+  if (d.code) score += 3;
+  if (d.expiry_date) score += 2;
+  if (d.is_verified) score += 1;
+  return score;
+}
+
+function deduplicateDeals(allDeals: any[]): { unique: any[]; removedCount: number } {
+  const uniqueDeals: any[] = [];
+  let duplicatesRemovedCount = 0;
+
+  const sourcePriority: Record<string, number> = {
+    'coupondunia': 1,
+    'cashkaro': 2,
+    'grabon': 3,
+    'grabon_coupons': 4
+  };
+
+  const sortedDeals = [...allDeals].sort((a, b) => {
+    return (sourcePriority[a.source_site] || 5) - (sourcePriority[b.source_site] || 5);
+  });
+
+  for (const deal of sortedDeals) {
+    let isDuplicate = false;
+    let duplicateIndex = -1;
+
+    for (let i = 0; i < uniqueDeals.length; i++) {
+      const u = uniqueDeals[i];
+      if (u.store_name.toLowerCase() !== deal.store_name.toLowerCase()) continue;
+
+      if (u.code && deal.code) {
+        if (u.code.toLowerCase() === deal.code.toLowerCase()) {
+          isDuplicate = true;
+          duplicateIndex = i;
+          break;
+        }
+      } else if (!u.code && !deal.code) {
+        if (u.discount.toLowerCase() === deal.discount.toLowerCase() && titleSimilarity(u.title, deal.title) > 0.85) {
+          isDuplicate = true;
+          duplicateIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (isDuplicate) {
+      duplicatesRemovedCount++;
+      const existing = uniqueDeals[duplicateIndex];
+      const scoreExisting = getCompletenessScore(existing);
+      const scoreNew = getCompletenessScore(deal);
+
+      if (scoreNew > scoreExisting) {
+        uniqueDeals[duplicateIndex] = deal;
+      }
+    } else {
+      uniqueDeals.push(deal);
+    }
+  }
+
+  return { unique: uniqueDeals, removedCount: duplicatesRemovedCount };
+}
+
+// ─── Main Pipeline Execution ─────────────────────────────────────────────────
 
 export async function main() {
-  console.log('═══════════════════════════════════════════════════════');
-  console.log('  CouponDunia — Public Deals Scraper Job');
-  console.log(`  Started at: ${new Date().toISOString()}`);
-  console.log('═══════════════════════════════════════════════════════');
+  log('═══════════════════════════════════════════════════════');
+  log('  DealHunterBot — Daily Deal Scraping Pipeline');
+  log(`  Started at: ${new Date().toISOString()}`);
+  log('═══════════════════════════════════════════════════════');
 
   if (!process.env.DATABASE_URL) {
-    console.error('❌ Error: DATABASE_URL environment variable is missing.');
+    log('❌ Error: DATABASE_URL environment variable is missing.');
     process.exit(1);
   }
 
   const db = createDb(process.env.DATABASE_URL);
-  const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days from now
+  
+  // 1. Fetch Stores from Database dynamically
+  log('🏪 Loading active stores from database...');
+  const dbStores = await db.select({
+    id: stores.id,
+    name: stores.name,
+    slug: stores.slug,
+    logo_url: stores.logo_url,
+    website_url: stores.website_url,
+    affiliate_url: stores.affiliate_url,
+    category_slug: categories.slug
+  })
+  .from(stores)
+  .leftJoin(categories, eq(stores.category_id, categories.id));
 
-  const counts = {
-    grabon: 0,
-    cashkaro: 0,
-    desidime: 0,
+  log(`   Loaded ${dbStores.length} stores.`);
+
+  const scrapedDeals: any[] = [];
+  const errors: any[] = [];
+
+  // 2. Scrape each store across the 4 targets
+  for (const store of dbStores) {
+    log(`\n👉 Processing store: ${store.name} (${store.slug})...`);
+    const { cashkaro, grabon, coupondunia } = getUrlSlugs(store.slug);
+    const category = normalizeCategory(store.category_slug);
+
+    // -- Target 1: CouponDunia
+    const cdUrl = `https://www.coupondunia.in/${coupondunia}`;
+    log(`   Fetching CouponDunia: ${cdUrl}`);
+    try {
+      const html = await fetchPage(cdUrl);
+      const cdDeals = parseCouponDunia(html, store.name, store.logo_url, category, cdUrl, coupondunia);
+      log(`      Scraped ${cdDeals.length} deals.`);
+      scrapedDeals.push(...cdDeals);
+    } catch (err: any) {
+      log(`      ❌ Error scraping CouponDunia: ${err.message || err}`);
+      errors.push({
+        site: 'coupondunia',
+        url: cdUrl,
+        reason: err.message || String(err),
+        timestamp: new Date().toISOString()
+      });
+    }
+    await sleep(2000 + Math.random() * 2000); // 2-4s delay
+
+    // -- Target 2: CashKaro
+    const ckUrl = `https://cashkaro.com/stores/${cashkaro}`;
+    log(`   Fetching CashKaro: ${ckUrl}`);
+    try {
+      const html = await fetchPage(ckUrl);
+      const ckDeals = parseCashKaro(html, store.name, store.logo_url, category, ckUrl);
+      log(`      Scraped ${ckDeals.length} deals.`);
+      scrapedDeals.push(...ckDeals);
+    } catch (err: any) {
+      log(`      ❌ Error scraping CashKaro: ${err.message || err}`);
+      errors.push({
+        site: 'cashkaro',
+        url: ckUrl,
+        reason: err.message || String(err),
+        timestamp: new Date().toISOString()
+      });
+    }
+    await sleep(2000 + Math.random() * 2000); // 2-4s delay
+
+    // -- Target 3: GrabOn
+    const goUrl = `https://grabon.in/${grabon}-coupons`;
+    log(`   Fetching GrabOn: ${goUrl}`);
+    try {
+      const html = await fetchPage(goUrl);
+      const goDeals = parseGrabOn(html, store.name, store.logo_url, category, goUrl, 'grabon');
+      log(`      Scraped ${goDeals.length} deals.`);
+      scrapedDeals.push(...goDeals);
+    } catch (err: any) {
+      log(`      ❌ Error scraping GrabOn: ${err.message || err}`);
+      errors.push({
+        site: 'grabon',
+        url: goUrl,
+        reason: err.message || String(err),
+        timestamp: new Date().toISOString()
+      });
+    }
+    await sleep(2000 + Math.random() * 2000); // 2-4s delay
+
+    // -- Target 4: GrabOn Coupons (Sub-domain, expected to fail resolving)
+    const gocUrl = `https://coupons.grabon.in/${grabon}-coupons`;
+    log(`   Fetching GrabOn Coupons: ${gocUrl}`);
+    try {
+      const html = await fetchPage(gocUrl);
+      const gocDeals = parseGrabOn(html, store.name, store.logo_url, category, gocUrl, 'grabon_coupons');
+      log(`      Scraped ${gocDeals.length} deals.`);
+      scrapedDeals.push(...gocDeals);
+    } catch (err: any) {
+      log(`      ❌ Error scraping GrabOn Coupons: ${err.message || err}`);
+      errors.push({
+        site: 'grabon_coupons',
+        url: gocUrl,
+        reason: err.message || String(err),
+        timestamp: new Date().toISOString()
+      });
+    }
+    await sleep(2000 + Math.random() * 2000); // 2-4s delay
+  }
+
+  // 3. Expiry Validation
+  log('\n🛡️  Applying Expiry Validation Rules...');
+  const validDeals: any[] = [];
+  let expiredRemovedCount = 0;
+
+  for (const deal of scrapedDeals) {
+    const valResult = validateDeal(deal);
+    if (valResult.valid) {
+      validDeals.push(deal);
+    } else {
+      expiredRemovedCount++;
+    }
+  }
+  log(`   Valid deals remaining: ${validDeals.length} (removed ${expiredRemovedCount} expired/invalid deals).`);
+
+  // 4. Cross-Site Deduplication
+  log('\n👥 Applying Deduplication Rules...');
+  const { unique: deduplicatedDeals, removedCount: duplicatesRemovedCount } = deduplicateDeals(validDeals);
+  log(`   Unique deals remaining: ${deduplicatedDeals.length} (removed ${duplicatesRemovedCount} duplicate deals).`);
+
+  // 5. Build Output JSON Structure
+  const outputJson = {
+    run_timestamp: new Date().toISOString(),
+    total_scraped: scrapedDeals.length,
+    total_valid: deduplicatedDeals.length,
+    total_expired_removed: expiredRemovedCount,
+    total_duplicates_removed: duplicatesRemovedCount,
+    deals: deduplicatedDeals,
+    errors: errors
   };
 
-  // 1. GrabOn Scraper
-  console.log('\n🌐 Scraping GrabOn...');
-  for (const store of TARGET_STORES) {
-    console.log(`   Scraping GrabOn for: ${store.dbSlug}...`);
-    const url = `https://grabon.in/${store.urlSlug}-coupons`;
-    const html = await fetchPage(url);
-    if (!html) continue;
+  log(`\n💾 Writing feed to ${outputFilePath}...`);
+  fs.writeFileSync(outputFilePath, JSON.stringify(outputJson, null, 2), 'utf8');
+  log('   Output JSON successfully written.');
 
-    const parsedCoupons = parseGrabOn(html);
-    if (parsedCoupons.length === 0) {
-      console.log(`      No coupons found on page.`);
-      continue;
-    }
+  // 6. DB Ingestion (Upsert Deals into Database)
+  log('\n📦 Ingesting deals into database...');
+  
+  // Pre-ingestion cleanup: Mark all existing public scraped coupons as expired, and delete those with no clicks/reports/saves.
+  try {
+    log('   Cleaning up old public scraped coupons...');
+    const expireResult = await db.execute(sql`
+      UPDATE coupons
+      SET expires_at = NOW() - INTERVAL '1 second', updated_at = NOW()
+      WHERE source IN ('grabon', 'cashkaro', 'coupondunia', 'grabon_coupons')
+        AND (expires_at IS NULL OR expires_at >= NOW())
+    `);
+    const expiredCount = expireResult.rowCount || 0;
+    log(`      Marked ${expiredCount} active public coupons as expired.`);
 
-    const [dbStore] = await db.select().from(stores).where(eq(stores.slug, store.dbSlug)).limit(1);
-    if (!dbStore) {
-      console.warn(`      ⚠️ Store "${store.dbSlug}" not found in database. Skipping coupons.`);
-      continue;
-    }
-
-    let scrapedCount = 0;
-    for (const cp of parsedCoupons) {
-      try {
-        await db.insert(coupons).values({
-          store_id: dbStore.id,
-          title: cp.title,
-          code: cp.code,
-          coupon_type: detectCouponType(cp.code),
-          discount_value: cp.discount,
-          affiliate_url: dbStore.affiliate_url || dbStore.website_url || 'https://www.google.com',
-          source: 'grabon',
-          expires_at: expiresAt,
-        }).onConflictDoUpdate({
-          target: [coupons.store_id, coupons.title],
-          set: {
-            code: sql`EXCLUDED.code`,
-            coupon_type: sql`EXCLUDED.coupon_type`,
-            discount_value: sql`EXCLUDED.discount_value`,
-            affiliate_url: sql`EXCLUDED.affiliate_url`,
-            expires_at: sql`EXCLUDED.expires_at`,
-            updated_at: sql`NOW()`,
-          }
-        });
-        scrapedCount++;
-        counts.grabon++;
-      } catch (err) {
-        console.error(`      ❌ Error upserting coupon "${cp.title}":`, err);
-      }
-    }
-    console.log(`      ✅ Scraped ${scrapedCount} coupons from GrabOn for ${store.dbSlug}`);
-    await sleep(1000); // 1s delay to avoid block
+    const cleanupResult = await db.execute(sql`
+      DELETE FROM coupons
+      WHERE source IN ('grabon', 'cashkaro', 'coupondunia', 'grabon_coupons')
+        AND id NOT IN (SELECT DISTINCT coupon_id FROM coupon_clicks)
+        AND id NOT IN (SELECT DISTINCT coupon_id FROM coupon_reports)
+        AND id NOT IN (SELECT DISTINCT coupon_id FROM saved_coupons)
+    `);
+    const cleanedCount = cleanupResult.rowCount || 0;
+    log(`      Cleaned up ${cleanedCount} old public coupons (with no clicks/reports/saves) from DB.`);
+  } catch (cleanupErr) {
+    log(`   ⚠️ Cleanup before ingestion failed: ${cleanupErr}`);
   }
 
-  // 2. CashKaro Scraper
-  console.log('\n🌐 Scraping CashKaro...');
-  for (const store of TARGET_STORES) {
-    console.log(`   Scraping CashKaro for: ${store.dbSlug}...`);
-    const url = `https://cashkaro.com/stores/${store.urlSlug}-coupons`;
-    const html = await fetchPage(url);
-    if (!html) continue;
+  let dbInsertedCount = 0;
 
-    const parsedCoupons = parseCashKaro(html);
-    if (parsedCoupons.length === 0) {
-      console.log(`      No coupons found on page.`);
-      continue;
-    }
+  for (const deal of deduplicatedDeals) {
+    const dbStore = dbStores.find(s => s.name.toLowerCase() === deal.store_name.toLowerCase());
+    if (!dbStore) continue;
 
-    const [dbStore] = await db.select().from(stores).where(eq(stores.slug, store.dbSlug)).limit(1);
-    if (!dbStore) {
-      console.warn(`      ⚠️ Store "${store.dbSlug}" not found in database. Skipping coupons.`);
-      continue;
-    }
+    const expiresAt = deal.expiry_date ? new Date(deal.expiry_date) : null;
 
-    let scrapedCount = 0;
-    for (const cp of parsedCoupons) {
-      try {
-        await db.insert(coupons).values({
-          store_id: dbStore.id,
-          title: cp.title,
-          code: cp.code,
-          coupon_type: detectCouponType(cp.code),
-          discount_value: cp.discount,
-          affiliate_url: dbStore.affiliate_url || dbStore.website_url || 'https://www.google.com',
-          source: 'cashkaro',
-          expires_at: expiresAt,
-        }).onConflictDoUpdate({
-          target: [coupons.store_id, coupons.title],
-          set: {
-            code: sql`EXCLUDED.code`,
-            coupon_type: sql`EXCLUDED.coupon_type`,
-            discount_value: sql`EXCLUDED.discount_value`,
-            affiliate_url: sql`EXCLUDED.affiliate_url`,
-            expires_at: sql`EXCLUDED.expires_at`,
-            updated_at: sql`NOW()`,
-          }
-        });
-        scrapedCount++;
-        counts.cashkaro++;
-      } catch (err) {
-        console.error(`      ❌ Error upserting coupon "${cp.title}":`, err);
-      }
+    try {
+      await db.insert(coupons).values({
+        store_id: dbStore.id,
+        title: deal.title,
+        description: deal.description,
+        code: deal.code,
+        coupon_type: deal.code ? 'code' : 'deal',
+        discount_value: deal.discount,
+        affiliate_url: dbStore.affiliate_url || dbStore.website_url || 'https://www.google.com',
+        source: deal.source_site,
+        is_verified: deal.is_verified,
+        expires_at: expiresAt,
+      }).onConflictDoUpdate({
+        target: [coupons.store_id, coupons.title],
+        set: {
+          code: sql`EXCLUDED.code`,
+          coupon_type: sql`EXCLUDED.coupon_type`,
+          discount_value: sql`EXCLUDED.discount_value`,
+          affiliate_url: sql`EXCLUDED.affiliate_url`,
+          expires_at: sql`EXCLUDED.expires_at`,
+          updated_at: sql`NOW()`,
+        }
+      });
+      dbInsertedCount++;
+    } catch (err) {
+      log(`   ❌ Error upserting coupon "${deal.title}" into DB: ${err}`);
     }
-    console.log(`      ✅ Scraped ${scrapedCount} coupons from CashKaro for ${store.dbSlug}`);
-    await sleep(1000); // 1s delay
   }
 
-  // 3. Desidime Scraper
-  console.log('\n🌐 Scraping Desidime...');
-  for (const store of TARGET_STORES) {
-    console.log(`   Scraping Desidime for: ${store.dbSlug}...`);
-    const url = `https://www.desidime.com/stores/${store.urlSlug}`;
-    const html = await fetchPage(url);
-    if (!html) continue;
-
-    const parsedCoupons = parseDesidime(html);
-    if (parsedCoupons.length === 0) {
-      console.log(`      No coupons found on page.`);
-      continue;
-    }
-
-    const [dbStore] = await db.select().from(stores).where(eq(stores.slug, store.dbSlug)).limit(1);
-    if (!dbStore) {
-      console.warn(`      ⚠️ Store "${store.dbSlug}" not found in database. Skipping coupons.`);
-      continue;
-    }
-
-    let scrapedCount = 0;
-    for (const cp of parsedCoupons) {
-      try {
-        await db.insert(coupons).values({
-          store_id: dbStore.id,
-          title: cp.title,
-          code: cp.code,
-          coupon_type: detectCouponType(cp.code),
-          discount_value: cp.discount,
-          affiliate_url: dbStore.affiliate_url || dbStore.website_url || 'https://www.google.com',
-          source: 'desidime',
-          expires_at: expiresAt,
-        }).onConflictDoUpdate({
-          target: [coupons.store_id, coupons.title],
-          set: {
-            code: sql`EXCLUDED.code`,
-            coupon_type: sql`EXCLUDED.coupon_type`,
-            discount_value: sql`EXCLUDED.discount_value`,
-            affiliate_url: sql`EXCLUDED.affiliate_url`,
-            expires_at: sql`EXCLUDED.expires_at`,
-            updated_at: sql`NOW()`,
-          }
-        });
-        scrapedCount++;
-        counts.desidime++;
-      } catch (err) {
-        console.error(`      ❌ Error upserting coupon "${cp.title}":`, err);
-      }
-    }
-    console.log(`      ✅ Scraped ${scrapedCount} coupons from Desidime for ${store.dbSlug}`);
-    await sleep(1000); // 1s delay
-  }
-
-  console.log('\n═══════════════════════════════════════════════════════');
-  console.log('  Scraping Summary:');
-  console.log(`  GrabOn: ${counts.grabon} coupons`);
-  console.log(`  CashKaro: ${counts.cashkaro} coupons`);
-  console.log(`  Desidime: ${counts.desidime} coupons`);
-  console.log(`  Completed at: ${new Date().toISOString()}`);
-  console.log('═══════════════════════════════════════════════════════');
+  log(`   Database ingestion finished: upserted ${dbInsertedCount} coupons.`);
+  
+  log('\n═══════════════════════════════════════════════════════');
+  log('  Scraping Pipeline Summary:');
+  log(`  Total Scraped: ${scrapedDeals.length}`);
+  log(`  Total Valid/Deduplicated: ${deduplicatedDeals.length}`);
+  log(`  Expired Removed: ${expiredRemovedCount}`);
+  log(`  Duplicates Removed: ${duplicatesRemovedCount}`);
+  log(`  Errors Logged: ${errors.length}`);
+  log(`  Completed at: ${new Date().toISOString()}`);
+  log('═══════════════════════════════════════════════════════');
 }
 
 main().catch((error) => {
-  console.error('Fatal error in scraping job:', error);
+  console.error('Fatal error in scraping pipeline:', error);
   process.exit(1);
 });
