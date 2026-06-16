@@ -52,8 +52,11 @@ export function formatNumber(n: number): string {
 
 export function ensureExternalLink(url: string | null | undefined): string {
   if (!url) return '#'
-  const trimmed = url.trim()
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('mailto:') || trimmed.startsWith('tel:')) {
+  let trimmed = url.trim()
+  if (trimmed.startsWith('http://')) {
+    trimmed = 'https://' + trimmed.slice(7)
+  }
+  if (trimmed.startsWith('https://') || trimmed.startsWith('mailto:') || trimmed.startsWith('tel:')) {
     return trimmed
   }
   return `https://${trimmed}`
@@ -66,15 +69,21 @@ export function getOutboundLink(
 ): string {
   // 1. Check if affiliateUrl is a valid external URL
   if (affiliateUrl) {
-    const trimmed = affiliateUrl.trim()
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    let trimmed = affiliateUrl.trim()
+    if (trimmed.startsWith('http://')) {
+      trimmed = 'https://' + trimmed.slice(7)
+    }
+    if (trimmed.startsWith('https://')) {
       return trimmed
     }
   }
 
   // 2. Fall back to websiteUrl if it looks like a valid URL or domain
   if (websiteUrl) {
-    const trimmed = websiteUrl.trim()
+    let trimmed = websiteUrl.trim()
+    if (trimmed.startsWith('http://')) {
+      trimmed = 'https://' + trimmed.slice(7)
+    }
     if (trimmed && !trimmed.includes('_AFFILIATE_URL') && !trimmed.includes('your_')) {
       return ensureExternalLink(trimmed)
     }
