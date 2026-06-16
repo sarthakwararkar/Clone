@@ -97,6 +97,11 @@ export default function RootLayout({
         </Providers>
         <OrganizationSchema />
         <WebsiteSchema />
+        <Script
+          type="text/javascript"
+          src="https://s.skimresources.com/js/304848X1793037.skimlinks.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   )
