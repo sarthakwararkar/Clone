@@ -66,7 +66,7 @@ async function sendToSentry(dsn: string, event: SentryEvent): Promise<void> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Sentry-Auth': `Sentry sentry_version=7, sentry_client=coupondunia-workers/1.0, sentry_key=${publicKey}`,
+        'X-Sentry-Auth': `Sentry sentry_version=7, sentry_client=dealdhamal-workers/1.0, sentry_key=${publicKey}`,
       },
       body: JSON.stringify(event),
     });
@@ -97,7 +97,7 @@ export const sentryMiddleware = createMiddleware<AppBindings>(async (c, next) =>
       timestamp: new Date().toISOString(),
       level: 'error',
       platform: 'javascript',
-      server_name: 'coupondunia-backend',
+      server_name: 'dealdhamal-backend',
       environment: c.env.ENVIRONMENT || 'production',
       exception: {
         values: [

@@ -23,7 +23,7 @@ A production-ready coupon & cashback aggregator backend for India, built with Ho
 
 ```bash
 git clone <your-repo-url>
-cd coupondunia-backend
+cd dealdhamal-backend
 npm install
 ```
 
@@ -82,7 +82,7 @@ curl "http://localhost:8787/api/search?q=amazon"
 ## 📁 Project Structure
 
 ```
-coupondunia-backend/
+dealdhamal-backend/
 ├── src/
 │   ├── index.ts                  # Hono app entry, Workers export
 │   ├── env.ts                    # Zod-validated env vars

@@ -16,25 +16,25 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
-          cache-dependency-path: coupondunia-backend/package-lock.json
+          cache-dependency-path: dealdhamal-backend/package-lock.json
 
       - name: Install Dependencies
         run: |
-          cd coupondunia-backend
+          cd dealdhamal-backend
           npm ci
 
       - name: Push Database Schema
         run: |
-          cd coupondunia-backend
+          cd dealdhamal-backend
           npx drizzle-kit push
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Run Sync Script
         run: |
-          cd coupondunia-backend
+          cd dealdhamal-backend
           npx tsx src/jobs/syncCoupons.ts
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
