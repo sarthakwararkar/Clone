@@ -2,8 +2,8 @@ const fs = require('fs');
 const path = require('path');
 
 const rootEnvPath = path.join(__dirname, '.env');
-const backendDevVarsPath = path.join(__dirname, 'coupondunia-backend', '.dev.vars');
-const frontendEnvPath = path.join(__dirname, 'coupondunia-frontend', '.env.local');
+const backendDevVarsPath = path.join(__dirname, 'dealdhamal-backend', '.dev.vars');
+const frontendEnvPath = path.join(__dirname, 'dealdhamal-frontend', '.env.local');
 
 // 1. Initialize root .env if it doesn't exist
 if (!fs.existsSync(rootEnvPath)) {
@@ -13,13 +13,13 @@ if (!fs.existsSync(rootEnvPath)) {
   mergedEnvContent += '# Edit this file; changes will sync to frontend/backend on running dev tasks\n';
   mergedEnvContent += '# =========================================================================\n\n';
 
-  const backendExamplePath = path.join(__dirname, 'coupondunia-backend', '.env.example');
+  const backendExamplePath = path.join(__dirname, 'dealdhamal-backend', '.env.example');
   if (fs.existsSync(backendExamplePath)) {
     mergedEnvContent += '# ─── Backend Variables ───────────────────────────────────────────────────\n';
     mergedEnvContent += fs.readFileSync(backendExamplePath, 'utf8') + '\n';
   }
 
-  const frontendExamplePath = path.join(__dirname, 'coupondunia-frontend', '.env.local.example');
+  const frontendExamplePath = path.join(__dirname, 'dealdhamal-frontend', '.env.local.example');
   if (fs.existsSync(frontendExamplePath)) {
     mergedEnvContent += '# ─── Frontend Variables ──────────────────────────────────────────────────\n';
     // Remove any overlapping comments or lines to keep it clean
@@ -46,9 +46,9 @@ if (!fs.existsSync(rootEnvPath)) {
 
   // Write to backend
   fs.writeFileSync(backendDevVarsPath, envContent);
-  console.log('✓ Synced to coupondunia-backend/.dev.vars');
+  console.log('✓ Synced to dealdhamal-backend/.dev.vars');
 
   // Write to frontend
   fs.writeFileSync(frontendEnvPath, envContent);
-  console.log('✓ Synced to coupondunia-frontend/.env.local');
+  console.log('✓ Synced to dealdhamal-frontend/.env.local');
 }

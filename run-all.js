@@ -24,8 +24,8 @@ function runProcess(dir, command, args) {
   return child;
 }
 
-const backend = runProcess('coupondunia-backend', 'npm', ['run', 'dev']);
-const frontend = runProcess('coupondunia-frontend', 'npm', ['run', 'dev']);
+const backend = runProcess('dealdhamal-backend', 'npm', ['run', 'dev']);
+const frontend = runProcess('dealdhamal-frontend', 'npm', ['run', 'dev']);
 
 // Ensure child processes are cleaned up when the main process is terminated
 const cleanup = () => {

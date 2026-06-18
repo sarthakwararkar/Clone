@@ -1,0 +1,142 @@
+[2026-06-16T18:32:51.204Z] ═══════════════════════════════════════════════════════
+[2026-06-16T18:32:51.206Z]   DealHunterBot — Daily Deal Scraping Pipeline
+[2026-06-16T18:32:51.206Z]   Started at: 2026-06-16T18:32:51.206Z
+[2026-06-16T18:32:51.207Z] ═══════════════════════════════════════════════════════
+[2026-06-16T18:32:51.220Z] 🏪 Loading active stores from database...
+[2026-06-16T18:32:52.313Z]    Loaded 10 stores.
+[2026-06-16T18:32:52.314Z] 
+👉 Processing store: Ajio (ajio)...
+[2026-06-16T18:32:52.314Z]    Fetching CouponDunia: https://www.coupondunia.in/ajio
+[2026-06-16T18:32:53.374Z]       Scraped 96 deals.
+[2026-06-16T18:32:56.704Z]    Fetching CashKaro: https://cashkaro.com/stores/ajio-coupons
+[2026-06-16T18:32:57.387Z]       Scraped 0 deals.
+[2026-06-16T18:32:59.529Z]    Fetching GrabOn: https://grabon.in/ajio-coupons
+[2026-06-16T18:33:00.981Z]       Scraped 44 deals.
+[2026-06-16T18:33:04.643Z]    Fetching GrabOn Coupons: https://coupons.grabon.in/ajio-coupons
+[2026-06-16T18:33:04.746Z] ⚠️ Fetch failed for https://coupons.grabon.in/ajio-coupons. Retrying in 10s... Error: fetch failed
+[2026-06-16T18:33:14.845Z]       ❌ Error scraping GrabOn Coupons: fetch failed
+[2026-06-16T18:33:18.109Z] 
+👉 Processing store: Myntra (myntra)...
+[2026-06-16T18:33:18.111Z]    Fetching CouponDunia: https://www.coupondunia.in/myntra
+[2026-06-16T18:33:19.106Z]       Scraped 30 deals.
+[2026-06-16T18:33:22.090Z]    Fetching CashKaro: https://cashkaro.com/stores/myntra
+[2026-06-16T18:33:22.585Z]       Scraped 0 deals.
+[2026-06-16T18:33:24.721Z]    Fetching GrabOn: https://grabon.in/myntra-coupons
+[2026-06-16T18:33:25.685Z]       Scraped 52 deals.
+[2026-06-16T18:33:29.410Z]    Fetching GrabOn Coupons: https://coupons.grabon.in/myntra-coupons
+[2026-06-16T18:33:29.490Z] ⚠️ Fetch failed for https://coupons.grabon.in/myntra-coupons. Retrying in 10s... Error: fetch failed
+[2026-06-16T18:33:39.588Z]       ❌ Error scraping GrabOn Coupons: fetch failed
+[2026-06-16T18:33:41.708Z] 
+👉 Processing store: Meesho (meesho)...
+[2026-06-16T18:33:41.710Z]    Fetching CouponDunia: https://www.coupondunia.in/meesho
+[2026-06-16T18:33:42.318Z] ⚠️ Fetch failed for https://www.coupondunia.in/meesho. Retrying in 10s... Error: HTTP 404 Not Found
+[2026-06-16T18:33:52.712Z]       ❌ Error scraping CouponDunia: HTTP 404 Not Found
+[2026-06-16T18:33:55.312Z]    Fetching CashKaro: https://cashkaro.com/stores/meesho
+[2026-06-16T18:33:55.701Z] ⚠️ Fetch failed for https://cashkaro.com/stores/meesho. Retrying in 10s... Error: HTTP 404 Not Found
+[2026-06-16T18:34:06.335Z]       ❌ Error scraping CashKaro: HTTP 404 Not Found
+[2026-06-16T18:34:08.881Z]    Fetching GrabOn: https://grabon.in/meesho-coupons
+[2026-06-16T18:34:09.630Z]       Scraped 28 deals.
+[2026-06-16T18:34:13.458Z]    Fetching GrabOn Coupons: https://coupons.grabon.in/meesho-coupons
+[2026-06-16T18:34:13.541Z] ⚠️ Fetch failed for https://coupons.grabon.in/meesho-coupons. Retrying in 10s... Error: fetch failed
+[2026-06-16T18:34:23.637Z]       ❌ Error scraping GrabOn Coupons: fetch failed
+[2026-06-16T18:34:27.096Z] 
+👉 Processing store: Amazon India (amazon-india)...
+[2026-06-16T18:34:27.098Z]    Fetching CouponDunia: https://www.coupondunia.in/amazon
+[2026-06-16T18:34:28.203Z]       Scraped 30 deals.
+[2026-06-16T18:34:31.145Z]    Fetching CashKaro: https://cashkaro.com/stores/amazon
+[2026-06-16T18:34:31.793Z]       Scraped 0 deals.
+[2026-06-16T18:34:34.007Z]    Fetching GrabOn: https://grabon.in/amazon-coupons
+[2026-06-16T18:34:35.461Z]       Scraped 71 deals.
+[2026-06-16T18:34:38.085Z]    Fetching GrabOn Coupons: https://coupons.grabon.in/amazon-coupons
+[2026-06-16T18:34:38.168Z] ⚠️ Fetch failed for https://coupons.grabon.in/amazon-coupons. Retrying in 10s... Error: fetch failed
+[2026-06-16T18:34:48.355Z]       ❌ Error scraping GrabOn Coupons: fetch failed
+[2026-06-16T18:34:50.658Z] 
+👉 Processing store: Flipkart (flipkart)...
+[2026-06-16T18:34:50.660Z]    Fetching CouponDunia: https://www.coupondunia.in/flipkart
+[2026-06-16T18:34:51.675Z]       Scraped 30 deals.
+[2026-06-16T18:34:55.352Z]    Fetching CashKaro: https://cashkaro.com/stores/flipkart
+[2026-06-16T18:34:55.794Z]       Scraped 1 deals.
+[2026-06-16T18:34:58.056Z]    Fetching GrabOn: https://grabon.in/flipkart-coupons
+[2026-06-16T18:34:59.211Z]       Scraped 39 deals.
+[2026-06-16T18:35:01.700Z]    Fetching GrabOn Coupons: https://coupons.grabon.in/flipkart-coupons
+[2026-06-16T18:35:01.783Z] ⚠️ Fetch failed for https://coupons.grabon.in/flipkart-coupons. Retrying in 10s... Error: fetch failed
+[2026-06-16T18:35:11.856Z]       ❌ Error scraping GrabOn Coupons: fetch failed
+[2026-06-16T18:35:15.804Z] 
+👉 Processing store: Zomato (zomato)...
+[2026-06-16T18:35:15.805Z]    Fetching CouponDunia: https://www.coupondunia.in/zomato
+[2026-06-16T18:35:16.964Z]       Scraped 30 deals.
+[2026-06-16T18:35:19.144Z]    Fetching CashKaro: https://cashkaro.com/stores/zomato
+[2026-06-16T18:35:19.530Z] ⚠️ Fetch failed for https://cashkaro.com/stores/zomato. Retrying in 10s... Error: HTTP 404 Not Found
+[2026-06-16T18:35:29.972Z]       ❌ Error scraping CashKaro: HTTP 404 Not Found
+[2026-06-16T18:35:33.933Z]    Fetching GrabOn: https://grabon.in/zomato-coupons
+[2026-06-16T18:35:34.987Z]       Scraped 26 deals.
+[2026-06-16T18:35:38.293Z]    Fetching GrabOn Coupons: https://coupons.grabon.in/zomato-coupons
+[2026-06-16T18:35:38.369Z] ⚠️ Fetch failed for https://coupons.grabon.in/zomato-coupons. Retrying in 10s... Error: fetch failed
+[2026-06-16T18:35:48.473Z]       ❌ Error scraping GrabOn Coupons: fetch failed
+[2026-06-16T18:35:51.501Z] 
+👉 Processing store: Swiggy (swiggy)...
+[2026-06-16T18:35:51.502Z]    Fetching CouponDunia: https://www.coupondunia.in/swiggy
+[2026-06-16T18:35:52.407Z]       Scraped 16 deals.
+[2026-06-16T18:35:54.680Z]    Fetching CashKaro: https://cashkaro.com/stores/swiggy
+[2026-06-16T18:35:55.057Z] ⚠️ Fetch failed for https://cashkaro.com/stores/swiggy. Retrying in 10s... Error: HTTP 404 Not Found
+[2026-06-16T18:36:05.441Z]       ❌ Error scraping CashKaro: HTTP 404 Not Found
+[2026-06-16T18:36:08.885Z]    Fetching GrabOn: https://grabon.in/swiggy-coupons
+[2026-06-16T18:36:10.075Z]       Scraped 39 deals.
+[2026-06-16T18:36:13.696Z]    Fetching GrabOn Coupons: https://coupons.grabon.in/swiggy-coupons
+[2026-06-16T18:36:13.793Z] ⚠️ Fetch failed for https://coupons.grabon.in/swiggy-coupons. Retrying in 10s... Error: fetch failed
+[2026-06-16T18:36:23.975Z]       ❌ Error scraping GrabOn Coupons: fetch failed
+[2026-06-16T18:36:27.252Z] 
+👉 Processing store: Nykaa (nykaa)...
+[2026-06-16T18:36:27.253Z]    Fetching CouponDunia: https://www.coupondunia.in/nykaa
+[2026-06-16T18:36:28.189Z]       Scraped 30 deals.
+[2026-06-16T18:36:30.435Z]    Fetching CashKaro: https://cashkaro.com/stores/nykaa
+[2026-06-16T18:36:30.821Z]       Scraped 0 deals.
+[2026-06-16T18:36:34.313Z]    Fetching GrabOn: https://grabon.in/nykaa-coupons
+[2026-06-16T18:36:35.279Z]       Scraped 59 deals.
+[2026-06-16T18:36:38.822Z]    Fetching GrabOn Coupons: https://coupons.grabon.in/nykaa-coupons
+[2026-06-16T18:36:38.902Z] ⚠️ Fetch failed for https://coupons.grabon.in/nykaa-coupons. Retrying in 10s... Error: fetch failed
+[2026-06-16T18:36:48.992Z]       ❌ Error scraping GrabOn Coupons: fetch failed
+[2026-06-16T18:36:51.571Z] 
+👉 Processing store: MakeMyTrip (makemytrip)...
+[2026-06-16T18:36:51.572Z]    Fetching CouponDunia: https://www.coupondunia.in/makemytrip
+[2026-06-16T18:36:52.415Z]       Scraped 30 deals.
+[2026-06-16T18:36:55.667Z]    Fetching CashKaro: https://cashkaro.com/stores/makemytrip-domesticflights
+[2026-06-16T18:36:56.235Z]       Scraped 0 deals.
+[2026-06-16T18:36:58.487Z]    Fetching GrabOn: https://grabon.in/makemytrip-coupons
+[2026-06-16T18:36:59.412Z]       Scraped 41 deals.
+[2026-06-16T18:37:03.362Z]    Fetching GrabOn Coupons: https://coupons.grabon.in/makemytrip-coupons
+[2026-06-16T18:37:03.439Z] ⚠️ Fetch failed for https://coupons.grabon.in/makemytrip-coupons. Retrying in 10s... Error: fetch failed
+[2026-06-16T18:37:13.502Z]       ❌ Error scraping GrabOn Coupons: fetch failed
+[2026-06-16T18:37:17.367Z] 
+👉 Processing store: BigBasket (bigbasket)...
+[2026-06-16T18:37:17.368Z]    Fetching CouponDunia: https://www.coupondunia.in/bigbasket
+[2026-06-16T18:37:18.413Z]       Scraped 27 deals.
+[2026-06-16T18:37:21.504Z]    Fetching CashKaro: https://cashkaro.com/stores/bigbasket
+[2026-06-16T18:37:21.924Z]       Scraped 11 deals.
+[2026-06-16T18:37:25.542Z]    Fetching GrabOn: https://grabon.in/bigbasket-coupons
+[2026-06-16T18:37:26.546Z]       Scraped 39 deals.
+[2026-06-16T18:37:29.576Z]    Fetching GrabOn Coupons: https://coupons.grabon.in/bigbasket-coupons
+[2026-06-16T18:37:30.035Z] ⚠️ Fetch failed for https://coupons.grabon.in/bigbasket-coupons. Retrying in 10s... Error: fetch failed
+[2026-06-16T18:37:40.134Z]       ❌ Error scraping GrabOn Coupons: fetch failed
+[2026-06-16T18:37:42.850Z] 
+🛡️  Applying Expiry Validation Rules...
+[2026-06-16T18:37:42.855Z]    Valid deals remaining: 769 (removed 0 expired/invalid deals).
+[2026-06-16T18:37:42.856Z] 
+👥 Applying Deduplication Rules...
+[2026-06-16T18:37:42.914Z]    Unique deals remaining: 693 (removed 76 duplicate deals).
+[2026-06-16T18:37:42.915Z] 
+💾 Writing feed to C:\Users\rames\OneDrive\Desktop\clone\coupondunia-backend\output\deals_latest.json...
+[2026-06-16T18:37:42.920Z]    Output JSON successfully written.
+[2026-06-16T18:37:42.920Z] 
+📦 Ingesting deals into database...
+[2026-06-16T18:39:07.963Z]    Database ingestion finished: upserted 693 coupons.
+[2026-06-16T18:39:07.964Z] 
+═══════════════════════════════════════════════════════
+[2026-06-16T18:39:07.965Z]   Scraping Pipeline Summary:
+[2026-06-16T18:39:07.965Z]   Total Scraped: 769
+[2026-06-16T18:39:07.965Z]   Total Valid/Deduplicated: 693
+[2026-06-16T18:39:07.966Z]   Expired Removed: 0
+[2026-06-16T18:39:07.966Z]   Duplicates Removed: 76
+[2026-06-16T18:39:07.967Z]   Errors Logged: 14
+[2026-06-16T18:39:07.967Z]   Completed at: 2026-06-16T18:39:07.967Z
+[2026-06-16T18:39:07.967Z] ═══════════════════════════════════════════════════════

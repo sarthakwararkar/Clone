@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node run-all.js",
-    "db:push": "npm run db:push --prefix coupondunia-backend",
-    "db:studio": "npm run db:studio --prefix coupondunia-backend"
+    "db:push": "npm run db:push --prefix dealdhamal-backend",
+    "db:studio": "npm run db:studio --prefix dealdhamal-backend"
   }
 }
