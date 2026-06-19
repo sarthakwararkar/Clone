@@ -88,13 +88,24 @@ class ApiClient {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 15000)
 
+    const isGet = !options.method || options.method.toUpperCase() === 'GET'
+    const fetchOptions: any = {
+      ...options,
+      headers,
+      signal: controller.signal,
+    }
+
+    if (isGet && !authenticated) {
+      fetchOptions.next = {
+        revalidate: 300, // Cache public read-only requests for 5 minutes
+        tags: [path.split('?')[0]],
+        ...options.next,
+      }
+    }
+
     let res
     try {
-      res = await fetch(`${this.baseUrl}${path}`, {
-        ...options,
-        headers,
-        signal: controller.signal,
-      })
+      res = await fetch(`${this.baseUrl}${path}`, fetchOptions)
     } catch (err: any) {
       if (err.name === 'AbortError') {
         throw new Error('API Request timed out after 15 seconds')

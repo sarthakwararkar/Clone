@@ -39,24 +39,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function StorePage({ params }: PageProps) {
   const p = await params
-  let storeDetail
   
-  try {
-    // Fetch store details (which returns { store: Store, coupons: Coupon[] })
-    storeDetail = await api.getStore(p.slug)
-  } catch (err: any) {
-    if (err.status === 404) {
-      notFound()
-    }
-    throw err
-  }
+  // Fetch store details and coupons in parallel to prevent request waterfalls
+  const [storeDetail, couponsResponse] = await Promise.all([
+    api.getStore(p.slug).catch((err) => {
+      if (err.status === 404) {
+        notFound()
+      }
+      throw err
+    }),
+    api.getCoupons({ store: p.slug, limit: 100 }).catch(() => ({ data: [] }))
+  ])
 
   const store = storeDetail.store
-
-  // Fetch all store coupons using public coupons API to allow filtering/pagination
-  const couponsResponse = await api
-    .getCoupons({ store: p.slug, limit: 100 })
-    .catch(() => ({ data: [] }))
 
   return (
     <div className="space-y-8">

@@ -39,19 +39,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function CategoryPage({ params }: PageProps) {
   const p = await params
   
-  // Get category details by looking up the slug in the category list
-  const categories = await api.getCategories().catch(() => [])
+  // Fetch categories, stores, and coupons in parallel to prevent request waterfalls
+  const [categories, storesResponse, couponsResponse] = await Promise.all([
+    api.getCategories().catch(() => []),
+    api.getStores({ category: p.slug, limit: 8 }).catch(() => ({ data: [] })),
+    api.getCoupons({ category: p.slug, limit: 100 }).catch(() => ({ data: [] })),
+  ])
+
   const category = categories.find((c) => c.slug === p.slug)
 
   if (!category) {
     notFound()
   }
-
-  // Fetch stores and coupons for this category in parallel
-  const [storesResponse, couponsResponse] = await Promise.all([
-    api.getStores({ category: p.slug, limit: 8 }).catch(() => ({ data: [] })),
-    api.getCoupons({ category: p.slug, limit: 100 }).catch(() => ({ data: [] })),
-  ])
 
   const categoryStores = storesResponse.data
   const categoryCoupons = couponsResponse.data
