@@ -18,7 +18,7 @@ export function FeaturedStores({ stores }: FeaturedStoresProps) {
           View All Stores →
         </Link>
       </div>
-      <StoreGrid stores={stores} />
+      <StoreGrid stores={stores} variant="flip" />
     </section>
   )
 }
