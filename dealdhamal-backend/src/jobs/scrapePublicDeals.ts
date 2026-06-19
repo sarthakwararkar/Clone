@@ -590,6 +590,7 @@ export async function main() {
         affiliate_url: dbStore.affiliate_url || dbStore.website_url || 'https://www.google.com',
         source: deal.source_site,
         is_verified: deal.is_verified,
+        is_featured: deal.is_verified, // Promoted verified coupons to featured for homepage exposure
         expires_at: expiresAt,
       }).onConflictDoUpdate({
         target: [coupons.store_id, coupons.title],
@@ -599,6 +600,8 @@ export async function main() {
           discount_value: sql`EXCLUDED.discount_value`,
           affiliate_url: sql`EXCLUDED.affiliate_url`,
           expires_at: sql`EXCLUDED.expires_at`,
+          is_verified: sql`EXCLUDED.is_verified`,
+          is_featured: sql`EXCLUDED.is_featured`,
           updated_at: sql`NOW()`,
         }
       });
