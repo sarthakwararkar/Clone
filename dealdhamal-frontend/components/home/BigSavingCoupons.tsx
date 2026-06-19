@@ -35,7 +35,7 @@ export function BigSavingCoupons({ coupons }: BigSavingCouponsProps) {
         </h2>
         
         {/* Navigation Arrows */}
-        <div className="flex items-center gap-1.5">
+        <div className="hidden sm:flex items-center gap-1.5">
           <button
             onClick={() => scroll('left')}
             className="w-8 h-8 rounded-full border border-gray-250 bg-white flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:text-primary transition-all shadow-sm cursor-pointer"

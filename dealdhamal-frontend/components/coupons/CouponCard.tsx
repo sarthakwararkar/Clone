@@ -131,8 +131,9 @@ export function CouponCard({ coupon, view = 'list' }: CouponCardProps) {
   // List view
   return (
     <>
+      {/* Desktop List View Layout */}
       <div
-        className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer group flex items-start gap-4"
+        className="hidden sm:flex bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer group items-start gap-4"
         onClick={handleCardClick}
       >
         {/* Logo */}
@@ -227,6 +228,126 @@ export function CouponCard({ coupon, view = 'list' }: CouponCardProps) {
               />
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Mobile List View Layout */}
+      <div
+        className="sm:hidden bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col gap-3.5 cursor-pointer relative"
+        onClick={handleCardClick}
+      >
+        {/* Header Row: Logo, Store Name, and Action Buttons */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-lg border border-gray-100 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 p-1">
+              {coupon.store.logo_url ? (
+                <Image src={coupon.store.logo_url} alt={coupon.store.name} width={40} height={40} className="object-contain" />
+              ) : (
+                <div className="w-full h-full bg-primary-light flex items-center justify-center">
+                  <span className="text-primary font-bold text-sm">{initials}</span>
+                </div>
+              )}
+            </div>
+            <div className="min-w-0">
+              <Link
+                href={`/stores/${coupon.store.slug}`}
+                onClick={(e) => e.stopPropagation()}
+                className="text-xs font-semibold text-gray-500 hover:text-primary transition-colors block truncate"
+              >
+                {coupon.store.name}
+              </Link>
+              <span className="text-[10px] text-gray-400">{formatNumber(coupon.used_count)} used</span>
+            </div>
+          </div>
+
+          {/* Actions: Share & Save */}
+          <div className="flex items-center gap-2.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={handleShareClick}
+              aria-label="Share coupon"
+              className="p-1.5 rounded-full text-gray-400 hover:text-primary transition-colors hover:bg-gray-50 border border-gray-100"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleSaveToggle}
+              aria-label={saved ? 'Unsave coupon' : 'Save coupon'}
+              className="p-1.5 rounded-full border border-gray-100 hover:bg-gray-50"
+            >
+              <Bookmark
+                className={cn('w-4 h-4 transition-colors', saved ? 'fill-primary text-primary font-bold' : 'text-gray-400')}
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* Coupon Title */}
+        <div>
+          <h3 className="text-sm font-bold text-gray-900 line-clamp-2 leading-snug">
+            {coupon.title}
+          </h3>
+        </div>
+
+        {/* Badges Row */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge variant={coupon.coupon_type} />
+          {coupon.is_exclusive && <Badge variant="exclusive" />}
+          {coupon.is_verified && <Badge variant="verified" />}
+        </div>
+
+        {/* Expiry & Success Rate info */}
+        {(coupon.expires_at || coupon.success_rate > 0) && (
+          <div className="flex items-center justify-between gap-4 pt-2.5 border-t border-gray-50 text-[11px]">
+            {coupon.expires_at ? (
+              <div className="flex items-center gap-1 text-gray-400">
+                <Clock className="w-3.5 h-3.5" />
+                <span>Expires {timeAgo(coupon.expires_at)}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 text-green-600">
+                <CheckCircle className="w-3.5 h-3.5" />
+                <span className="font-semibold">No Expiry</span>
+              </div>
+            )}
+
+            {coupon.success_rate > 0 && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-400">{coupon.success_rate}% success</span>
+                <div className="w-12 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-green-500"
+                    style={{ width: `${coupon.success_rate}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* CTA Button at Bottom */}
+        <div className="w-full pt-1" onClick={(e) => e.stopPropagation()}>
+          {coupon.coupon_type === 'code' ? (
+            <button
+              onClick={handleReveal}
+              className="w-full border-2 border-dashed border-primary bg-primary-light/30 hover:bg-primary-light/50 rounded-xl py-2.5 text-center cursor-pointer transition-colors"
+            >
+              <div className="flex items-center justify-center gap-2">
+                <span className="font-mono text-sm font-bold text-primary tracking-wider">
+                  {coupon.code ? maskCode(coupon.code) : '••••••'}
+                </span>
+                <span className="text-xs font-bold text-primary-dark/80 bg-primary-light px-2 py-0.5 rounded-md">
+                  REVEAL CODE
+                </span>
+              </div>
+            </button>
+          ) : (
+            <button
+              onClick={handleReveal}
+              className="w-full bg-primary hover:bg-primary-dark text-white font-bold text-sm py-2.5 rounded-xl text-center cursor-pointer transition-colors shadow-sm"
+            >
+              Get Deal →
+            </button>
+          )}
         </div>
       </div>
 

@@ -55,7 +55,7 @@ export function HeroBanner({ coupons }: HeroBannerProps) {
           ) : (
             <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-red-500 to-orange-500" />
           )}
-          <div className="relative z-10 h-full flex items-center justify-between px-8 md:px-12">
+          <div className="relative z-10 h-full flex items-center justify-between px-4 sm:px-8 md:px-12">
             {/* Left: content */}
             <div className="flex-1 max-w-lg">
               <span className="inline-block bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full mb-3">
@@ -98,14 +98,14 @@ export function HeroBanner({ coupons }: HeroBannerProps) {
       {/* Prev/Next arrows */}
       <button
         onClick={() => go(current - 1)}
-        className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-colors"
+        className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 text-white hidden sm:flex items-center justify-center transition-colors"
         aria-label="Previous slide"
       >
         <ChevronLeft className="w-5 h-5" />
       </button>
       <button
         onClick={() => go(current + 1)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-colors"
+        className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 text-white hidden sm:flex items-center justify-center transition-colors"
         aria-label="Next slide"
       >
         <ChevronRight className="w-5 h-5" />
