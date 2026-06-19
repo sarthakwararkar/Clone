@@ -16,6 +16,9 @@ export function HeroBanner({ coupons }: HeroBannerProps) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const slides = coupons.slice(0, 5)
 
+  const touchStartX = useRef<number | null>(null)
+  const touchEndX = useRef<number | null>(null)
+
   const go = (idx: number) => setCurrent((idx + slides.length) % slides.length)
 
   useEffect(() => {
@@ -24,6 +27,31 @@ export function HeroBanner({ coupons }: HeroBannerProps) {
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
   }, [isHovered, slides.length])
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX
+  }
+
+  const handleTouchEnd = () => {
+    if (touchStartX.current === null || touchEndX.current === null) return
+    const diff = touchStartX.current - touchEndX.current
+    const swipeThreshold = 50 // Minimum swipe distance (pixels) to transition
+
+    if (diff > swipeThreshold) {
+      // Swipe left -> Show next slide
+      go(current + 1)
+    } else if (diff < -swipeThreshold) {
+      // Swipe right -> Show previous slide
+      go(current - 1)
+    }
+
+    touchStartX.current = null
+    touchEndX.current = null
+  }
 
   if (!slides.length) return null
 
@@ -34,6 +62,9 @@ export function HeroBanner({ coupons }: HeroBannerProps) {
       className="relative rounded-2xl overflow-hidden h-64 md:h-80 select-none"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       {slides.map((s, idx) => (
         <div
