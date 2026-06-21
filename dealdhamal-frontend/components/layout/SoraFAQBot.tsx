@@ -257,26 +257,60 @@ export function SoraFAQBot() {
       {/* Chat window panel */}
       <div
         id="sora-chatbot-window"
-        className={`fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] h-[550px] max-h-[85vh] rounded-3xl flex flex-col overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] transition-all duration-300 origin-bottom-right ${
-          isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'
-        } backdrop-blur-xl bg-white/80 dark:bg-slate-950/80 border border-white/30 dark:border-slate-800/40`}
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          zIndex: 50,
+          width: '380px',
+          maxWidth: 'calc(100vw - 2rem)',
+          height: '550px',
+          maxHeight: '85vh',
+          borderRadius: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          boxShadow: '0 20px 60px -15px rgba(0,0,0,0.3)',
+          transition: 'all 300ms ease-in-out',
+          transformOrigin: 'bottom right',
+          transform: isOpen ? 'scale(1)' : 'scale(0)',
+          opacity: isOpen ? 1 : 0,
+          pointerEvents: isOpen ? 'auto' : 'none',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255,255,255,0.3)'
+        }}
+        className="bg-white/80 dark:bg-slate-950/80"
       >
         {/* Soft background glows */}
         <div className="absolute -z-10 w-44 h-44 bg-pink-400/20 rounded-full blur-3xl -top-10 -left-10 pointer-events-none"></div>
         <div className="absolute -z-10 w-44 h-44 bg-cyan-400/20 rounded-full blur-3xl -bottom-10 -right-10 pointer-events-none"></div>
 
         {/* Header */}
-        <div className="h-16 bg-gradient-to-r from-pink-400 via-purple-500 to-cyan-500 flex items-center justify-between px-4 border-b border-white/20 text-white relative shadow-sm shrink-0">
+        <div 
+          style={{
+            height: '64px',
+            minHeight: '64px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingLeft: '16px',
+            paddingRight: '16px',
+            borderBottom: '1px solid rgba(255,255,255,0.2)',
+            position: 'relative'
+          }}
+          className="bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-500 text-white shadow-sm shrink-0"
+        >
           {/* macOS window dots */}
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 bg-rose-500 rounded-full"></div>
-            <div className="w-2.5 h-2.5 bg-amber-500 rounded-full"></div>
-            <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full"></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '10px', height: '10px', backgroundColor: '#ef4444', borderRadius: '50%' }}></div>
+            <div style={{ width: '10px', height: '10px', backgroundColor: '#f59e0b', borderRadius: '50%' }}></div>
+            <div style={{ width: '10px', height: '10px', backgroundColor: '#10b981', borderRadius: '50%' }}></div>
           </div>
 
           {/* Centered Brand / Sora profile */}
-          <div className="flex items-center gap-2.5">
-            <div className="relative w-9 h-9 rounded-full border border-white/40 overflow-hidden bg-white/20 shrink-0">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ position: 'relative', width: '36px', height: '36px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.4)', overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.2)', flexShrink: 0 }}>
               <Image
                 src="/sora-avatar.png"
                 alt="Sora"
@@ -286,10 +320,10 @@ export function SoraFAQBot() {
                 unoptimized
               />
             </div>
-            <div className="flex flex-col text-left">
-              <span className="font-extrabold text-sm tracking-tight leading-tight">Sora • FAQ Bot</span>
-              <span className="text-[10px] text-white/90 flex items-center gap-1 leading-none mt-0.5">
-                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse shrink-0"></span>
+            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+              <span style={{ fontWeight: 800, fontSize: '14px', lineHeight: '1.2' }}>Sora • FAQ Bot</span>
+              <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', gap: '4px', lineHeight: '1', marginTop: '2px' }}>
+                <span style={{ width: '6px', height: '6px', backgroundColor: '#34d399', borderRadius: '50%' }} className="animate-pulse"></span>
                 Active Guide
               </span>
             </div>
@@ -298,23 +332,49 @@ export function SoraFAQBot() {
           {/* Close button */}
           <button
             onClick={toggleChat}
-            className="p-1.5 hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+            style={{
+              padding: '6px',
+              backgroundColor: 'transparent',
+              border: 'none',
+              borderRadius: '50%',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              transition: 'background-color 200ms'
+            }}
+            className="hover:bg-white/10"
             aria-label="Close Chat"
           >
-            <X className="w-4 h-4" />
+            <X style={{ width: '16px', height: '16px' }} />
           </button>
         </div>
 
         {/* Scrollable messages container */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+        <div 
+          style={{
+            flex: '1 1 0%',
+            overflowY: 'auto',
+            padding: '16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px'
+          }}
+          className="no-scrollbar"
+        >
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: msg.sender === 'user' ? 'flex-end' : 'flex-start'
+              }}
             >
-              <div className="flex gap-2 max-w-[85%] items-start">
+              <div style={{ display: 'flex', gap: '8px', maxWidth: '85%', alignItems: 'flex-start' }}>
                 {msg.sender === 'sora' && (
-                  <div className="w-7 h-7 rounded-full border border-pink-200/50 bg-pink-100 overflow-hidden flex-shrink-0 mt-0.5">
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '1px solid rgba(236,72,153,0.2)', backgroundColor: '#fdf2f8', overflow: 'hidden', flexShrink: 0, marginTop: '2px' }}>
                     <Image
                       src="/sora-avatar.png"
                       alt="Sora"
@@ -339,7 +399,7 @@ export function SoraFAQBot() {
 
               {/* Suggestions quick-click list (only shown on bot replies that require selection) */}
               {msg.sender === 'sora' && msg.showSuggestions && (
-                <div className="pl-9 mt-2 flex flex-wrap gap-1.5 max-w-full">
+                <div style={{ paddingLeft: '36px', marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px', maxWidth: '100%' }}>
                   {FAQ_OPTIONS.map((option) => (
                     <button
                       key={option.label}
@@ -362,11 +422,19 @@ export function SoraFAQBot() {
             e.preventDefault()
             handleSendMessage(inputValue)
           }}
-          className="p-3 border-t border-slate-100/50 dark:border-slate-800/50 bg-white/60 dark:bg-slate-900/60 relative flex items-center"
+          style={{
+            padding: '12px',
+            borderTop: '1px solid rgba(0,0,0,0.05)',
+            backgroundColor: 'rgba(255,255,255,0.6)',
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center'
+          }}
+          className="dark:bg-slate-900/60 dark:border-slate-800/50"
         >
           {/* Pencil icon decorative decoration */}
-          <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 flex items-center pointer-events-none">
-            <PenTool className="w-3.5 h-3.5" />
+          <div style={{ position: 'absolute', left: '24px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', color: '#94a3b8', pointerEvents: 'none' }}>
+            <PenTool style={{ width: '14px', height: '14px' }} />
           </div>
 
           <input
@@ -374,24 +442,57 @@ export function SoraFAQBot() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Ask Sora a question..."
-            className="w-full bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 rounded-full py-2.5 pl-10 pr-20 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500/50 dark:text-slate-100 text-slate-800"
+            style={{
+              width: '100%',
+              borderRadius: '9999px',
+              paddingTop: '10px',
+              paddingBottom: '10px',
+              paddingLeft: '38px',
+              paddingRight: '80px',
+              fontSize: '12px',
+              border: '1px solid rgba(0,0,0,0.1)',
+              outline: 'none'
+            }}
+            className="bg-white dark:bg-slate-800 dark:border-slate-700/50 dark:text-slate-100 text-slate-800 focus:ring-2 focus:ring-pink-500/50"
           />
 
-          <div className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+          <div style={{ position: 'absolute', right: '20px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <button
               type="button"
-              className="p-1 text-slate-400 hover:text-pink-500 transition-colors cursor-pointer"
+              style={{
+                padding: '4px',
+                backgroundColor: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#94a3b8',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              className="hover:text-pink-500 transition-colors"
               aria-label="Add Emoji"
               onClick={() => setInputValue(prev => prev + ' ✨')}
             >
-              <Smile className="w-4 h-4" />
+              <Smile style={{ width: '16px', height: '16px' }} />
             </button>
             <button
               type="submit"
-              className="w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-cyan-500 text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-md cursor-pointer"
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                border: 'none',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+              }}
+              className="bg-gradient-to-r from-pink-500 to-cyan-500 hover:scale-105 active:scale-95 transition-transform"
               aria-label="Send Message"
             >
-              <Send className="w-3.5 h-3.5 transform -rotate-12" />
+              <Send style={{ width: '14px', height: '14px', transform: 'rotate(-12deg)' }} />
             </button>
           </div>
         </form>
