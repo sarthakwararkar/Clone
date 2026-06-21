@@ -266,30 +266,30 @@ export function SoraFAQBot() {
         <div className="absolute -z-10 w-44 h-44 bg-cyan-400/20 rounded-full blur-3xl -bottom-10 -right-10 pointer-events-none"></div>
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 p-4 pb-4 flex items-center justify-between border-b border-white/20 text-white relative shadow-sm">
+        <div className="h-16 bg-gradient-to-r from-pink-400 via-purple-500 to-cyan-500 flex items-center justify-between px-4 border-b border-white/20 text-white relative shadow-sm shrink-0">
           {/* macOS window dots */}
-          <div className="flex items-center gap-1.5 absolute left-4 top-4.5">
-            <div className="w-2.5 h-2.5 bg-rose-500 rounded-full opacity-80"></div>
-            <div className="w-2.5 h-2.5 bg-amber-500 rounded-full opacity-80"></div>
-            <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full opacity-80"></div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 bg-rose-500 rounded-full"></div>
+            <div className="w-2.5 h-2.5 bg-amber-500 rounded-full"></div>
+            <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full"></div>
           </div>
 
           {/* Centered Brand / Sora profile */}
-          <div className="flex items-center gap-2.5 mx-auto pl-10">
-            <div className="relative w-8 h-8 rounded-full border border-white/40 overflow-hidden bg-white/20 flex-shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="relative w-9 h-9 rounded-full border border-white/40 overflow-hidden bg-white/20 shrink-0">
               <Image
                 src="/sora-avatar.png"
                 alt="Sora"
-                width={32}
-                height={32}
+                width={36}
+                height={36}
                 className="object-cover w-full h-full"
                 unoptimized
               />
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col text-left">
               <span className="font-extrabold text-sm tracking-tight leading-tight">Sora • FAQ Bot</span>
-              <span className="text-[10px] text-white/90 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+              <span className="text-[10px] text-white/90 flex items-center gap-1 leading-none mt-0.5">
+                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse shrink-0"></span>
                 Active Guide
               </span>
             </div>
@@ -365,7 +365,7 @@ export function SoraFAQBot() {
           className="p-3 border-t border-slate-100/50 dark:border-slate-800/50 bg-white/60 dark:bg-slate-900/60 relative flex items-center"
         >
           {/* Pencil icon decorative decoration */}
-          <div className="absolute left-6 text-slate-400 dark:text-slate-500">
+          <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 flex items-center pointer-events-none">
             <PenTool className="w-3.5 h-3.5" />
           </div>
 
@@ -374,10 +374,10 @@ export function SoraFAQBot() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Ask Sora a question..."
-            className="w-full bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 rounded-full py-2.5 pl-9 pr-20 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500/50 dark:text-slate-100 text-slate-800"
+            className="w-full bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 rounded-full py-2.5 pl-10 pr-20 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500/50 dark:text-slate-100 text-slate-800"
           />
 
-          <div className="absolute right-5 flex items-center gap-1.5">
+          <div className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
             <button
               type="button"
               className="p-1 text-slate-400 hover:text-pink-500 transition-colors cursor-pointer"
@@ -388,7 +388,7 @@ export function SoraFAQBot() {
             </button>
             <button
               type="submit"
-              className="w-7.5 h-7.5 rounded-full bg-gradient-to-r from-pink-500 to-cyan-500 text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-md cursor-pointer"
+              className="w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-cyan-500 text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-md cursor-pointer"
               aria-label="Send Message"
             >
               <Send className="w-3.5 h-3.5 transform -rotate-12" />
