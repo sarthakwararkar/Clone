@@ -9,6 +9,7 @@ import { Toaster } from 'sonner'
 import Script from 'next/script'
 import { OrganizationSchema } from '@/components/seo/OrganizationSchema'
 import { WebsiteSchema } from '@/components/seo/WebsiteSchema'
+import { SoraFAQBot } from '@/components/layout/SoraFAQBot'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -94,6 +95,7 @@ export default function RootLayout({
           <Footer />
           <MobileNav />
           <Toaster position="top-right" richColors />
+          <SoraFAQBot />
         </Providers>
         <OrganizationSchema />
         <WebsiteSchema />
