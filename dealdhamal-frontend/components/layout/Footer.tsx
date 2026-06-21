@@ -29,9 +29,10 @@ export function Footer() {
               <li><Link href="/stores" className="hover:text-white transition-colors">All Stores</Link></li>
               <li><Link href="/categories" className="hover:text-white transition-colors">Categories</Link></li>
               <li><Link href="/search" className="hover:text-white transition-colors">Search Deals</Link></li>
+              <li><Link href={"/partner" as any} className="hover:text-white transition-colors">Partner with Us</Link></li>
             </ul>
           </div>
-
+          
           <div>
             <h4 className="font-semibold text-white mb-4">Account</h4>
             <ul className="space-y-2 text-sm">
@@ -58,6 +59,7 @@ export function Footer() {
             © {new Date().getFullYear()} DealDhamal. All rights reserved.
           </p>
           <div className="flex items-center gap-6 text-sm">
+            <Link href={"/partner" as any} className="text-gray-500 hover:text-white transition-colors">Partner with Us</Link>
             <Link href={"/privacy" as any} className="text-gray-500 hover:text-white transition-colors">Privacy Policy</Link>
             <Link href={"/terms" as any} className="text-gray-500 hover:text-white transition-colors">Terms of Service</Link>
           </div>
