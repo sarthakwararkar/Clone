@@ -231,7 +231,7 @@ export function SoraFAQBot() {
         {/* Circular Avatar Bubble Container */}
         <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-pink-400/50 bg-slate-900/10 backdrop-blur-md overflow-hidden flex items-center justify-center shadow-[0_0_15px_rgba(236,72,153,0.35)] group-hover:shadow-[0_0_25px_rgba(6,182,212,0.6)] group-hover:border-cyan-400/60 transition-all duration-300 animate-[float_4s_ease-in-out_infinite]">
           <Image
-            src="/sora-avatar.png"
+            src="/sora-avatar-v2.png"
             alt="Sora Mascot"
             width={80}
             height={80}
@@ -264,8 +264,8 @@ export function SoraFAQBot() {
           zIndex: 50,
           width: '380px',
           maxWidth: 'calc(100vw - 2rem)',
-          height: '550px',
-          maxHeight: '85vh',
+          height: '480px',
+          maxHeight: 'calc(100vh - 6rem)',
           borderRadius: '24px',
           display: 'flex',
           flexDirection: 'column',
@@ -282,9 +282,9 @@ export function SoraFAQBot() {
         }}
         className="bg-white/80 dark:bg-slate-950/80"
       >
-        {/* Soft background glows */}
-        <div className="absolute -z-10 w-44 h-44 bg-pink-400/20 rounded-full blur-3xl -top-10 -left-10 pointer-events-none"></div>
-        <div className="absolute -z-10 w-44 h-44 bg-cyan-400/20 rounded-full blur-3xl -bottom-10 -right-10 pointer-events-none"></div>
+        {/* Soft background glows - positioned inside bounds to avoid clipping */}
+        <div className="absolute -z-10 w-44 h-44 bg-pink-400/20 rounded-full blur-3xl top-0 left-0 pointer-events-none"></div>
+        <div className="absolute -z-10 w-44 h-44 bg-cyan-400/20 rounded-full blur-3xl bottom-0 right-0 pointer-events-none"></div>
 
         {/* Header */}
         <div 
@@ -312,7 +312,7 @@ export function SoraFAQBot() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ position: 'relative', width: '36px', height: '36px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.4)', overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.2)', flexShrink: 0 }}>
               <Image
-                src="/sora-avatar.png"
+                src="/sora-avatar-v2.png"
                 alt="Sora"
                 width={36}
                 height={36}
@@ -376,7 +376,7 @@ export function SoraFAQBot() {
                 {msg.sender === 'sora' && (
                   <div style={{ width: '28px', height: '28px', borderRadius: '50%', border: '1px solid rgba(236,72,153,0.2)', backgroundColor: '#fdf2f8', overflow: 'hidden', flexShrink: 0, marginTop: '2px' }}>
                     <Image
-                      src="/sora-avatar.png"
+                      src="/sora-avatar-v2.png"
                       alt="Sora"
                       width={28}
                       height={28}
