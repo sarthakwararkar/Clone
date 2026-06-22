@@ -87,71 +87,155 @@ export class AffiliateService {
   }
 
   /**
-   * Sync coupons from Cuelinks API.
-   * Cuelinks provides coupons and deals data for Indian advertisers.
+   * Sync coupons from Cuelinks API v2.
+   * Cuelinks provides offers/coupons data for Indian advertisers.
+   *
+   * API Docs: https://cuelinks.docs.apiary.io/
+   * Auth: custom `token` header (NOT Authorization: Bearer)
+   * Endpoint: GET https://www.cuelinks.com/api/v2/offers.json
    */
   async syncCuelinks(apiKey: string): Promise<CouponData[]> {
     console.log('[AffiliateService] Syncing Cuelinks coupons...');
 
+    const allOffers: CouponData[] = [];
+    let page = 1;
+    const perPage = 100; // Max allowed by CueLinks
+    let hasMore = true;
+
     try {
-      const response = await fetch('https://api.cuelinks.com/v1/coupons', {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          Accept: 'application/json',
-        },
-      });
+      while (hasMore) {
+        const url = `https://www.cuelinks.com/api/v2/offers.json?page=${page}&per_page=${perPage}&country_id=1`;
 
-      if (!response.ok) {
-        console.error(`Cuelinks API returned ${response.status}`);
-        return [];
-      }
+        const response = await fetch(url, {
+          headers: {
+            'token': apiKey,
+            'Accept': 'application/json',
+          },
+        });
 
-      const data = (await response.json()) as {
-        coupons?: Array<{
-          coupon_id: string | number;
-          coupon_title: string;
-          coupon_code: string | null;
-          coupon_type: string;
-          valid_till: string | null;
-          tracking_url: string;
-          merchant_name: string;
-          coupon_description?: string;
-        }>;
-      };
+        if (!response.ok) {
+          console.error(`Cuelinks API returned ${response.status} on page ${page}`);
+          // If first page fails, the key or endpoint is wrong
+          if (page === 1) return [];
+          break;
+        }
 
-      if (!data.coupons || !Array.isArray(data.coupons)) {
-        console.log('[Cuelinks] No coupons found in response');
-        return [];
-      }
+        const data = (await response.json()) as {
+          offers?: Array<{
+            id: string | number;
+            title: string;
+            description?: string;
+            coupon_code?: string | null;
+            offer_type?: string;
+            discount?: string;
+            url?: string;
+            tracking_url?: string;
+            merchant_name?: string;
+            campaign_name?: string;
+            start_date?: string;
+            end_date?: string;
+            expiry_date?: string;
+            categories?: string[];
+            status?: string;
+          }>;
+          total_pages?: number;
+          current_page?: number;
+          total_count?: number;
+        };
 
-      const dbStores = await this.db.select({ slug: stores.slug }).from(stores);
-      const storeSlugs = new Set(dbStores.map(s => s.slug));
+        const offers = data.offers || [];
+        if (offers.length === 0) {
+          hasMore = false;
+          break;
+        }
 
-      const mappedCoupons: CouponData[] = [];
-      for (const item of data.coupons) {
-        const storeSlug = this.slugify(item.merchant_name || '');
-        if (storeSlugs.has(storeSlug)) {
-          mappedCoupons.push({
-            title: item.coupon_title || 'Untitled Offer',
-            description: item.coupon_description || null,
+        for (const item of offers) {
+          const merchantName = item.merchant_name || item.campaign_name || '';
+          const storeSlug = this.slugify(merchantName);
+          if (!storeSlug) continue;
+
+          // Determine the best tracking URL
+          const affiliateUrl = item.tracking_url || item.url || '';
+
+          allOffers.push({
+            title: item.title || 'Untitled Offer',
+            description: item.description || null,
             code: item.coupon_code || null,
-            coupon_type: this.mapCouponType(item.coupon_type),
-            discount_value: item.coupon_title || '',
-            affiliate_url: item.tracking_url || '',
+            coupon_type: this.mapCouponType(item.offer_type || (item.coupon_code ? 'coupon' : 'deal')),
+            discount_value: item.discount || item.title || '',
+            affiliate_url: affiliateUrl,
             source: 'cuelinks' as CouponSource,
-            external_id: String(item.coupon_id),
+            external_id: String(item.id),
             store_slug: storeSlug,
-            starts_at: null,
-            expires_at: item.valid_till ? new Date(item.valid_till) : null,
+            starts_at: item.start_date ? new Date(item.start_date) : null,
+            expires_at: (item.end_date || item.expiry_date)
+              ? new Date(item.end_date || item.expiry_date!)
+              : null,
             is_exclusive: false,
           });
         }
+
+        // Check if there are more pages
+        if (data.total_pages && page < data.total_pages) {
+          page++;
+        } else if (offers.length < perPage) {
+          hasMore = false;
+        } else {
+          page++;
+          // Safety limit: don't fetch more than 20 pages (2000 offers)
+          if (page > 20) hasMore = false;
+        }
       }
 
-      return mappedCoupons;
+      console.log(`[Cuelinks] Fetched ${allOffers.length} total offers across ${page} page(s)`);
+      return allOffers;
     } catch (error) {
       console.error('[Cuelinks] Sync error:', error);
       return [];
+    }
+  }
+
+  /**
+   * Convert a plain URL into a CueLinks tracked affiliate URL.
+   * Uses the CueLinks Link API v2.
+   *
+   * Endpoint: GET https://www.cuelinks.com/api/v2/links?url={url}
+   * Returns the tracked URL, or the original URL if conversion fails.
+   */
+  async convertToCuelinkUrl(apiKey: string, originalUrl: string): Promise<string> {
+    try {
+      const response = await fetch(
+        `https://www.cuelinks.com/api/v2/links?url=${encodeURIComponent(originalUrl)}`,
+        {
+          headers: {
+            'token': apiKey,
+            'Accept': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        console.warn(`[Cuelinks] Link conversion failed (${response.status}) for: ${originalUrl}`);
+        return originalUrl;
+      }
+
+      const data = (await response.json()) as {
+        tracking_url?: string;
+        url?: string;
+        short_url?: string;
+        error?: string;
+      };
+
+      // Return the best available tracked URL
+      const trackedUrl = data.tracking_url || data.url || data.short_url;
+      if (trackedUrl) {
+        return trackedUrl;
+      }
+
+      return originalUrl;
+    } catch (error) {
+      console.warn('[Cuelinks] Link conversion error:', error);
+      return originalUrl;
     }
   }
 
@@ -306,11 +390,12 @@ export class AffiliateService {
   /**
    * Upsert coupons into the database.
    * Uses Drizzle's onConflictDoUpdate to upsert by external_id + source.
-   * First resolves store_slug → store_id, creating stores if needed.
+   * Auto-creates stores when they don't exist (from affiliate network data).
    */
-  async upsertCoupons(couponDataList: CouponData[]): Promise<{ inserted: number; updated: number }> {
+  async upsertCoupons(couponDataList: CouponData[]): Promise<{ inserted: number; updated: number; storesCreated: number }> {
     let inserted = 0;
     let updated = 0;
+    let storesCreated = 0;
 
     // Group coupons by store_slug
     const byStore = new Map<string, CouponData[]>();
@@ -323,16 +408,67 @@ export class AffiliateService {
     for (const [storeSlug, storeCoupons] of byStore) {
       if (!storeSlug) continue;
 
-      // Resolve store ID (find or skip — don't auto-create stores)
-      const [store] = await this.db
+      // Resolve store ID — find existing or auto-create
+      let [store] = await this.db
         .select({ id: stores.id })
         .from(stores)
         .where(eq(stores.slug, storeSlug))
         .limit(1);
 
       if (!store) {
-        console.log(`[AffiliateService] Store not found for slug: ${storeSlug}, skipping ${storeCoupons.length} coupons`);
-        continue;
+        // Auto-create the store from affiliate data
+        const sampleCoupon = storeCoupons[0];
+        const storeName = this.unslugify(storeSlug);
+
+        // Try to derive website URL from affiliate URL
+        let websiteUrl: string | null = null;
+        if (sampleCoupon.affiliate_url) {
+          try {
+            const urlObj = new URL(sampleCoupon.affiliate_url);
+            // If affiliate URL redirects to a merchant, try to extract domain
+            // For direct merchant URLs, use the host directly
+            if (!urlObj.hostname.includes('cuelinks') && !urlObj.hostname.includes('clnk.in')) {
+              websiteUrl = `https://${urlObj.hostname}`;
+            }
+          } catch { /* ignore invalid URLs */ }
+        }
+
+        try {
+          const [newStore] = await this.db
+            .insert(stores)
+            .values({
+              name: storeName,
+              slug: storeSlug,
+              website_url: websiteUrl,
+              affiliate_url: sampleCoupon.affiliate_url || null,
+              affiliate_network: sampleCoupon.source || 'cuelinks',
+              description: `Coupons and deals for ${storeName}`,
+            })
+            .onConflictDoNothing()
+            .returning();
+
+          if (newStore) {
+            store = { id: newStore.id };
+            storesCreated++;
+            console.log(`[AffiliateService] ✅ Auto-created store: ${storeName} (${storeSlug})`);
+          } else {
+            // Race condition: another process created it — fetch it
+            const [existingStore] = await this.db
+              .select({ id: stores.id })
+              .from(stores)
+              .where(eq(stores.slug, storeSlug))
+              .limit(1);
+            if (existingStore) {
+              store = existingStore;
+            } else {
+              console.log(`[AffiliateService] Store creation failed for slug: ${storeSlug}, skipping ${storeCoupons.length} coupons`);
+              continue;
+            }
+          }
+        } catch (error) {
+          console.error(`[AffiliateService] Error creating store ${storeSlug}:`, error);
+          continue;
+        }
       }
 
       // Upsert coupons for this store
@@ -386,8 +522,8 @@ export class AffiliateService {
       }
     }
 
-    console.log(`[AffiliateService] Upsert complete: ${inserted} inserted, ${updated} updated`);
-    return { inserted, updated };
+    console.log(`[AffiliateService] Upsert complete: ${inserted} inserted, ${updated} updated, ${storesCreated} new stores created`);
+    return { inserted, updated, storesCreated };
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -410,6 +546,17 @@ export class AffiliateService {
       .replace(/[\s_]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .slice(0, 100);
+  }
+
+  /**
+   * Convert a slug back to a readable store name.
+   * e.g., 'abe-books' → 'Abe Books'
+   */
+  private unslugify(slug: string): string {
+    return slug
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   }
 }
 

@@ -412,19 +412,23 @@ adminRouter.post('/sync', async (c) => {
     vcommission: { coupons: 0, error: null as string | null },
     admitad: { coupons: 0, error: null as string | null },
     cj: { coupons: 0, error: null as string | null },
-    upsert: { inserted: 0, updated: 0 },
+    cuelinks: { coupons: 0, error: null as string | null },
+    upsert: { inserted: 0, updated: 0, storesCreated: 0 },
   };
 
   const allCoupons = [];
 
   // Sync from all sources (parallel)
-  const [vcCoupons, admitadCoupons, cjCoupons] = await Promise.allSettled([
+  const [vcCoupons, admitadCoupons, cjCoupons, cuelinksCoupons] = await Promise.allSettled([
     affiliateService.syncVCommission(c.env.VCOMMISSION_API_KEY || ''),
     affiliateService.syncAdmitad(
       c.env.ADMITAD_CLIENT_ID || '',
       c.env.ADMITAD_CLIENT_SECRET || ''
     ),
     affiliateService.syncCJAffiliate(c.env.CJ_API_KEY || ''),
+    c.env.CUELINKS_API_KEY
+      ? affiliateService.syncCuelinks(c.env.CUELINKS_API_KEY)
+      : Promise.resolve([]),
   ]);
 
   if (vcCoupons.status === 'fulfilled') {
@@ -448,7 +452,14 @@ adminRouter.post('/sync', async (c) => {
     results.cj.error = cjCoupons.reason?.message || 'Unknown error';
   }
 
-  // Upsert all coupons
+  if (cuelinksCoupons.status === 'fulfilled') {
+    results.cuelinks.coupons = cuelinksCoupons.value.length;
+    allCoupons.push(...cuelinksCoupons.value);
+  } else {
+    results.cuelinks.error = cuelinksCoupons.reason?.message || 'Unknown error';
+  }
+
+  // Upsert all coupons (auto-creates new stores)
   if (allCoupons.length > 0) {
     results.upsert = await affiliateService.upsertCoupons(allCoupons);
   }

@@ -107,7 +107,7 @@ couponsRouter.post('/:id/click', optionalAuthMiddleware, async (c) => {
   const db = createDb(c.env.DATABASE_URL);
   const couponService = createCouponService(db);
 
-  const redirectUrl = await couponService.recordClick(
+  let redirectUrl = await couponService.recordClick(
     couponId,
     user?.id ?? null,
     ipHash
@@ -115,6 +115,34 @@ couponsRouter.post('/:id/click', optionalAuthMiddleware, async (c) => {
 
   if (!redirectUrl) {
     return c.json({ success: false, error: 'Coupon not found' } as ApiResponse, 404);
+  }
+
+  // ─── CueLinks Deep-Link Conversion ──────────────────────────────────
+  // If the URL isn't already a CueLinks tracked link, convert it
+  if (
+    c.env.CUELINKS_API_KEY &&
+    redirectUrl.startsWith('https://') &&
+    !redirectUrl.includes('cuelinks.com') &&
+    !redirectUrl.includes('clnk.in')
+  ) {
+    const cache = createCacheService(c.env.UPSTASH_REDIS_URL, c.env.UPSTASH_REDIS_TOKEN);
+    const cacheKey = `cuelink:${redirectUrl}`;
+    const cached = await cache.get<string>(cacheKey);
+
+    if (cached) {
+      redirectUrl = cached;
+    } else {
+      const { createAffiliateService } = await import('../services/affiliateService');
+      const affiliateService = createAffiliateService(db);
+      const converted = await affiliateService.convertToCuelinkUrl(
+        c.env.CUELINKS_API_KEY,
+        redirectUrl
+      );
+      if (converted !== redirectUrl) {
+        await cache.set(cacheKey, converted, 86400); // Cache for 24 hours
+        redirectUrl = converted;
+      }
+    }
   }
 
   return c.json({
