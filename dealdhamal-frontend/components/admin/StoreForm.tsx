@@ -7,7 +7,6 @@ import { toast } from 'sonner'
 import { Upload, X, Loader2 } from 'lucide-react'
 import type { Store, Category } from '@/types'
 import { storeSchema, type StoreSchemaValues } from '@/schemas/storeSchema'
-import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload'
 import { api } from '@/lib/api'
 
 interface StoreFormProps {
@@ -20,7 +19,6 @@ export function StoreForm({ initialData, categories }: StoreFormProps) {
   const [submitting, setSubmitting] = useState(false)
   const [logoPreview, setLogoPreview] = useState<string | null>(initialData?.logo_url ?? null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const { upload, uploading, progress, error, reset: resetUpload } = useCloudinaryUpload()
 
   const form = useForm<StoreSchemaValues>({
     resolver: zodResolver(storeSchema),
@@ -64,17 +62,6 @@ export function StoreForm({ initialData, categories }: StoreFormProps) {
 
     setSelectedFile(file)
     setLogoPreview(URL.createObjectURL(file))
-
-    try {
-      // Perform client-side upload for progress and getting secure url
-      const secureUrl = await upload(file, 'stores')
-      form.setValue('logo_url', secureUrl)
-      toast.success('Logo uploaded successfully')
-    } catch (err) {
-      toast.error('Upload failed. Try again.')
-      setLogoPreview(initialData?.logo_url ?? null)
-      setSelectedFile(null)
-    }
   }
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -93,7 +80,6 @@ export function StoreForm({ initialData, categories }: StoreFormProps) {
     setSelectedFile(null)
     setLogoPreview(null)
     form.setValue('logo_url', '')
-    resetUpload()
   }
 
   const onSubmit = async (values: StoreSchemaValues) => {
@@ -111,6 +97,7 @@ export function StoreForm({ initialData, categories }: StoreFormProps) {
       if (values.cashback_rate) formData.append('cashback_rate', values.cashback_rate)
       formData.append('is_featured', String(values.is_featured))
       formData.append('banner_url', values.banner_url ?? '')
+      formData.append('logo_url', values.logo_url ?? '')
 
       if (selectedFile) {
         formData.append('logo', selectedFile)
@@ -368,21 +355,6 @@ export function StoreForm({ initialData, categories }: StoreFormProps) {
               />
             </div>
           )}
-
-          {uploading && (
-            <div className="mt-3">
-              <div className="flex justify-between text-xs text-gray-500 mb-1">
-                <span>Uploading logo...</span>
-                <span>{progress}%</span>
-              </div>
-              <div className="w-full bg-gray-100 rounded-full h-1.5">
-                <div
-                  className="bg-primary h-1.5 rounded-full transition-all duration-150"
-                  style={{ width: `${progress}%` }}
-                ></div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Form Submission Button */}
@@ -396,11 +368,11 @@ export function StoreForm({ initialData, categories }: StoreFormProps) {
           </button>
           <button
             type="button"
-            disabled={submitting || uploading}
+            disabled={submitting}
             onClick={form.handleSubmit(onSubmit)}
             className="px-5 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {(submitting || uploading) && <Loader2 className="w-4 h-4 animate-spin" />}
+            {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
             {initialData ? 'Save Changes' : 'Create Store'}
           </button>
         </div>
