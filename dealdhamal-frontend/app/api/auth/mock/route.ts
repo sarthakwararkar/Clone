@@ -73,7 +73,16 @@ export async function POST(req: Request) {
     }
 
     const sub = await getDeterministicUuid(email)
-    const role = 'user' // default role
+    let role = 'user' // default role
+
+    const adminEmails = [
+      'sarthakwararkar2@gmail.com',
+      'rameshwararkar9@gmail.com',
+      'beastultra59@gmail.com'
+    ]
+    if (adminEmails.includes(email.toLowerCase())) {
+      role = 'admin'
+    }
 
     // Sign a mock Firebase JWT token
     const now = Math.floor(Date.now() / 1000)
