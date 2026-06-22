@@ -2,7 +2,7 @@ import { createMiddleware } from 'hono/factory';
 import { jwtVerify, createRemoteJWKSet } from 'jose';
 import { createDb } from '../db';
 import { users } from '../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import type { AppBindings, AuthUser } from '../types';
 
 const JWKS = createRemoteJWKSet(
@@ -54,16 +54,20 @@ export const authMiddleware = createMiddleware<AppBindings>(async (c, next) => {
 
     if (email) {
       try {
+        console.log(`[Auth] Looking up role for email: "${email}"`);
         const [dbUser] = await db
           .select({ role: users.role })
           .from(users)
-          .where(eq(users.email, email))
+          .where(eq(sql`LOWER(${users.email})`, email.toLowerCase()))
           .limit(1);
         if (dbUser) {
           role = dbUser.role;
+          console.log(`[Auth] Found user in DB, role: "${role}"`);
+        } else {
+          console.log(`[Auth] User not found in DB for email: "${email}". Role remains: "${role}"`);
         }
-      } catch (dbErr) {
-        console.error('Error fetching role from DB in authMiddleware:', dbErr);
+      } catch (dbErr: any) {
+        console.error('Error fetching role from DB in authMiddleware:', dbErr?.message || dbErr);
       }
     }
 
@@ -151,7 +155,7 @@ export const optionalAuthMiddleware = createMiddleware<AppBindings>(async (c, ne
         const [dbUser] = await db
           .select({ role: users.role })
           .from(users)
-          .where(eq(users.email, email))
+          .where(eq(sql`LOWER(${users.email})`, email.toLowerCase()))
           .limit(1);
         if (dbUser) {
           role = dbUser.role;

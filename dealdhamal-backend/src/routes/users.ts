@@ -38,7 +38,7 @@ export async function getInternalUserId(db: any, authUser: { id: string; email: 
     const [existingUser] = await db
       .select()
       .from(users)
-      .where(eq(users.email, authUser.email))
+      .where(eq(sql`LOWER(${users.email})`, authUser.email.toLowerCase()))
       .limit(1);
 
     let baseUser = existingUser;
@@ -47,7 +47,7 @@ export async function getInternalUserId(db: any, authUser: { id: string; email: 
       const [newBase] = await db
         .insert(users)
         .values({
-          email: authUser.email,
+          email: authUser.email.toLowerCase(),
           role: authUser.role || 'user',
           name: authUser.name || null,
           avatar_url: authUser.avatar_url || null,
@@ -121,7 +121,7 @@ usersRouter.get('/', async (c) => {
     const [baseUser] = await db
       .insert(users)
       .values({
-        email: authUser.email,
+        email: authUser.email.toLowerCase(),
         role: authUser.role,
         name: authUser.name || null,
         avatar_url: authUser.avatar_url || null,
@@ -192,7 +192,7 @@ usersRouter.patch('/', async (c) => {
     const [baseUser] = await db
       .insert(users)
       .values({
-        email: authUser.email,
+        email: authUser.email.toLowerCase(),
         role: authUser.role,
         name: parsed.data.name !== undefined ? parsed.data.name : (authUser.name || null),
         avatar_url: parsed.data.avatar_url !== undefined ? parsed.data.avatar_url : (authUser.avatar_url || null),
