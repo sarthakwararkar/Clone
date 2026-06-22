@@ -1,5 +1,8 @@
 import { createMiddleware } from 'hono/factory';
 import { jwtVerify, createRemoteJWKSet } from 'jose';
+import { createDb } from '../db';
+import { users } from '../db/schema';
+import { eq } from 'drizzle-orm';
 import type { AppBindings, AuthUser } from '../types';
 
 const JWKS = createRemoteJWKSet(
@@ -45,10 +48,29 @@ export const authMiddleware = createMiddleware<AppBindings>(async (c, next) => {
     const firebaseData = (payload.firebase as Record<string, unknown>) || {};
     const signInProvider = (firebaseData.sign_in_provider as string) || 'password';
 
+    const db = createDb(c.env.DATABASE_URL);
+    let role: 'user' | 'admin' = (payload.role as 'user' | 'admin') || 'user';
+    const email = (payload.email as string) || '';
+
+    if (email) {
+      try {
+        const [dbUser] = await db
+          .select({ role: users.role })
+          .from(users)
+          .where(eq(users.email, email))
+          .limit(1);
+        if (dbUser) {
+          role = dbUser.role;
+        }
+      } catch (dbErr) {
+        console.error('Error fetching role from DB in authMiddleware:', dbErr);
+      }
+    }
+
     const user: AuthUser = {
       id: payload.sub as string,
-      email: (payload.email as string) || '',
-      role: (payload.role as 'user' | 'admin') || 'user',
+      email,
+      role,
       name: (payload.name as string) || undefined,
       avatar_url: (payload.picture as string) || undefined,
       provider: signInProvider === 'google.com' ? 'google' : 'email',
@@ -120,10 +142,29 @@ export const optionalAuthMiddleware = createMiddleware<AppBindings>(async (c, ne
     const firebaseData = (payload.firebase as Record<string, unknown>) || {};
     const signInProvider = (firebaseData.sign_in_provider as string) || 'password';
 
+    const db = createDb(c.env.DATABASE_URL);
+    let role: 'user' | 'admin' = (payload.role as 'user' | 'admin') || 'user';
+    const email = (payload.email as string) || '';
+
+    if (email) {
+      try {
+        const [dbUser] = await db
+          .select({ role: users.role })
+          .from(users)
+          .where(eq(users.email, email))
+          .limit(1);
+        if (dbUser) {
+          role = dbUser.role;
+        }
+      } catch (dbErr) {
+        console.error('Error fetching role from DB in optionalAuthMiddleware:', dbErr);
+      }
+    }
+
     const user: AuthUser = {
       id: payload.sub as string,
-      email: (payload.email as string) || '',
-      role: (payload.role as 'user' | 'admin') || 'user',
+      email,
+      role,
       name: (payload.name as string) || undefined,
       avatar_url: (payload.picture as string) || undefined,
       provider: signInProvider === 'google.com' ? 'google' : 'email',

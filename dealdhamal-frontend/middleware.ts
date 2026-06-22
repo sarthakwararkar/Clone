@@ -69,6 +69,25 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
+    // Since the Firebase JWT claim does not automatically sync database role promotions,
+    // fetch the up-to-date role from the backend API for protected routes.
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://dealdhamal-backend.sarthakwararkar2.workers.dev'
+      const res = await fetch(`${apiUrl}/api/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      if (res.ok) {
+        const body = await res.json()
+        if (body.success && body.data) {
+          user.role = body.data.role
+        }
+      }
+    } catch (err) {
+      console.warn('Middleware: Failed to fetch user role from API, falling back to JWT:', err)
+    }
+
     if (pathname.startsWith('/admin')) {
       if (user.role !== 'admin') {
         const url = request.nextUrl.clone()
