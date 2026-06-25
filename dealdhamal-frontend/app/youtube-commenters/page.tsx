@@ -10,6 +10,34 @@ const YoutubeIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 )
 
+const getInitials = (name: string) => {
+  if (!name) return '?'
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+const getGradient = (name: string) => {
+  if (!name) return 'from-gray-500 to-gray-600'
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const gradients = [
+    'from-red-500 to-orange-500',
+    'from-orange-500 to-yellow-500',
+    'from-pink-500 to-rose-500',
+    'from-rose-500 to-red-600',
+    'from-amber-500 to-red-500',
+    'from-red-500 to-pink-500',
+  ]
+  const index = Math.abs(hash) % gradients.length
+  return gradients[index]
+}
+
 export const revalidate = 300 // ISR every 5 minutes
 
 export const metadata: Metadata = {
@@ -60,7 +88,9 @@ export default async function YoutubeCommentersPage() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={c.avatar_url} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-[10px] font-bold text-gray-300">{c.name[0]}</span>
+                    <div className={`w-full h-full bg-gradient-to-br ${getGradient(c.name)} text-white flex items-center justify-center text-[10px] font-bold`}>
+                      {getInitials(c.name)}
+                    </div>
                   )}
                 </div>
               ))}
@@ -100,7 +130,9 @@ export default async function YoutubeCommentersPage() {
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={c.avatar_url} alt={c.name} className="w-full h-full object-cover" />
                       ) : (
-                        <YoutubeIcon className="w-7 h-7 text-primary" />
+                        <div className={`w-full h-full bg-gradient-to-br ${getGradient(c.name)} text-white flex items-center justify-center text-sm font-bold`}>
+                          {getInitials(c.name)}
+                        </div>
                       )}
                     </div>
                     <div>
@@ -171,7 +203,9 @@ export default async function YoutubeCommentersPage() {
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={c.avatar_url} alt={c.name} className="w-full h-full object-cover" />
                       ) : (
-                        <YoutubeIcon className="w-5 h-5 text-primary" />
+                        <div className={`w-full h-full bg-gradient-to-br ${getGradient(c.name)} text-white flex items-center justify-center text-xs font-bold`}>
+                          {getInitials(c.name)}
+                        </div>
                       )}
                     </div>
                     <div className="truncate">

@@ -1,12 +1,13 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Pencil, Trash2, Plus, Search, ExternalLink, Award } from 'lucide-react'
+import { Pencil, Trash2, Plus, Search, ExternalLink, Award, Upload, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload'
 import type { YoutubeCommentator } from '@/types'
 
 const YoutubeIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -14,6 +15,34 @@ const YoutubeIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.518 3.545 12 3.545 12 3.545s-7.518 0-9.388.508a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.87.508 9.388.508 9.388.508s7.518 0 9.388-.508a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
   </svg>
 )
+
+const getInitials = (name: string) => {
+  if (!name) return '?'
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+const getGradient = (name: string) => {
+  if (!name) return 'from-gray-500 to-gray-600'
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const gradients = [
+    'from-red-500 to-orange-500',
+    'from-orange-500 to-yellow-500',
+    'from-pink-500 to-rose-500',
+    'from-rose-500 to-red-600',
+    'from-amber-500 to-red-500',
+    'from-red-500 to-pink-500',
+  ]
+  const index = Math.abs(hash) % gradients.length
+  return gradients[index]
+}
 
 export default function AdminCommentersPage() {
   const [search, setSearch] = useState('')
@@ -28,6 +57,29 @@ export default function AdminCommentersPage() {
   const [channelUrl, setChannelUrl] = useState('')
   const [commentText, setCommentText] = useState('')
   const [isFeatured, setIsFeatured] = useState(false)
+
+  // Cloudinary Upload hook and ref
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { upload, uploading, progress: uploadProgress } = useCloudinaryUpload()
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      return toast.error('Please select an image file')
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      return toast.error('Image size must be less than 2MB')
+    }
+    try {
+      toast.info('Uploading image to Cloudinary...')
+      const secureUrl = await upload(file, 'avatars')
+      setAvatarUrl(secureUrl)
+      toast.success('Image uploaded successfully!')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to upload image')
+    }
+  }
 
   const queryClient = useQueryClient()
 
@@ -195,12 +247,14 @@ export default function AdminCommentersPage() {
                   <tr key={comm.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center border border-red-100 overflow-hidden flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center border border-gray-100 overflow-hidden flex-shrink-0 bg-gray-50">
                           {comm.avatar_url ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={comm.avatar_url} alt={comm.name} className="w-full h-full object-cover" />
                           ) : (
-                            <YoutubeIcon className="w-5 h-5 text-primary" />
+                            <div className={`w-full h-full bg-gradient-to-br ${getGradient(comm.name)} text-white flex items-center justify-center text-xs font-bold`}>
+                              {getInitials(comm.name)}
+                            </div>
                           )}
                         </div>
                         <div>
@@ -285,15 +339,60 @@ export default function AdminCommentersPage() {
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Avatar Image URL</label>
-            <input
-              type="url"
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="e.g. https://yt3.ggpht.com/..."
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
+          <div className="space-y-3">
+            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Avatar / Logo</label>
+            <div className="flex items-center gap-4 bg-gray-50 p-3 rounded-lg border border-gray-150">
+              <div className="w-14 h-14 rounded-full border border-gray-200 overflow-hidden flex items-center justify-center bg-white relative flex-shrink-0">
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarUrl} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <div className={`w-full h-full bg-gradient-to-br ${getGradient(name)} text-white flex items-center justify-center text-sm font-bold`}>
+                    {getInitials(name)}
+                  </div>
+                )}
+                {uploading && (
+                  <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white">
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span className="text-[8px] font-bold mt-0.5">{uploadProgress}%</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 space-y-1">
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={uploading}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="w-3.5 h-3.5" /> Upload Photo
+                  </Button>
+                  {avatarUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAvatarUrl('')}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+                <p className="text-[9px] text-gray-400">JPG, PNG or WebP. Max 2MB.</p>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Avatar URL (Optional)</label>
+              <input
+                type="url"
+                value={avatarUrl}
+                onChange={(e) => setAvatarUrl(e.target.value)}
+                placeholder="Or paste an image URL directly..."
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Channel Link</label>
@@ -360,14 +459,60 @@ export default function AdminCommentersPage() {
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Avatar Image URL</label>
-            <input
-              type="url"
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
+          <div className="space-y-3">
+            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Avatar / Logo</label>
+            <div className="flex items-center gap-4 bg-gray-50 p-3 rounded-lg border border-gray-150">
+              <div className="w-14 h-14 rounded-full border border-gray-200 overflow-hidden flex items-center justify-center bg-white relative flex-shrink-0">
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarUrl} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <div className={`w-full h-full bg-gradient-to-br ${getGradient(name)} text-white flex items-center justify-center text-sm font-bold`}>
+                    {getInitials(name)}
+                  </div>
+                )}
+                {uploading && (
+                  <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white">
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span className="text-[8px] font-bold mt-0.5">{uploadProgress}%</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 space-y-1">
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={uploading}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="w-3.5 h-3.5" /> Upload Photo
+                  </Button>
+                  {avatarUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAvatarUrl('')}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+                <p className="text-[9px] text-gray-400">JPG, PNG or WebP. Max 2MB.</p>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Avatar URL (Optional)</label>
+              <input
+                type="url"
+                value={avatarUrl}
+                onChange={(e) => setAvatarUrl(e.target.value)}
+                placeholder="Or paste an image URL directly..."
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Channel Link</label>
@@ -430,6 +575,14 @@ export default function AdminCommentersPage() {
           </div>
         </div>
       </Modal>
+      
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/*"
+        className="hidden"
+      />
     </div>
   )
 }
