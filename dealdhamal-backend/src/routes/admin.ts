@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, desc } from 'drizzle-orm';
 import { createDb } from '../db';
-import { coupons, stores } from '../db/schema';
+import { coupons, stores, youtubeCommentators } from '../db/schema';
 import { authMiddleware, adminMiddleware } from '../middleware/auth';
 import { createCouponService } from '../services/couponService';
 import { createCacheService } from '../services/cacheService';
@@ -704,6 +704,131 @@ adminRouter.post('/import', async (c) => {
       errors,
     },
   });
+});
+
+// ─── Validation schemas for YouTube Commentators ─────────────────────────────
+
+const createCommentatorSchema = z.object({
+  name: z.string().min(1).max(200),
+  youtube_handle: z.string().max(200).optional().nullable(),
+  avatar_url: z.string().url().or(z.literal('')).optional().nullable(),
+  channel_url: z.string().url().or(z.literal('')).optional().nullable(),
+  comment_text: z.string().max(2000).optional().nullable(),
+  is_featured: z.boolean().optional(),
+});
+
+const updateCommentatorSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  youtube_handle: z.string().max(200).optional().nullable(),
+  avatar_url: z.string().url().or(z.literal('')).optional().nullable(),
+  channel_url: z.string().url().or(z.literal('')).optional().nullable(),
+  comment_text: z.string().max(2000).optional().nullable(),
+  is_featured: z.boolean().optional(),
+});
+
+// ─── GET /api/admin/commentators ─────────────────────────────────────────────
+
+adminRouter.get('/commentators', async (c) => {
+  const db = createDb(c.env.DATABASE_URL);
+  
+  const allCommentators = await db
+    .select()
+    .from(youtubeCommentators)
+    .orderBy(desc(youtubeCommentators.created_at));
+
+  return c.json({ success: true, data: allCommentators });
+});
+
+// ─── POST /api/admin/commentators ────────────────────────────────────────────
+
+adminRouter.post('/commentators', async (c) => {
+  const body = await c.req.json();
+  const parsed = createCommentatorSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return c.json(
+      { success: false, error: 'Invalid request body', message: parsed.error.message } as ApiResponse,
+      400
+    );
+  }
+
+  const db = createDb(c.env.DATABASE_URL);
+  const cache = createCacheService(c.env.UPSTASH_REDIS_URL, c.env.UPSTASH_REDIS_TOKEN);
+
+  const [commentator] = await db
+    .insert(youtubeCommentators)
+    .values({
+      name: parsed.data.name,
+      youtube_handle: parsed.data.youtube_handle || null,
+      avatar_url: parsed.data.avatar_url || null,
+      channel_url: parsed.data.channel_url || null,
+      comment_text: parsed.data.comment_text || null,
+      is_featured: parsed.data.is_featured ?? false,
+    })
+    .returning();
+
+  // Invalidate cache
+  await cache.del('commentators:all');
+
+  return c.json({ success: true, data: commentator } as ApiResponse, 201);
+});
+
+// ─── PATCH /api/admin/commentators/:id ──────────────────────────────────────────
+
+adminRouter.patch('/commentators/:id', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json();
+  const parsed = updateCommentatorSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return c.json(
+      { success: false, error: 'Invalid request body', message: parsed.error.message } as ApiResponse,
+      400
+    );
+  }
+
+  const db = createDb(c.env.DATABASE_URL);
+  const cache = createCacheService(c.env.UPSTASH_REDIS_URL, c.env.UPSTASH_REDIS_TOKEN);
+
+  const [commentator] = await db
+    .update(youtubeCommentators)
+    .set({
+      ...parsed.data,
+      updated_at: new Date(),
+    })
+    .where(eq(youtubeCommentators.id, id))
+    .returning();
+
+  if (!commentator) {
+    return c.json({ success: false, error: 'Commentator not found' } as ApiResponse, 404);
+  }
+
+  // Invalidate cache
+  await cache.del('commentators:all');
+
+  return c.json({ success: true, data: commentator });
+});
+
+// ─── DELETE /api/admin/commentators/:id ─────────────────────────────────────────
+
+adminRouter.delete('/commentators/:id', async (c) => {
+  const id = c.req.param('id');
+  const db = createDb(c.env.DATABASE_URL);
+  const cache = createCacheService(c.env.UPSTASH_REDIS_URL, c.env.UPSTASH_REDIS_TOKEN);
+
+  const [deleted] = await db
+    .delete(youtubeCommentators)
+    .where(eq(youtubeCommentators.id, id))
+    .returning();
+
+  if (!deleted) {
+    return c.json({ success: false, error: 'Commentator not found' } as ApiResponse, 404);
+  }
+
+  // Invalidate cache
+  await cache.del('commentators:all');
+
+  return c.json({ success: true, message: 'Commentator deleted successfully' });
 });
 
 export { adminRouter };

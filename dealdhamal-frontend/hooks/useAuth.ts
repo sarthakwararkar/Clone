@@ -32,15 +32,25 @@ export function useAuth() {
   const router = useRouter()
 
   useEffect(() => {
-    // 1. Check for mock session first
+    const isLocal = typeof window !== 'undefined' && 
+      (window.location.hostname === 'localhost' || 
+       window.location.hostname === '127.0.0.1' || 
+       window.location.hostname.startsWith('192.168.') || 
+       window.location.hostname.endsWith('.local'));
+
+    // 1. Check for mock session first (only on local)
     const mockSessionStr = typeof window !== 'undefined' ? localStorage.getItem('mock_firebase_session') : null
     if (mockSessionStr) {
-      try {
-        const mockData = JSON.parse(mockSessionStr)
-        setUser(mockData.user, { access_token: mockData.access_token })
-        setLoading(false)
-        return
-      } catch {
+      if (isLocal) {
+        try {
+          const mockData = JSON.parse(mockSessionStr)
+          setUser(mockData.user, { access_token: mockData.access_token })
+          setLoading(false)
+          return
+        } catch {
+          localStorage.removeItem('mock_firebase_session')
+        }
+      } else {
         localStorage.removeItem('mock_firebase_session')
       }
     }
@@ -102,8 +112,24 @@ export function useAuth() {
         router.push('/')
       }
     } catch (error: any) {
-      console.warn('Firebase Google signin failed, falling back to mock OAuth:', error.message)
+      console.warn('Firebase Google signin failed:', error.message)
       
+      const isLocal = typeof window !== 'undefined' && 
+        (window.location.hostname === 'localhost' || 
+         window.location.hostname === '127.0.0.1' || 
+         window.location.hostname.startsWith('192.168.') || 
+         window.location.hostname.endsWith('.local'));
+      
+      if (!isLocal) {
+        console.error('Google Sign In failed in production:', error)
+        throw new Error(
+          `Google Sign In failed: ${error.message || 'Pop-up blocked or closed'}. ` +
+          `If this is a production URL, make sure it is added to the Authorized Domains list in Firebase Console, ` +
+          `or sign in using your Admin Email and Password instead.`
+        );
+      }
+      
+      console.log('Falling back to mock OAuth in development...');
       try {
         const res = await fetch('/api/auth/mock', {
           method: 'POST',
@@ -158,8 +184,20 @@ export function useAuth() {
         body: JSON.stringify({ token }),
       })
     } catch (err: any) {
-      // Fallback to mock auth if Firebase auth fails or is offline
-      console.warn('Firebase login failed, falling back to mock auth:', err.message)
+      console.warn('Firebase login failed:', err.message)
+      
+      const isLocal = typeof window !== 'undefined' && 
+        (window.location.hostname === 'localhost' || 
+         window.location.hostname === '127.0.0.1' || 
+         window.location.hostname.startsWith('192.168.') || 
+         window.location.hostname.endsWith('.local'));
+      
+      if (!isLocal) {
+        console.error('Firebase login failed in production:', err)
+        throw err;
+      }
+      
+      console.log('Falling back to mock auth in development...');
       const res = await fetch('/api/auth/mock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -198,8 +236,20 @@ export function useAuth() {
         body: JSON.stringify({ token }),
       })
     } catch (err: any) {
-      // Fallback to mock auth if Firebase signup fails
-      console.warn('Firebase signup failed, falling back to mock auth:', err.message)
+      console.warn('Firebase signup failed:', err.message)
+      
+      const isLocal = typeof window !== 'undefined' && 
+        (window.location.hostname === 'localhost' || 
+         window.location.hostname === '127.0.0.1' || 
+         window.location.hostname.startsWith('192.168.') || 
+         window.location.hostname.endsWith('.local'));
+      
+      if (!isLocal) {
+        console.error('Firebase signup failed in production:', err)
+        throw err;
+      }
+      
+      console.log('Falling back to mock auth in development...');
       const res = await fetch('/api/auth/mock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

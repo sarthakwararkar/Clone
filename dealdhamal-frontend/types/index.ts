@@ -111,6 +111,27 @@ export interface ApiError {
   message: string
 }
 
+export interface YoutubeCommentator {
+  id: string
+  name: string
+  youtube_handle: string | null
+  avatar_url: string | null
+  channel_url: string | null
+  comment_text: string | null
+  is_featured: boolean
+  created_at: string
+  updated_at?: string | null
+}
+
+export interface YoutubeCommentatorFormData {
+  name: string
+  youtube_handle?: string | null
+  avatar_url?: string | null
+  channel_url?: string | null
+  comment_text?: string | null
+  is_featured?: boolean
+}
+
 declare global {
   interface Window {
     gtag: (command: string, targetId: string, config?: Record<string, unknown>) => void

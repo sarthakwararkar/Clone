@@ -60,6 +60,7 @@ export function Footer() {
           </p>
           <div className="flex items-center gap-6 text-sm">
             <Link href={"/partner" as any} className="text-gray-500 hover:text-white transition-colors">Partner with Us</Link>
+            <Link href={"/youtube-commenters" as any} className="text-gray-500 hover:text-white transition-colors">YouTube Commenters</Link>
             <Link href={"/privacy" as any} className="text-gray-500 hover:text-white transition-colors">Privacy Policy</Link>
             <Link href={"/terms" as any} className="text-gray-500 hover:text-white transition-colors">Terms of Service</Link>
           </div>

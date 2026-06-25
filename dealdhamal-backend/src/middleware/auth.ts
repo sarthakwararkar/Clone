@@ -67,9 +67,13 @@ export const authMiddleware = createMiddleware<AppBindings>(async (c, next) => {
           console.log(`[Auth] User not found in DB for email: "${email}". Role remains: "${role}"`);
         }
       } catch (dbErr: any) {
-        console.error('Error fetching role from DB in authMiddleware:', dbErr?.message || dbErr);
+        console.error(`[Auth] DB role lookup FAILED for email "${email}". Error:`, dbErr?.message || dbErr);
+        console.error('[Auth] Full error:', JSON.stringify(dbErr, Object.getOwnPropertyNames(dbErr || {})));
+        // Role stays as default 'user' — this is the likely cause of 403 on admin routes
       }
     }
+
+    console.log(`[Auth] Final auth result — email: "${email}", role: "${role}", sub: "${payload.sub}"`);
 
     const user: AuthUser = {
       id: payload.sub as string,

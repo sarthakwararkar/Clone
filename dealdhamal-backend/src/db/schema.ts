@@ -199,6 +199,20 @@ export const newsletterSubscribers = pgTable('newsletter_subscribers', {
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+// ─── YouTube Commentators Table ──────────────────────────────────────────────
+
+export const youtubeCommentators = pgTable('youtube_commentators', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  youtube_handle: text('youtube_handle'),
+  avatar_url: text('avatar_url'),
+  channel_url: text('channel_url'),
+  comment_text: text('comment_text'),
+  is_featured: boolean('is_featured').default(false).notNull(),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true }),
+});
+
 // ─── Relations ──────────────────────────────────────────────────────────────
 
 export const googleUsersRelations = relations(googleUsers, ({ one }) => ({

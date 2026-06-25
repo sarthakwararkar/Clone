@@ -9,6 +9,8 @@ import type {
   CouponFormData,
   User,
   ApiError as ApiErrorType,
+  YoutubeCommentator,
+  YoutubeCommentatorFormData,
 } from '@/types'
 
 class ApiError extends Error {
@@ -310,6 +312,36 @@ class ApiClient {
     }
     const body = await res.json() as { success: boolean; data: Store }
     return body.data
+  }
+
+  // ─── Youtube Commentators ───────────────────────────────────────────────────
+
+  async getCommentators(): Promise<YoutubeCommentator[]> {
+    return this.request<YoutubeCommentator[]>('/api/commentators')
+  }
+
+  async adminGetCommentators(): Promise<YoutubeCommentator[]> {
+    return this.request<YoutubeCommentator[]>('/api/admin/commentators', {}, true)
+  }
+
+  async adminCreateCommentator(data: YoutubeCommentatorFormData): Promise<YoutubeCommentator> {
+    return this.request<YoutubeCommentator>('/api/admin/commentators', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }, true)
+  }
+
+  async adminUpdateCommentator(id: string, data: YoutubeCommentatorFormData): Promise<YoutubeCommentator> {
+    return this.request<YoutubeCommentator>(`/api/admin/commentators/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }, true)
+  }
+
+  async adminDeleteCommentator(id: string): Promise<void> {
+    await this.request<unknown>(`/api/admin/commentators/${id}`, {
+      method: 'DELETE',
+    }, true)
   }
 }
 

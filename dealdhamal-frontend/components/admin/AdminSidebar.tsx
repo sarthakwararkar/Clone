@@ -4,10 +4,17 @@ import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Tag, Store, ChevronLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+const YoutubeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.518 3.545 12 3.545 12 3.545s-7.518 0-9.388.508a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.87.508 9.388.508 9.388.508s7.518 0 9.388-.508a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+  </svg>
+)
+
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/admin/coupons', label: 'Coupons', icon: Tag, exact: false },
   { href: '/admin/stores', label: 'Stores', icon: Store, exact: false },
+  { href: '/admin/commenters', label: 'Commentators', icon: YoutubeIcon, exact: false },
 ]
 
 export function AdminSidebar() {
