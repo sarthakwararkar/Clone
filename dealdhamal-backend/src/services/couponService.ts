@@ -47,12 +47,16 @@ export class CouponService {
 
     // Build sort/orderBy clause first
     let orderBy = sql`c.is_featured DESC, c.created_at DESC`;
+    let outerOrderBy = sql`is_featured DESC, created_at DESC`;
     if (sort === 'latest') {
       orderBy = sql`c.created_at DESC`;
+      outerOrderBy = sql`created_at DESC`;
     } else if (sort === 'popular') {
       orderBy = sql`c.used_count DESC`;
+      outerOrderBy = sql`used_count DESC`;
     } else if (sort === 'featured') {
       orderBy = sql`c.is_featured DESC, c.created_at DESC`;
+      outerOrderBy = sql`is_featured DESC, created_at DESC`;
     }
 
     // Build select fields
@@ -118,7 +122,7 @@ export class CouponService {
           ${selectClause} ${fromClause} WHERE ${whereClause}
         ) ranked
         WHERE store_rank <= 2
-        ORDER BY ${orderBy}
+        ORDER BY ${outerOrderBy}
         LIMIT ${limit} OFFSET ${offset}
       `;
       
