@@ -25,7 +25,7 @@ export function useCloudinaryUpload(): UseCloudinaryUploadReturn {
       return new Promise((resolve, reject) => {
         const formData = new FormData()
         formData.append('file', file)
-        formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? '')
+        formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'coupondunia_unsigned')
         formData.append('folder', `coupondunia/${folder}`)
 
         const xhr = new XMLHttpRequest()
@@ -37,18 +37,20 @@ export function useCloudinaryUpload(): UseCloudinaryUploadReturn {
           }
         })
 
-        xhr.addEventListener('load', () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            const data = JSON.parse(xhr.responseText) as { secure_url: string }
-            setUploading(false)
-            resolve(data.secure_url)
-          } else {
-            const err = 'Upload failed. Try again.'
-            setError(err)
-            setUploading(false)
-            reject(new Error(err))
+        xhr.onreadystatechange = () => {
+          if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              const data = JSON.parse(xhr.responseText) as { secure_url: string }
+              setUploading(false)
+              resolve(data.secure_url)
+            } else {
+              const err = 'Upload failed. Try again.'
+              setError(err)
+              setUploading(false)
+              reject(new Error(err))
+            }
           }
-        })
+        }
 
         xhr.addEventListener('error', () => {
           const err = 'Upload failed. Try again.'
@@ -57,7 +59,7 @@ export function useCloudinaryUpload(): UseCloudinaryUploadReturn {
           reject(new Error(err))
         })
 
-        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? ''
+        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dmodstdsx'
         xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`)
         setUploading(true)
         setProgress(0)
