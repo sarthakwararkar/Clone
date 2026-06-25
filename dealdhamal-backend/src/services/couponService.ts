@@ -25,13 +25,14 @@ export class CouponService {
     type?: 'code' | 'deal' | 'cashback';
     featured?: boolean;
     sort?: 'featured' | 'latest' | 'popular';
+    diverse?: boolean;
     pagination: PaginationParams;
   }): Promise<PaginatedResponse<CouponResponse>> {
-    const { storeSlug, categorySlug, type, featured, sort, pagination } = params;
+    const { storeSlug, categorySlug, type, featured, sort, diverse, pagination } = params;
     const { page, limit } = pagination;
     const offset = (page - 1) * limit;
 
-    // Build conditions
+    // Build conditions for Drizzle ORM relations (unused, but kept for compatibility)
     const conditions = [
       or(gt(coupons.expires_at, new Date()), isNull(coupons.expires_at)),
     ];
@@ -44,8 +45,18 @@ export class CouponService {
       conditions.push(eq(coupons.is_featured, featured));
     }
 
-    // Build a raw SQL query to handle store/category joins
-    let query = sql`
+    // Build sort/orderBy clause first
+    let orderBy = sql`c.is_featured DESC, c.created_at DESC`;
+    if (sort === 'latest') {
+      orderBy = sql`c.created_at DESC`;
+    } else if (sort === 'popular') {
+      orderBy = sql`c.used_count DESC`;
+    } else if (sort === 'featured') {
+      orderBy = sql`c.is_featured DESC, c.created_at DESC`;
+    }
+
+    // Build select fields
+    let selectClause = sql`
       SELECT
         c.id, c.store_id, c.title, c.description, c.code, c.coupon_type,
         c.discount_value, c.affiliate_url, c.source, c.is_verified, c.is_exclusive,
@@ -53,16 +64,28 @@ export class CouponService {
         c.created_at,
         s.name AS store_name, s.slug AS store_slug, s.logo_url AS store_logo_url,
         s.banner_url AS store_banner_url
+    `;
+
+    if (diverse) {
+      selectClause = sql`
+        ${selectClause},
+        ROW_NUMBER() OVER (
+          PARTITION BY c.store_id
+          ORDER BY ${orderBy}
+        ) as store_rank
+      `;
+    }
+
+    // Build from tables clause
+    let fromClause = sql`
       FROM coupons c
       JOIN stores s ON s.id = c.store_id
     `;
+    if (categorySlug) {
+      fromClause = sql`${fromClause} JOIN categories cat ON cat.id = s.category_id`;
+    }
 
-    let countQuery = sql`
-      SELECT COUNT(*)::int AS total
-      FROM coupons c
-      JOIN stores s ON s.id = c.store_id
-    `;
-
+    // Build where conditions
     const whereParts: ReturnType<typeof sql>[] = [
       sql`(c.expires_at > NOW() OR c.expires_at IS NULL)`,
     ];
@@ -72,24 +95,6 @@ export class CouponService {
     }
 
     if (categorySlug) {
-      query = sql`
-        SELECT
-          c.id, c.store_id, c.title, c.description, c.code, c.coupon_type,
-          c.discount_value, c.affiliate_url, c.source, c.is_verified, c.is_exclusive,
-          c.is_featured, c.expires_at, c.starts_at, c.success_rate, c.used_count,
-          c.created_at,
-          s.name AS store_name, s.slug AS store_slug, s.logo_url AS store_logo_url,
-          s.banner_url AS store_banner_url
-        FROM coupons c
-        JOIN stores s ON s.id = c.store_id
-        JOIN categories cat ON cat.id = s.category_id
-      `;
-      countQuery = sql`
-        SELECT COUNT(*)::int AS total
-        FROM coupons c
-        JOIN stores s ON s.id = c.store_id
-        JOIN categories cat ON cat.id = s.category_id
-      `;
       whereParts.push(sql`cat.slug = ${categorySlug}`);
     }
 
@@ -103,17 +108,38 @@ export class CouponService {
 
     const whereClause = sql.join(whereParts, sql` AND `);
 
-    let orderBy = sql`c.is_featured DESC, c.created_at DESC`;
-    if (sort === 'latest') {
-      orderBy = sql`c.created_at DESC`;
-    } else if (sort === 'popular') {
-      orderBy = sql`c.used_count DESC`;
-    } else if (sort === 'featured') {
-      orderBy = sql`c.is_featured DESC, c.created_at DESC`;
-    }
+    // Final dynamic queries combining partitions if diverse is true
+    let finalQuery;
+    let finalCountQuery;
 
-    const finalQuery = sql`${query} WHERE ${whereClause} ORDER BY ${orderBy} LIMIT ${limit} OFFSET ${offset}`;
-    const finalCountQuery = sql`${countQuery} WHERE ${whereClause}`;
+    if (diverse) {
+      finalQuery = sql`
+        SELECT * FROM (
+          ${selectClause} ${fromClause} WHERE ${whereClause}
+        ) ranked
+        WHERE store_rank <= 2
+        ORDER BY ${orderBy}
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+      
+      finalCountQuery = sql`
+        SELECT COUNT(*)::int AS total FROM (
+          ${selectClause} ${fromClause} WHERE ${whereClause}
+        ) ranked
+        WHERE store_rank <= 2
+      `;
+    } else {
+      finalQuery = sql`
+        ${selectClause} ${fromClause} WHERE ${whereClause}
+        ORDER BY ${orderBy}
+        LIMIT ${limit} OFFSET ${offset}
+      `;
+      
+      finalCountQuery = sql`
+        SELECT COUNT(*)::int AS total
+        ${fromClause} WHERE ${whereClause}
+      `;
+    }
 
     const [dataResult, countResult] = await Promise.all([
       this.db.execute(finalQuery),

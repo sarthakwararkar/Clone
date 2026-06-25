@@ -23,8 +23,8 @@ export default async function Homepage() {
   const [categories, storesResponse, couponsResponse, dealsResponse] = await Promise.all([
     api.getCategories().catch(() => []),
     api.getStores({ featured: true, limit: 12 }).catch(() => ({ data: [], total: 0 })),
-    api.getCoupons({ type: 'code', featured: true, limit: 12 }).catch(() => ({ data: [], total: 0 })),
-    api.getCoupons({ type: 'deal', sort: 'latest', limit: 12 }).catch(() => ({ data: [], total: 0 })),
+    api.getCoupons({ type: 'code', featured: true, diverse: true, limit: 12 }).catch(() => ({ data: [], total: 0 })),
+    api.getCoupons({ type: 'deal', sort: 'latest', diverse: true, limit: 12 }).catch(() => ({ data: [], total: 0 })),
   ])
 
   const featuredStores = storesResponse.data

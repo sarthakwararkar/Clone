@@ -19,6 +19,10 @@ const listCouponsSchema = z.object({
     .optional()
     .transform((v) => (v === 'true' ? true : v === 'false' ? false : undefined)),
   sort: z.enum(['featured', 'latest', 'popular']).optional(),
+  diverse: z
+    .string()
+    .optional()
+    .transform((v) => (v === 'true' ? true : v === 'false' ? false : undefined)),
   page: z
     .string()
     .optional()
@@ -39,7 +43,7 @@ couponsRouter.get('/', async (c) => {
   const query = listCouponsSchema.parse(c.req.query());
   const cache = createCacheService(c.env.UPSTASH_REDIS_URL, c.env.UPSTASH_REDIS_TOKEN);
 
-  const cacheKey = `coupons:page:${query.page}:${query.limit}:${query.store || ''}:${query.category || ''}:${query.type || ''}:${query.featured ?? ''}:${query.sort || ''}`;
+  const cacheKey = `coupons:page:${query.page}:${query.limit}:${query.store || ''}:${query.category || ''}:${query.type || ''}:${query.featured ?? ''}:${query.sort || ''}:${query.diverse ?? ''}`;
   const cached = await cache.get<PaginatedResponse<CouponResponse>>(cacheKey);
   if (cached) {
     return c.json({ success: true, ...cached } as ApiResponse<CouponResponse[]>);
@@ -54,6 +58,7 @@ couponsRouter.get('/', async (c) => {
     type: query.type,
     featured: query.featured,
     sort: query.sort,
+    diverse: query.diverse,
     pagination: { page: query.page, limit: query.limit },
   });
 
