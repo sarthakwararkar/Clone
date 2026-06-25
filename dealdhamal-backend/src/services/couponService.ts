@@ -24,9 +24,10 @@ export class CouponService {
     categorySlug?: string;
     type?: 'code' | 'deal' | 'cashback';
     featured?: boolean;
+    sort?: 'featured' | 'latest' | 'popular';
     pagination: PaginationParams;
   }): Promise<PaginatedResponse<CouponResponse>> {
-    const { storeSlug, categorySlug, type, featured, pagination } = params;
+    const { storeSlug, categorySlug, type, featured, sort, pagination } = params;
     const { page, limit } = pagination;
     const offset = (page - 1) * limit;
 
@@ -102,7 +103,16 @@ export class CouponService {
 
     const whereClause = sql.join(whereParts, sql` AND `);
 
-    const finalQuery = sql`${query} WHERE ${whereClause} ORDER BY c.is_featured DESC, c.used_count DESC LIMIT ${limit} OFFSET ${offset}`;
+    let orderBy = sql`c.is_featured DESC, c.created_at DESC`;
+    if (sort === 'latest') {
+      orderBy = sql`c.created_at DESC`;
+    } else if (sort === 'popular') {
+      orderBy = sql`c.used_count DESC`;
+    } else if (sort === 'featured') {
+      orderBy = sql`c.is_featured DESC, c.created_at DESC`;
+    }
+
+    const finalQuery = sql`${query} WHERE ${whereClause} ORDER BY ${orderBy} LIMIT ${limit} OFFSET ${offset}`;
     const finalCountQuery = sql`${countQuery} WHERE ${whereClause}`;
 
     const [dataResult, countResult] = await Promise.all([

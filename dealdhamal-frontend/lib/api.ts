@@ -176,6 +176,7 @@ class ApiClient {
     category?: string
     type?: string
     featured?: boolean
+    sort?: string
     page?: number
     limit?: number
   } = {}): Promise<PaginatedResponse<Coupon>> {
