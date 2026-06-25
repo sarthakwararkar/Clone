@@ -7,7 +7,6 @@ import { api } from '@/lib/api'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload'
 import type { YoutubeCommentator } from '@/types'
 
 const YoutubeIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -58,9 +57,9 @@ export default function AdminCommentersPage() {
   const [commentText, setCommentText] = useState('')
   const [isFeatured, setIsFeatured] = useState(false)
 
-  // Cloudinary Upload hook and ref
+  // Cloudinary Upload using backend API and ref
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { upload, uploading, progress: uploadProgress } = useCloudinaryUpload()
+  const [uploading, setUploading] = useState(false)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -72,12 +71,15 @@ export default function AdminCommentersPage() {
       return toast.error('Image size must be less than 2MB')
     }
     try {
+      setUploading(true)
       toast.info('Uploading image to Cloudinary...')
-      const secureUrl = await upload(file, 'avatars')
+      const secureUrl = await api.adminUploadFile(file, 'avatars')
       setAvatarUrl(secureUrl)
       toast.success('Image uploaded successfully!')
     } catch (err: any) {
       toast.error(err?.message || 'Failed to upload image')
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -352,9 +354,9 @@ export default function AdminCommentersPage() {
                   </div>
                 )}
                 {uploading && (
-                  <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white">
+                  <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white text-center p-0.5">
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
-                    <span className="text-[8px] font-bold mt-0.5">{uploadProgress}%</span>
+                    <span className="text-[8px] font-bold mt-0.5 leading-tight">Uploading...</span>
                   </div>
                 )}
               </div>
@@ -472,9 +474,9 @@ export default function AdminCommentersPage() {
                   </div>
                 )}
                 {uploading && (
-                  <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white">
+                  <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white text-center p-0.5">
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
-                    <span className="text-[8px] font-bold mt-0.5">{uploadProgress}%</span>
+                    <span className="text-[8px] font-bold mt-0.5 leading-tight">Uploading...</span>
                   </div>
                 )}
               </div>

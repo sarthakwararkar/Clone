@@ -16,6 +16,33 @@ const adminRouter = new Hono<AppBindings>();
 adminRouter.use('*', authMiddleware);
 adminRouter.use('*', adminMiddleware);
 
+// ─── POST /api/admin/upload ──────────────────────────────────────────────────
+
+adminRouter.post('/upload', async (c) => {
+  const formData = await c.req.formData();
+  const file = formData.get('file') as File | null;
+  const folder = (formData.get('folder') as string) || 'general';
+
+  if (!file || file.size === 0) {
+    return c.json({ success: false, error: 'No file uploaded' } as ApiResponse, 400);
+  }
+
+  const cloudinaryService = createCloudinaryService(
+    c.env.CLOUDINARY_CLOUD_NAME,
+    c.env.CLOUDINARY_API_KEY,
+    c.env.CLOUDINARY_API_SECRET
+  );
+
+  const ext = file.name.split('.').pop() || 'png';
+  const uniqueId = crypto.randomUUID();
+  const key = `coupondunia/${folder}/${uniqueId}.${ext}`;
+  const arrayBuffer = await file.arrayBuffer();
+  
+  const secureUrl = await cloudinaryService.uploadFile(key, arrayBuffer, file.type);
+
+  return c.json({ success: true, secure_url: secureUrl });
+});
+
 // ─── Validation schemas ─────────────────────────────────────────────────────
 
 const createCouponSchema = z.object({

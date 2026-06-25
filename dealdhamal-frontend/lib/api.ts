@@ -343,6 +343,27 @@ class ApiClient {
       method: 'DELETE',
     }, true)
   }
+
+  async adminUploadFile(file: File, folder: string): Promise<string> {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('folder', folder)
+
+    const headers = await this.getAuthHeader()
+    const res = await fetch(`${this.baseUrl}/api/admin/upload`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+
+    if (!res.ok) {
+      const body = await res.json() as { message?: string; error?: string }
+      throw new ApiError(body.message ?? body.error ?? 'Failed to upload image', res.status)
+    }
+
+    const body = await res.json() as { success: boolean; secure_url: string }
+    return body.secure_url
+  }
 }
 
 export const api = new ApiClient()
