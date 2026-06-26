@@ -52,7 +52,7 @@ export function StoreCouponsList({ initialCoupons }: StoreCouponsListProps) {
           />
         </div>
       ) : (
-        <CouponList coupons={filteredCoupons} />
+        <CouponList coupons={filteredCoupons} variant="premium" />
       )}
     </div>
   )

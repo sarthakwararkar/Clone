@@ -130,7 +130,7 @@ export function CouponDetailClient({ coupon, moreCoupons }: CouponDetailClientPr
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {moreCoupons.map((c) => (
-                <CouponCard key={c.id} coupon={c} view="list" />
+                <CouponCard key={c.id} coupon={c} view="list" variant="premium" />
               ))}
             </div>
           </div>
@@ -261,7 +261,7 @@ export function CouponDetailClient({ coupon, moreCoupons }: CouponDetailClientPr
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {moreCoupons.map((c) => (
-              <CouponCard key={c.id} coupon={c} view="list" />
+              <CouponCard key={c.id} coupon={c} view="list" variant="premium" />
             ))}
           </div>
         </div>
