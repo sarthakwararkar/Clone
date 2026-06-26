@@ -34,6 +34,41 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
 
   const initials = coupon.store.name.slice(0, 2).toUpperCase()
 
+  const handleSaveToggle = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!user) {
+      setLoginPromptOpen(true)
+      return
+    }
+    if (saved) unsave(coupon.id)
+    else save(coupon.id, coupon.store.name)
+  }
+
+  const handleReveal = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!user) {
+      setLoginPromptOpen(true)
+    } else {
+      setModalOpen(true)
+    }
+  }
+
+  const handleCardClick = () => {
+    if (!user) {
+      setLoginPromptOpen(true)
+    } else {
+      router.push(`/coupons/${coupon.id}`)
+    }
+  }
+
+  const handleShareClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setShareModalOpen(true)
+  }
+
   if (variant === 'premium') {
     const theme = getDealTheme(coupon.title, coupon.store.name, coupon.store.category?.name)
     
@@ -199,41 +234,6 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
         />
       </>
     )
-  }
-
-  const handleSaveToggle = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!user) {
-      setLoginPromptOpen(true)
-      return
-    }
-    if (saved) unsave(coupon.id)
-    else save(coupon.id, coupon.store.name)
-  }
-
-  const handleReveal = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!user) {
-      setLoginPromptOpen(true)
-    } else {
-      setModalOpen(true)
-    }
-  }
-
-  const handleCardClick = () => {
-    if (!user) {
-      setLoginPromptOpen(true)
-    } else {
-      router.push(`/coupons/${coupon.id}`)
-    }
-  }
-
-  const handleShareClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setShareModalOpen(true)
   }
 
   if (view === 'grid') {
