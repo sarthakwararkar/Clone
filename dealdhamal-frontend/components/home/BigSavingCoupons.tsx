@@ -76,13 +76,159 @@ function getProductImage(title: string, storeName: string): string | null {
   return null
 }
 
+interface BigSavingCouponCardProps {
+  coupon: Coupon
+  onSelect: (coupon: Coupon) => void
+}
+
+function BigSavingCouponCard({ coupon, onSelect }: BigSavingCouponCardProps) {
+  const [imageError, setImageError] = useState(false)
+  const isFeatured = coupon.is_featured
+
+  const discountText = coupon.discount_value 
+    ? (coupon.discount_value.includes('%') || coupon.discount_value.includes('$') || coupon.discount_value.includes('₹')
+        ? coupon.discount_value 
+        : `${coupon.discount_value} OFF`)
+    : 'Special Offer'
+
+  const productImage = getProductImage(coupon.title, coupon.store.name)
+  const logoUrl = sanitizeLogoUrl(coupon.store.logo_url)
+
+  // Bigger card sizes and slightly reduced negative margin overlap to show larger details clearly
+  const cardClass = isFeatured
+    ? "w-[350px] min-w-[350px] md:w-[380px] md:min-w-[380px] glass-card glass-card-featured tilted-card tilted-card-hover tilted-card-featured-hover featured rounded-[24px] overflow-hidden flex flex-col relative shadow-purple-900/10 z-10 -mr-4 last:mr-0 group cursor-pointer animate-[fade-in_0.3s_ease-out]"
+    : "w-[310px] min-w-[310px] md:w-[340px] md:min-w-[340px] glass-card glass-card-hover tilted-card tilted-card-hover rounded-[22px] overflow-hidden flex flex-col relative z-0 -mr-4 last:mr-0 cursor-pointer group animate-[fade-in_0.2s_ease-out]"
+
+  return (
+    <div
+      className={cardClass}
+      onClick={() => onSelect(coupon)}
+    >
+      {/* Card Image Header */}
+      <div className="h-48 bg-neutral-100 dark:bg-white m-3 rounded-2xl relative overflow-hidden flex items-center justify-center p-3 border border-white/10 group-hover:scale-[0.98] transition-transform duration-300">
+        {coupon.is_exclusive && (
+          <span className="absolute top-3 left-3 text-[9px] font-black tracking-widest text-teal-400 bg-brandDark/85 border border-teal-400/30 px-2 py-0.5 rounded shadow z-10">
+            EXCLUSIVE
+          </span>
+        )}
+        
+        {productImage && !imageError ? (
+          <>
+            {/* Render matching product image */}
+            <img
+              src={productImage}
+              alt={coupon.title}
+              className="object-contain max-h-full max-w-full hover:scale-110 transition-transform duration-500"
+              loading="lazy"
+              onError={() => setImageError(true)}
+            />
+            {/* Floating Store Logo Overlay in Top Right - made larger (w-20 h-10) for premium feel */}
+            <div className="absolute top-3 right-3 w-20 h-10 bg-white border border-gray-150 rounded-xl flex items-center justify-center p-1.5 shadow-md z-10">
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={coupon.store.name}
+                  className="object-contain max-h-full max-w-full"
+                  loading="lazy"
+                />
+              ) : (
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tight truncate max-w-full">
+                  {coupon.store.name.slice(0, 3)}
+                </span>
+              )}
+            </div>
+          </>
+        ) : (
+          /* Fallback: Centered Store Logo as main image for accuracy */
+          <div className="w-full h-full flex flex-col items-center justify-center p-4">
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={coupon.store.name}
+                className="object-contain max-h-[75%] max-w-[85%] hover:scale-105 transition-transform duration-500"
+                loading="lazy"
+              />
+            ) : (
+              <span className="text-gray-400 font-black text-2xl tracking-tighter uppercase select-none">
+                {coupon.store.name}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Card Content Body */}
+      <div className="px-5 pb-5 pt-1 flex-1 flex flex-col justify-between text-white">
+        <div>
+          {/* Header Discount & Icon */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className={`w-6.5 h-6.5 rounded-lg ${isFeatured ? 'bg-purple-600/20 border border-purple-500/30 text-purple-400' : 'bg-teal-500/20 border border-teal-500/30 text-teal-400'} flex items-center justify-center`}>
+                <Ticket className="w-4 h-4" />
+              </div>
+              <span className={`text-lg font-black tracking-tight ${isFeatured ? 'text-purple-400' : 'text-teal-400'}`}>
+                {discountText}
+              </span>
+            </div>
+            {/* Store Logo Tag Inline - made larger pill layout for clear visibility */}
+            <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-2.5 py-1">
+              {logoUrl && (
+                <div className="w-9 h-5.5 bg-white rounded flex items-center justify-center p-0.5 overflow-hidden">
+                  <img
+                    src={logoUrl}
+                    alt={coupon.store.name}
+                    className="object-contain w-full h-full"
+                  />
+                </div>
+              )}
+              <span className="text-[11px] font-black text-gray-300 tracking-wider uppercase truncate max-w-[90px]">
+                {coupon.store.name}
+              </span>
+            </div>
+          </div>
+
+          {/* Product Title */}
+          <h3 className="text-sm md:text-base font-extrabold text-white tracking-tight line-clamp-1 mb-1.5 group-hover:text-cyan-400 transition-colors">
+            {coupon.title}
+          </h3>
+          {/* Description */}
+          <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed mb-4 font-medium">
+            {coupon.description || 'Verified promo code for extra savings at checkout.'}
+          </p>
+        </div>
+
+        {/* Action Area / Real Claims Data */}
+        <div>
+          <div className="mb-4 flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider">
+            <span className="text-gray-400 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              VERIFIED
+            </span>
+            <span className="text-cyan-400">{coupon.used_count || 0} Claims Today</span>
+          </div>
+
+          {/* Wavy Separator */}
+          <div className={`my-3 opacity-30 ${isFeatured ? 'wave-divider-featured' : 'wave-divider'}`}></div>
+
+          {/* CTA Button - Solid Cyan color style */}
+          <button
+            className="w-full py-3 px-4 rounded-xl font-extrabold text-xs tracking-wider transition-all duration-300 uppercase shadow-md bg-cyan-400 hover:bg-cyan-300 text-[#0B0F19] hover:shadow-cyan-400/20 active:scale-95 cursor-pointer"
+          >
+            {coupon.code ? 'Show Code' : 'Get Deal'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function BigSavingCoupons({ coupons }: BigSavingCouponsProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [activeCoupon, setActiveCoupon] = useState<Coupon | null>(null)
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
-      const cardWidth = 320 // fixed offset for smooth scrolling
+      const cardWidth = 360 // adjusted scroll distance for larger card sizes
       const scrollTo = direction === 'left' 
         ? scrollContainerRef.current.scrollLeft - cardWidth 
         : scrollContainerRef.current.scrollLeft + cardWidth
@@ -160,156 +306,13 @@ export function BigSavingCoupons({ coupons }: BigSavingCouponsProps) {
         className="flex gap-0 overflow-x-auto py-14 px-12 -mx-12 scrollbar-none perspective-container"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {coupons.map((coupon) => {
-          const isFeatured = coupon.is_featured
-          
-          // Formulate claimed percentage based on success_rate or dynamic fallback
-          const claimedPct = coupon.success_rate || (Math.floor(parseInt(coupon.id.slice(0, 2), 16) % 30) + 60)
-
-          const discountText = coupon.discount_value 
-            ? (coupon.discount_value.includes('%') || coupon.discount_value.includes('$') || coupon.discount_value.includes('₹')
-                ? coupon.discount_value 
-                : `${coupon.discount_value} OFF`)
-            : 'Special Offer'
-
-          const productImage = getProductImage(coupon.title, coupon.store.name)
-          const logoUrl = sanitizeLogoUrl(coupon.store.logo_url)
-
-          // Bigger card sizes and wider spacing (reduced overlap to -mr-6). Removed snap-start to enable smooth wheel scrolling.
-          const cardClass = isFeatured
-            ? "w-[325px] min-w-[325px] md:w-[350px] md:min-w-[350px] glass-card glass-card-featured tilted-card tilted-card-hover tilted-card-featured-hover featured rounded-[22px] overflow-hidden flex flex-col relative shadow-purple-900/10 z-10 -mr-6 last:mr-0 group cursor-pointer animate-[fade-in_0.3s_ease-out]"
-            : "w-[290px] min-w-[290px] md:w-[310px] md:min-w-[310px] glass-card glass-card-hover tilted-card tilted-card-hover rounded-[20px] overflow-hidden flex flex-col relative z-0 -mr-6 last:mr-0 cursor-pointer group animate-[fade-in_0.2s_ease-out]"
-
-          return (
-            <div
-              key={coupon.id}
-              className={cardClass}
-              onClick={() => setActiveCoupon(coupon)}
-            >
-              {/* Card Image Header */}
-              <div className="h-44 bg-neutral-100 dark:bg-white m-3 rounded-2xl relative overflow-hidden flex items-center justify-center p-3 border border-white/10 group-hover:scale-[0.98] transition-transform duration-300">
-                {coupon.is_exclusive && (
-                  <span className="absolute top-2.5 left-2.5 text-[9px] font-black tracking-widest text-teal-400 bg-brandDark/85 border border-teal-400/30 px-2 py-0.5 rounded shadow z-10">
-                    EXCLUSIVE
-                  </span>
-                )}
-                
-                {productImage ? (
-                  <>
-                    {/* Render matching product image */}
-                    <img
-                      src={productImage}
-                      alt={coupon.title}
-                      className="object-contain max-h-full max-w-full hover:scale-110 transition-transform duration-500"
-                      loading="lazy"
-                    />
-                    {/* Floating Store Logo Overlay in Top Right */}
-                    <div className="absolute top-2.5 right-2.5 w-14 h-7 bg-white border border-gray-150 rounded-lg flex items-center justify-center p-1 shadow-md z-10">
-                      {logoUrl ? (
-                        <img
-                          src={logoUrl}
-                          alt={coupon.store.name}
-                          className="object-contain max-h-full max-w-full"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tight truncate max-w-full">
-                          {coupon.store.name.slice(0, 3)}
-                        </span>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  /* Fallback: Centered Store Logo as main image for accuracy */
-                  <div className="w-full h-full flex flex-col items-center justify-center p-4">
-                    {logoUrl ? (
-                      <img
-                        src={logoUrl}
-                        alt={coupon.store.name}
-                        className="object-contain max-h-[70%] max-w-[85%] hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <span className="text-gray-400 font-black text-2xl tracking-tighter uppercase select-none">
-                        {coupon.store.name}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Card Content Body */}
-              <div className="px-5 pb-5 pt-1 flex-1 flex flex-col justify-between text-white">
-                <div>
-                  {/* Header Discount & Icon */}
-                  <div className="flex items-center justify-between mb-3.5">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-6 h-6 rounded-lg ${isFeatured ? 'bg-purple-600/20 border border-purple-500/30 text-purple-400' : 'bg-teal-500/20 border border-teal-500/30 text-teal-400'} flex items-center justify-center`}>
-                        <Ticket className="w-3.5 h-3.5" />
-                      </div>
-                      <span className={`text-lg font-black tracking-tight ${isFeatured ? 'text-purple-400' : 'text-teal-400'}`}>
-                        {discountText}
-                      </span>
-                    </div>
-                    {/* Store Logo Tag Inline */}
-                    <div className="flex items-center gap-1.5">
-                      {logoUrl && (
-                        <div className="w-7 h-4 bg-white rounded border border-white/10 flex items-center justify-center p-0.5 overflow-hidden">
-                          <img
-                            src={logoUrl}
-                            alt={coupon.store.name}
-                            className="object-contain w-full h-full"
-                          />
-                        </div>
-                      )}
-                      <span className="text-[10px] font-black text-gray-500 tracking-widest uppercase truncate max-w-[80px]">
-                        {coupon.store.name}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Product Title */}
-                  <h3 className="text-sm md:text-base font-extrabold text-white tracking-tight line-clamp-1 mb-1.5 group-hover:text-teal-400 transition-colors">
-                    {coupon.title}
-                  </h3>
-                  {/* Description */}
-                  <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed mb-4 font-medium">
-                    {coupon.description || 'Verified promo code for extra savings at checkout.'}
-                  </p>
-                </div>
-
-                {/* Action Area / Progress Bar for Featured */}
-                <div>
-                  {isFeatured && (
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between text-[10px] font-extrabold text-gray-400 mb-1.5 uppercase tracking-wide">
-                        <span>Claimed</span>
-                        <span className="text-purple-400">{claimedPct}%</span>
-                      </div>
-                      <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
-                        <div className="h-full bg-gradient-to-r from-purple-500 to-teal-400 rounded-full" style={{ width: `${claimedPct}%` }}></div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Wavy Separator */}
-                  <div className={`my-3 opacity-30 ${isFeatured ? 'wave-divider-featured' : 'wave-divider'}`}></div>
-
-                  {/* CTA Button */}
-                  <button
-                    className={`w-full py-3 px-4 rounded-xl font-extrabold text-xs tracking-wider transition-all duration-300 uppercase shadow-md ${
-                      isFeatured 
-                        ? 'bg-gradient-to-r from-purple-500 to-teal-400 hover:from-purple-400 hover:to-teal-300 text-[#0B0F19] hover:shadow-purple-500/10 active:scale-98 cursor-pointer' 
-                        : 'bg-white/5 hover:bg-white/10 text-white hover:text-teal-400 active:scale-98 border border-white/10 hover:border-teal-500/30 cursor-pointer'
-                    }`}
-                  >
-                    {coupon.code ? 'Show Code' : 'Get Deal'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )
-        })}
+        {coupons.map((coupon) => (
+          <BigSavingCouponCard
+            key={coupon.id}
+            coupon={coupon}
+            onSelect={setActiveCoupon}
+          />
+        ))}
       </div>
 
       {/* Detail Modal */}
