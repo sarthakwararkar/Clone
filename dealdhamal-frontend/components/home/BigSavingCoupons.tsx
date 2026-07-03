@@ -11,8 +11,8 @@ interface BigSavingCouponsProps {
 // Helper to sanitize potentially corrupted store logo URLs (like Wikipedia SVG for Ajio)
 function sanitizeLogoUrl(url: string | null | undefined): string | null {
   if (!url) return null
-  if (url.includes('AJIO_Logo.svg')) {
-    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/AJIO_Logo.svg/250px-AJIO_Logo.svg.png'
+  if (url.includes('AJIO_Logo.svg') || url.toLowerCase().includes('ajio')) {
+    return '/ajio-logo.svg'
   }
   return url
 }
@@ -103,7 +103,8 @@ export function BigSavingCoupons({ coupons }: BigSavingCouponsProps) {
       if (container.scrollWidth > container.clientWidth) {
         if (e.deltaY !== 0) {
           e.preventDefault()
-          container.scrollLeft += e.deltaY * 1.0 // smooth scroll step
+          // Smooth increment scroll position directly
+          container.scrollLeft += e.deltaY * 1.2
         }
       }
     }
@@ -153,10 +154,10 @@ export function BigSavingCoupons({ coupons }: BigSavingCouponsProps) {
         </div>
       </div>
 
-      {/* Horizontal Scroll Area with 3D perspective */}
+      {/* Horizontal Scroll Area with 3D perspective. Removed scroll snapping to allow smooth mouse wheel scroll */}
       <div
         ref={scrollContainerRef}
-        className="flex gap-0 overflow-x-auto py-14 px-12 -mx-12 scrollbar-none snap-x snap-mandatory perspective-container"
+        className="flex gap-0 overflow-x-auto py-14 px-12 -mx-12 scrollbar-none perspective-container"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {coupons.map((coupon) => {
@@ -174,10 +175,10 @@ export function BigSavingCoupons({ coupons }: BigSavingCouponsProps) {
           const productImage = getProductImage(coupon.title, coupon.store.name)
           const logoUrl = sanitizeLogoUrl(coupon.store.logo_url)
 
-          // Bigger card sizes and wider spacing (reduced overlap to -mr-6)
+          // Bigger card sizes and wider spacing (reduced overlap to -mr-6). Removed snap-start to enable smooth wheel scrolling.
           const cardClass = isFeatured
-            ? "w-[325px] min-w-[325px] md:w-[350px] md:min-w-[350px] snap-start glass-card glass-card-featured tilted-card tilted-card-hover tilted-card-featured-hover featured rounded-[22px] overflow-hidden flex flex-col relative shadow-purple-900/10 z-10 -mr-6 last:mr-0 group cursor-pointer animate-[fade-in_0.3s_ease-out]"
-            : "w-[290px] min-w-[290px] md:w-[310px] md:min-w-[310px] snap-start glass-card glass-card-hover tilted-card tilted-card-hover rounded-[20px] overflow-hidden flex flex-col relative z-0 -mr-6 last:mr-0 cursor-pointer group animate-[fade-in_0.2s_ease-out]"
+            ? "w-[325px] min-w-[325px] md:w-[350px] md:min-w-[350px] glass-card glass-card-featured tilted-card tilted-card-hover tilted-card-featured-hover featured rounded-[22px] overflow-hidden flex flex-col relative shadow-purple-900/10 z-10 -mr-6 last:mr-0 group cursor-pointer animate-[fade-in_0.3s_ease-out]"
+            : "w-[290px] min-w-[290px] md:w-[310px] md:min-w-[310px] glass-card glass-card-hover tilted-card tilted-card-hover rounded-[20px] overflow-hidden flex flex-col relative z-0 -mr-6 last:mr-0 cursor-pointer group animate-[fade-in_0.2s_ease-out]"
 
           return (
             <div
