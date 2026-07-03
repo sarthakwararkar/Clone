@@ -6,6 +6,7 @@ import { FeaturedStores } from '@/components/home/FeaturedStores'
 import { TrendingCoupons } from '@/components/home/TrendingCoupons'
 import { NewsletterBanner } from '@/components/home/NewsletterBanner'
 import { HomePageSchema } from '@/components/seo/HomePageSchema'
+import IntroSplash from '@/components/ui/IntroSplash'
 
 export const revalidate = 3600 // ISR hourly
 
@@ -32,30 +33,32 @@ export default async function Homepage() {
   const bestDeals = dealsResponse.data
 
   return (
-    <div className="space-y-12">
-      <HomePageSchema featuredStores={featuredStores} />
-      {/* Hero banner carousel */}
-      {featuredCoupons.length > 0 && (
-        <HeroBanner coupons={featuredCoupons.slice(0, 5)} />
-      )}
+    <IntroSplash>
+      <div className="space-y-12">
+        <HomePageSchema featuredStores={featuredStores} />
+        {/* Hero banner carousel */}
+        {featuredCoupons.length > 0 && (
+          <HeroBanner coupons={featuredCoupons.slice(0, 5)} />
+        )}
 
-      {/* Big Saving Coupon Codes */}
-      {featuredCoupons.length > 0 && (
-        <BigSavingCoupons coupons={featuredCoupons} />
-      )}
+        {/* Big Saving Coupon Codes */}
+        {featuredCoupons.length > 0 && (
+          <BigSavingCoupons coupons={featuredCoupons} />
+        )}
 
-      {/* Top Stores */}
-      {featuredStores.length > 0 && (
-        <FeaturedStores stores={featuredStores} />
-      )}
+        {/* Top Stores */}
+        {featuredStores.length > 0 && (
+          <FeaturedStores stores={featuredStores} />
+        )}
 
-      {/* Today's Best Deals */}
-      {bestDeals.length > 0 && (
-        <TrendingCoupons coupons={bestDeals} />
-      )}
+        {/* Today's Best Deals */}
+        {bestDeals.length > 0 && (
+          <TrendingCoupons coupons={bestDeals} />
+        )}
 
-      {/* Newsletter signup */}
-      <NewsletterBanner />
-    </div>
+        {/* Newsletter signup */}
+        <NewsletterBanner />
+      </div>
+    </IntroSplash>
   )
 }
