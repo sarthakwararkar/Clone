@@ -35,30 +35,29 @@ export default function ButterflyOverlay() {
     // 1. Setup Three.js Scene, Camera, and Renderer
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000)
-    camera.position.z = 12
+    camera.position.set(0, 0.5, 12) // Slightly raise camera to look down on the terrain
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)) // cap pixel ratio for performance
     renderer.setSize(window.innerWidth, window.innerHeight)
     container.appendChild(renderer.domElement)
 
-    // 2. Setup Lighting (Cyan and Purple accents to match homepage theme)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.75)
+    // 2. Setup exponential fog for landscape depth
+    scene.fog = new THREE.FogExp2(0xbde0fe, 0.045)
+
+    // 3. Setup Lighting matching sunny landscape
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7)
     scene.add(ambientLight)
 
-    const cyanLight = new THREE.DirectionalLight(0x00E5FF, 1.4)
-    cyanLight.position.set(5, 8, 8)
-    scene.add(cyanLight)
+    const sunLight = new THREE.DirectionalLight(0xfff5e6, 1.7) // Warm sun light
+    sunLight.position.set(10, 15, 10)
+    scene.add(sunLight)
 
-    const purpleLight = new THREE.DirectionalLight(0xBD00FF, 1.2)
-    purpleLight.position.set(-6, -4, 4)
-    scene.add(purpleLight)
+    const skyLight = new THREE.DirectionalLight(0x8ecae6, 0.9) // Cool sky light
+    skyLight.position.set(-10, 10, -5)
+    scene.add(skyLight)
 
-    const whiteLight = new THREE.DirectionalLight(0xffffff, 0.9)
-    whiteLight.position.set(0, 10, 15)
-    scene.add(whiteLight)
-
-    // 3. Fallback Procedural Geometries (used while base.obj is loading)
+    // 4. Fallback Procedural Geometries (used while base.obj is loading)
     const proceduralWingGeo = new THREE.PlaneGeometry(2.0, 2.0, 12, 12)
     const posAttr = proceduralWingGeo.attributes.position as THREE.BufferAttribute
     for (let i = 0; i < posAttr.count; i++) {
@@ -74,12 +73,406 @@ export default function ButterflyOverlay() {
     const proceduralBodyGeo = new THREE.CylinderGeometry(0.04, 0.03, 0.6, 8)
     proceduralBodyGeo.rotateX(Math.PI / 2)
 
-    // 4. Geometry Splitting Helper for base.obj
+    // 5. HIGH-RES CONTINUOUS TERRAIN HEIGHTMAP (Meadow to Snow Mountains)
+    const terrainGeo = new THREE.PlaneGeometry(35, 35, 150, 150)
+    terrainGeo.rotateX(-Math.PI / 2) // lie flat
+
+    const colors: number[] = []
+    const terrainPos = terrainGeo.attributes.position as THREE.BufferAttribute
+    
+    for (let i = 0; i < terrainPos.count; i++) {
+      const x = terrainPos.getX(i)
+      const z = terrainPos.getZ(i)
+
+      // 5.1 Meadow height
+      const meadowY = Math.sin(x * 0.12) * Math.cos(z * 0.12) * 0.8 + Math.sin(x * 0.3) * Math.cos(z * 0.3) * 0.2
+      
+      let finalY = meadowY
+      let r = 0.18, g = 0.38, b = 0.15 // default grass green
+      
+      // 5.2 Rising mountain range at the back (z < -2)
+      if (z < -2) {
+        // Transition weight (0 at z=-2, 1 at z=-17.5)
+        const t = (Math.abs(z) - 2) / 15.5 
+        
+        // Rugged mountain ridges (fractional Brownian motion approximation)
+        let mountainNoise = Math.sin(x * 0.4) * 2.8       // giant peaks
+        mountainNoise += Math.sin(x * 1.2) * 0.75         // secondary ridges
+        mountainNoise += Math.sin(x * 3.5) * 0.25         // rocky details
+        mountainNoise += Math.sin(x * 8.0) * 0.08         // fine gravel
+        
+        // Blend meadow plane to mountain peaks
+        finalY = meadowY * (1 - t) + (2.5 + mountainNoise) * t
+
+        // Color coding by altitude & slope
+        if (t > 0.35) {
+          if (finalY > 2.1) {
+            // Snow-capped peaks
+            r = 0.95; g = 0.95; b = 0.95
+          } else if (finalY > 1.0) {
+            // Rocky dark grey
+            r = 0.36; g = 0.40; b = 0.42
+          } else {
+            // Alpine forest transition
+            r = 0.22; g = 0.33; b = 0.20
+          }
+        }
+      }
+      
+      // 5.3 Winding dirt path (only in the front meadow area z > -5)
+      if (z >= -5) {
+        const pathCenter = Math.sin(z * 0.22) * 2.2
+        const distToPath = Math.abs(x - pathCenter)
+
+        if (distToPath < 1.2) {
+          const factor = distToPath / 1.2
+          finalY -= (1 - factor) * 0.28 // path depression
+
+          // Sandy dirt trail color
+          r = 0.64 - (1 - factor) * 0.1
+          g = 0.50 - (1 - factor) * 0.08
+          b = 0.38 - (1 - factor) * 0.05
+        } else if (distToPath < 2.0) {
+          // Blend path edge
+          const factor = (distToPath - 1.2) / 0.8
+          const rBrown = 0.54, gBrown = 0.44, bBrown = 0.34
+          const rGrass = 0.18, gGrass = 0.38, bGrass = 0.15
+
+          r = rBrown * (1 - factor) + rGrass * factor
+          g = gBrown * (1 - factor) + gGrass * factor
+          b = bBrown * (1 - factor) + bGrass * factor
+        }
+      }
+
+      terrainPos.setY(i, finalY)
+      colors.push(r, g, b)
+    }
+    terrainGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+    terrainGeo.computeVertexNormals()
+
+    const terrainMat = new THREE.MeshLambertMaterial({
+      vertexColors: true,
+      flatShading: true
+    })
+
+    const terrain = new THREE.Mesh(terrainGeo, terrainMat)
+    terrain.position.y = -3.2
+    scene.add(terrain)
+
+    // -------------------------------------------------------------
+    // HIGH-RES PROCEDURAL TEXTURES
+    // -------------------------------------------------------------
+    function createHighResTexture(type: string) {
+      const canvas = document.createElement('canvas')
+      canvas.width = 128
+      canvas.height = 256
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return new THREE.Texture()
+      ctx.clearRect(0, 0, 128, 256)
+
+      if (type === 'grass') {
+        const grad = ctx.createLinearGradient(64, 256, 64, 10)
+        grad.addColorStop(0, '#132a13')
+        grad.addColorStop(0.3, '#3f5e3d')
+        grad.addColorStop(0.8, '#52b788')
+        grad.addColorStop(1, '#b7e4c7')
+
+        ctx.fillStyle = grad
+        ctx.beginPath()
+        ctx.moveTo(56, 256)
+        ctx.quadraticCurveTo(50, 120, 72, 10)
+        ctx.quadraticCurveTo(74, 120, 72, 256)
+        ctx.fill()
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)'
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        ctx.moveTo(64, 256)
+        ctx.quadraticCurveTo(57, 120, 72, 20)
+        ctx.stroke()
+
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)'
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(62, 256)
+        ctx.quadraticCurveTo(55, 120, 70, 20)
+        ctx.stroke()
+      } else if (type === 'red') {
+        ctx.strokeStyle = '#2d6a4f'
+        ctx.lineWidth = 4
+        ctx.beginPath()
+        ctx.moveTo(64, 256)
+        ctx.quadraticCurveTo(58, 150, 64, 60)
+        ctx.stroke()
+
+        ctx.fillStyle = '#3B7A3E'
+        ctx.beginPath()
+        ctx.ellipse(50, 160, 6, 18, -Math.PI/6, 0, Math.PI*2)
+        ctx.ellipse(78, 120, 5, 15, Math.PI/4, 0, Math.PI*2)
+        ctx.fill()
+
+        ctx.fillStyle = '#b7094c'
+        ctx.beginPath()
+        ctx.ellipse(64, 60, 26, 22, 0, 0, Math.PI*2)
+        ctx.fill()
+
+        const flowerGrad = ctx.createRadialGradient(64, 60, 2, 64, 60, 28)
+        flowerGrad.addColorStop(0, '#000814')
+        flowerGrad.addColorStop(0.25, '#780000')
+        flowerGrad.addColorStop(0.7, '#c1121f')
+        flowerGrad.addColorStop(1, '#f25c54')
+
+        ctx.fillStyle = flowerGrad
+        for (let i = 0; i < 4; i++) {
+          const angle = (i * Math.PI) / 2
+          const ox = Math.cos(angle) * 8
+          const oy = Math.sin(angle) * 8
+          ctx.beginPath()
+          ctx.arc(64 + ox, 60 + oy, 18, 0, Math.PI * 2)
+          ctx.fill()
+        }
+
+        ctx.fillStyle = '#ffb703'
+        for (let i = 0; i < 12; i++) {
+          const a = (i * Math.PI) / 6
+          const px = 64 + Math.cos(a) * 8
+          const py = 60 + Math.sin(a) * 8
+          ctx.beginPath()
+          ctx.arc(px, py, 1.5, 0, Math.PI * 2)
+          ctx.fill()
+        }
+      } else if (type === 'yellow') {
+        ctx.strokeStyle = '#2d6a4f'
+        ctx.lineWidth = 4
+        ctx.beginPath()
+        ctx.moveTo(64, 256)
+        ctx.quadraticCurveTo(66, 160, 64, 60)
+        ctx.stroke()
+
+        ctx.fillStyle = '#ffb703'
+        for (let i = 0; i < 16; i++) {
+          const angle = (i * Math.PI) / 8
+          ctx.save()
+          ctx.translate(64, 60)
+          ctx.rotate(angle)
+          ctx.fillStyle = i % 2 === 0 ? '#ffb703' : '#ffc300'
+          ctx.beginPath()
+          ctx.moveTo(0, 0)
+          ctx.quadraticCurveTo(-6, -18, 0, -28)
+          ctx.quadraticCurveTo(6, -18, 0, 0)
+          ctx.fill()
+          ctx.restore()
+        }
+
+        const centerGrad = ctx.createRadialGradient(64, 60, 0, 64, 60, 10)
+        centerGrad.addColorStop(0, '#582f0e')
+        centerGrad.addColorStop(0.7, '#7f4f24')
+        centerGrad.addColorStop(1, '#a68a64')
+        ctx.fillStyle = centerGrad
+        ctx.beginPath()
+        ctx.arc(64, 60, 10, 0, Math.PI * 2)
+        ctx.fill()
+      } else if (type === 'purple') {
+        ctx.strokeStyle = '#3a5a40'
+        ctx.lineWidth = 3
+        ctx.beginPath()
+        ctx.moveTo(64, 256)
+        ctx.lineTo(64, 30)
+        ctx.stroke()
+
+        const blossomColors = ['#5e548e', '#9f86c0', '#be95c4', '#e0b1cb']
+        for (let y = 30; y < 140; y += 6) {
+          const sizeX = Math.max(6, 16 - (y - 30) * 0.08)
+          ctx.fillStyle = blossomColors[Math.floor(Math.random() * blossomColors.length)]
+          ctx.beginPath()
+          ctx.ellipse(64 - sizeX/2, y, sizeX/2.5, 4, -Math.PI/6, 0, Math.PI*2)
+          ctx.ellipse(64 + sizeX/2, y, sizeX/2.5, 4, Math.PI/6, 0, Math.PI*2)
+          ctx.fill()
+
+          ctx.fillStyle = blossomColors[Math.floor(Math.random() * blossomColors.length)]
+          ctx.beginPath()
+          ctx.arc(64, y - 2, 3, 0, Math.PI*2)
+          ctx.fill()
+        }
+      } else {
+        ctx.strokeStyle = '#2d6a4f'
+        ctx.lineWidth = 3.5
+        ctx.beginPath()
+        ctx.moveTo(64, 256)
+        ctx.quadraticCurveTo(68, 140, 64, 60)
+        ctx.stroke()
+
+        ctx.fillStyle = '#0077b6'
+        for (let i = 0; i < 8; i++) {
+          const angle = (i * Math.PI) / 4
+          ctx.save()
+          ctx.translate(64, 60)
+          ctx.rotate(angle)
+          ctx.beginPath()
+          ctx.moveTo(0, 0)
+          ctx.lineTo(-7, -24)
+          ctx.lineTo(0, -28)
+          ctx.lineTo(7, -24)
+          ctx.closePath()
+          ctx.fill()
+
+          ctx.strokeStyle = '#90e0ef'
+          ctx.lineWidth = 1
+          ctx.beginPath()
+          ctx.moveTo(0, 0)
+          ctx.lineTo(0, -22)
+          ctx.stroke()
+          ctx.restore()
+        }
+
+        ctx.fillStyle = '#caf0f8'
+        ctx.beginPath()
+        ctx.arc(64, 60, 5, 0, Math.PI * 2)
+        ctx.fill()
+      }
+
+      const texture = new THREE.CanvasTexture(canvas)
+      texture.minFilter = THREE.LinearMipmapLinearFilter
+      return texture
+    }
+
+    // -------------------------------------------------------------
+    // INSTANCED FOLIAGE (2,500 Swaying Grass Blades)
+    // -------------------------------------------------------------
+    const grassGeo = new THREE.PlaneGeometry(0.2, 0.7)
+    grassGeo.translate(0, 0.35, 0)
+
+    const totalGrass = 2500
+    const grassTex = createHighResTexture('grass')
+    const grassMat = new THREE.MeshLambertMaterial({
+      map: grassTex,
+      transparent: true,
+      alphaTest: 0.5,
+      side: THREE.DoubleSide
+    })
+
+    const grassMesh = new THREE.InstancedMesh(grassGeo, grassMat, totalGrass)
+    const grassDummy = new THREE.Object3D()
+
+    for (let i = 0; i < totalGrass; i++) {
+      let rx = 0, rz = 0, distToPath = 0
+      do {
+        rx = (Math.random() - 0.5) * 28
+        rz = (Math.random() - 0.5) * 28
+        
+        // Spawn restriction: meadow only (z > -6)
+        if (rz < -6) continue
+        
+        const pCenter = Math.sin(rz * 0.22) * 2.2
+        distToPath = Math.abs(rx - pCenter)
+      } while (distToPath < 1.1 || rz < -6)
+
+      const ry = Math.sin(rx * 0.15) * Math.cos(rz * 0.15) * 0.8 + Math.sin(rx * 0.4) * 0.2 - 3.2
+
+      grassDummy.position.set(rx, ry, rz)
+      grassDummy.rotation.y = Math.random() * Math.PI * 2
+      grassDummy.rotation.x = (Math.random() - 0.5) * 0.2
+      
+      const scale = 0.7 + Math.random() * 0.8
+      grassDummy.scale.set(scale, scale, scale)
+      grassDummy.updateMatrix()
+      grassMesh.setMatrixAt(i, grassDummy.matrix)
+    }
+    scene.add(grassMesh)
+
+    // -------------------------------------------------------------
+    // INSTANCED WILDFLOWERS
+    // -------------------------------------------------------------
+    const flowerGeo = new THREE.PlaneGeometry(0.35, 0.7)
+    flowerGeo.translate(0, 0.35, 0)
+
+    const totalFlowersPerType = 150
+    const flowerColors = ['red', 'yellow', 'purple', 'blue']
+    const instancedMeshes: { mesh: THREE.InstancedMesh; color: string }[] = []
+
+    flowerColors.forEach((color) => {
+      const tex = createHighResTexture(color)
+      const mat = new THREE.MeshLambertMaterial({
+        map: tex,
+        transparent: true,
+        alphaTest: 0.5,
+        side: THREE.DoubleSide
+      })
+
+      const mesh = new THREE.InstancedMesh(flowerGeo, mat, totalFlowersPerType)
+      const dummy = new THREE.Object3D()
+
+      for (let i = 0; i < totalFlowersPerType; i++) {
+        let rx = 0, rz = 0, distToPath = 0
+        do {
+          rx = (Math.random() - 0.5) * 28
+          rz = (Math.random() - 0.5) * 28
+          
+          if (rz < -6) continue // meadow only
+          
+          const pCenter = Math.sin(rz * 0.22) * 2.2
+          distToPath = Math.abs(rx - pCenter)
+        } while (distToPath < 1.15 || rz < -6)
+
+        const ry = Math.sin(rx * 0.15) * Math.cos(rz * 0.15) * 0.8 + Math.sin(rx * 0.4) * 0.2 - 3.2
+
+        dummy.position.set(rx, ry, rz)
+        dummy.rotation.y = Math.random() * Math.PI * 2
+        dummy.rotation.x = (Math.random() - 0.5) * 0.15
+        
+        const scale = 0.5 + Math.random() * 0.7
+        dummy.scale.set(scale, scale, scale)
+        dummy.updateMatrix()
+        mesh.setMatrixAt(i, dummy.matrix)
+      }
+      
+      scene.add(mesh)
+      instancedMeshes.push({ mesh, color })
+    })
+
+    // -------------------------------------------------------------
+    // WIND SWAY SIMULATION
+    // -------------------------------------------------------------
+    function animateMeadow(time: number) {
+      const dummy = new THREE.Object3D()
+      const mat = new THREE.Matrix4()
+
+      // Sway Grass
+      for (let i = 0; i < totalGrass; i++) {
+        grassMesh.getMatrixAt(i, mat)
+        dummy.position.setFromMatrixPosition(mat)
+        dummy.scale.setFromMatrixScale(mat)
+        
+        const sway = Math.sin(time * 1.5 + dummy.position.x * 0.2 + dummy.position.z * 0.2) * 0.15
+        dummy.rotation.set(sway, Math.sin(i) * Math.PI, sway * 0.4)
+        dummy.updateMatrix()
+        grassMesh.setMatrixAt(i, dummy.matrix)
+      }
+      grassMesh.instanceMatrix.needsUpdate = true
+
+      // Sway Flowers
+      instancedMeshes.forEach(({ mesh }) => {
+        for (let i = 0; i < totalFlowersPerType; i++) {
+          mesh.getMatrixAt(i, mat)
+          dummy.position.setFromMatrixPosition(mat)
+          dummy.scale.setFromMatrixScale(mat)
+          
+          const sway = Math.sin(time * 1.5 + dummy.position.x * 0.2 + dummy.position.z * 0.2) * 0.12
+          dummy.rotation.set(sway, Math.sin(i) * Math.PI, sway * 0.3)
+          dummy.updateMatrix()
+          mesh.setMatrixAt(i, dummy.matrix)
+        }
+        mesh.instanceMatrix.needsUpdate = true
+      })
+    }
+
+    // -------------------------------------------------------------
+    // GEOMETRY SPLITTING HELPER FOR base.obj
+    // -------------------------------------------------------------
     function splitButterflyGeometry(geo: THREE.BufferGeometry) {
       const positionAttr = geo.attributes.position as THREE.BufferAttribute
       if (!positionAttr) return null
 
-      // Ensure geometry is non-indexed for simple triangle parsing
       const tempGeo = geo.index ? geo.clone().toNonIndexed() : geo.clone()
       const positions = (tempGeo.attributes.position as THREE.BufferAttribute).array as Float32Array
       const normals = tempGeo.attributes.normal 
@@ -88,10 +481,8 @@ export default function ButterflyOverlay() {
 
       const leftVerts: number[] = []
       const leftNorms: number[] = []
-
       const rightVerts: number[] = []
       const rightNorms: number[] = []
-
       const bodyVerts: number[] = []
       const bodyNorms: number[] = []
 
@@ -143,7 +534,6 @@ export default function ButterflyOverlay() {
       if (bodyNorms.length) bGeo.setAttribute('normal', new THREE.Float32BufferAttribute(bodyNorms, 3))
       bGeo.computeVertexNormals()
 
-      // Hinge translations: translate meshes so pivots lie at X = 0
       leftGeo.translate(bodyThreshold, 0, 0)
       rightGeo.translate(-bodyThreshold, 0, 0)
 
@@ -154,7 +544,7 @@ export default function ButterflyOverlay() {
       }
     }
 
-    // 5. Load base.obj dynamically
+    // 6. Load base.obj dynamically
     const objLoader = new OBJLoader()
     objLoader.load(
       '/base.obj',
@@ -178,7 +568,7 @@ export default function ButterflyOverlay() {
       }
     )
 
-    // 6. Base Butterfly Logic
+    // 7. Base Butterfly Logic
     class ButterflyInstance {
       group: THREE.Group
       wingMat: THREE.MeshLambertMaterial
@@ -203,9 +593,9 @@ export default function ButterflyOverlay() {
 
         this.wingMat = new THREE.MeshLambertMaterial({
           color: 0xffffff,
-          emissive: 0x333333,
+          emissive: 0x444444,
           transparent: true,
-          opacity: 0.8,
+          opacity: 0.85,
           side: THREE.DoubleSide,
           depthWrite: false
         })
@@ -253,9 +643,9 @@ export default function ButterflyOverlay() {
       }
     }
 
-    // 7. Interactive Trail Butterflies
+    // 8. Interactive Trail Butterflies
     const trailButterflies: TrailButterfly[] = []
-    const MAX_TRAIL_BUTTERFLIES = 15 // Performance cap
+    const MAX_TRAIL_BUTTERFLIES = 15
 
     class TrailButterfly extends ButterflyInstance {
       constructor(x: number, y: number) {
@@ -305,7 +695,7 @@ export default function ButterflyOverlay() {
         }
 
         const opacityDecay = pct < 0.15 ? (pct / 0.15) : Math.max(0, 1.0 - (pct - 0.15) / 0.85)
-        this.wingMat.opacity = opacityDecay * 0.8
+        this.wingMat.opacity = opacityDecay * 0.85
 
         if (this.age >= this.maxAge) {
           this.destroy()
@@ -315,7 +705,7 @@ export default function ButterflyOverlay() {
       }
     }
 
-    // 8. Backdrop Ambient Butterflies
+    // 9. Backdrop Ambient Butterflies
     const backdropButterflies: BackdropButterfly[] = []
 
     class BackdropButterfly extends ButterflyInstance {
@@ -324,7 +714,7 @@ export default function ButterflyOverlay() {
         const depthZ = -8 + Math.random() * 8.0
         this.group.position.set(
           (Math.random() - 0.5) * 12,
-          isInitial ? (Math.random() - 0.5) * 10 : -6,
+          isInitial ? (Math.random() - 0.5) * 10 : -4.5,
           depthZ
         )
 
@@ -354,8 +744,8 @@ export default function ButterflyOverlay() {
 
         const yaw = Math.atan2(this.vx + Math.sin(this.time) * 0.005, this.vy)
         const pitch = -Math.atan2(this.vz, Math.hypot(this.vx, this.vy))
-        this.group.rotation.z = -yaw
-        this.group.rotation.x = pitch
+        this.group.rotation.z = -yaw;
+        this.group.rotation.x = pitch;
 
         const flapAngle = Math.sin(this.time * this.flapSpeed + this.flapOffset) * (Math.PI / 3)
         this.leftWingGroup.rotation.y = flapAngle
@@ -363,7 +753,7 @@ export default function ButterflyOverlay() {
 
         // Loop bounds
         if (this.group.position.y > 6 || this.group.position.x > 8 || this.group.position.x < -8 || this.group.position.z > 2 || this.group.position.z < -10) {
-          this.group.position.y = -6
+          this.group.position.y = -4.5
           this.group.position.x = (Math.random() - 0.5) * 12
           this.group.position.z = -8 + Math.random() * 8.0
           const depthPct = (this.group.position.z + 8) / 8.0
@@ -391,7 +781,7 @@ export default function ButterflyOverlay() {
 
     initBackdrop()
 
-    // 9. Mouse Projector & Spawner
+    // 10. Mouse Projector & Spawner
     function projectMouseTo3D(clientX: number, clientY: number) {
       const vector = new THREE.Vector3(
         (clientX / window.innerWidth) * 2 - 1,
@@ -408,7 +798,6 @@ export default function ButterflyOverlay() {
     let lastScreenY: number | null = null
 
     const handleMouseMove = (e: MouseEvent) => {
-      // Exclude mouse tracking on control panel or buttons
       if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('a')) return
 
       if (lastScreenX === null || lastScreenY === null) {
@@ -451,7 +840,7 @@ export default function ButterflyOverlay() {
     window.addEventListener('mousemove', handleMouseMove)
     window.addEventListener('mouseleave', handleMouseLeave)
 
-    // 10. Frame resizing handler
+    // 11. Frame resizing handler
     const handleResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight
       camera.updateProjectionMatrix()
@@ -459,12 +848,18 @@ export default function ButterflyOverlay() {
     }
     window.addEventListener('resize', handleResize)
 
-    // 11. Tick Render Loop (with Page Visbility optimization)
+    // 12. Tick Render Loop (with Page Visbility optimization)
     let animationFrameId: number
     let isVisible = true
+    let animTime = 0
 
     const animate = () => {
       if (!isVisible) return
+
+      animTime += 0.015
+
+      // Animate swaying grass + flowers
+      animateMeadow(animTime)
 
       // Update background butterflies
       backdropButterflies.forEach((b) => b.update())
@@ -496,7 +891,7 @@ export default function ButterflyOverlay() {
     // Start render loop
     animate()
 
-    // 12. Cleanup on Unmount
+    // 13. Cleanup on Unmount
     return () => {
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseleave', handleMouseLeave)
@@ -512,6 +907,24 @@ export default function ButterflyOverlay() {
       proceduralWingGeo.dispose()
       proceduralBodyGeo.dispose()
 
+      // Dispose terrain geometries
+      terrainGeo.dispose()
+      terrainMat.dispose()
+
+      // Dispose foliage meshes/materials
+      grassGeo.dispose()
+      grassMat.dispose()
+      grassTex.dispose()
+      flowerGeo.dispose()
+      instancedMeshes.forEach(({ mesh }) => {
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach((m) => m.dispose())
+        } else {
+          mesh.material.dispose()
+        }
+        scene.remove(mesh)
+      })
+
       // Dispose WebGL context
       renderer.dispose()
       if (renderer.domElement && container.contains(renderer.domElement)) {
@@ -524,7 +937,10 @@ export default function ButterflyOverlay() {
     <div
       ref={containerRef}
       className="fixed inset-0 w-full h-full pointer-events-none z-0 overflow-hidden"
-      style={{ mixBlendMode: 'screen' }}
+      style={{
+        mixBlendMode: 'screen',
+        background: 'linear-gradient(to bottom, #87b9e8 0%, #b8d4ee 40%, #ffcbdc 100%)'
+      }}
     />
   )
 }
