@@ -7,6 +7,7 @@ import { TrendingCoupons } from '@/components/home/TrendingCoupons'
 import { NewsletterBanner } from '@/components/home/NewsletterBanner'
 import { HomePageSchema } from '@/components/seo/HomePageSchema'
 import IntroSplash from '@/components/ui/IntroSplash'
+import ClientButterflyOverlay from '@/components/home/ClientButterflyOverlay'
 
 export const revalidate = 3600 // ISR hourly
 
@@ -34,7 +35,8 @@ export default async function Homepage() {
 
   return (
     <IntroSplash>
-      <div className="space-y-12">
+      <ClientButterflyOverlay />
+      <div className="space-y-12 relative z-10">
         <HomePageSchema featuredStores={featuredStores} />
         {/* Hero banner carousel */}
         {featuredCoupons.length > 0 && (
