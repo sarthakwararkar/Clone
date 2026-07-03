@@ -117,7 +117,7 @@
 }
 
 body {
-  background-color: var(--color-background);
+  background-color: transparent;
   color: var(--color-text-primary);
 }
 

@@ -936,9 +936,8 @@ export default function ButterflyOverlay() {
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 w-full h-full pointer-events-none z-0 overflow-hidden"
+      className="fixed inset-0 w-full h-full pointer-events-none z-[-10] overflow-hidden"
       style={{
-        mixBlendMode: 'screen',
         background: 'linear-gradient(to bottom, #87b9e8 0%, #b8d4ee 40%, #ffcbdc 100%)'
       }}
     />
