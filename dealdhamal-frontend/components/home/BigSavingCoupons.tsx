@@ -1,11 +1,20 @@
 'use client'
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Ticket } from 'lucide-react'
 import type { Coupon } from '@/types'
 import { CouponModal } from '@/components/coupons/CouponModal'
 
 interface BigSavingCouponsProps {
   coupons: Coupon[]
+}
+
+// Helper to sanitize potentially corrupted store logo URLs (like Wikipedia SVG for Ajio)
+function sanitizeLogoUrl(url: string | null | undefined): string | null {
+  if (!url) return null
+  if (url.includes('AJIO_Logo.svg')) {
+    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/AJIO_Logo.svg/250px-AJIO_Logo.svg.png'
+  }
+  return url
 }
 
 // Client-side helper to resolve accurate product images from titles/keywords. Returns null if none match.
@@ -84,6 +93,27 @@ export function BigSavingCoupons({ coupons }: BigSavingCouponsProps) {
     }
   }
 
+  // Translate vertical wheel scroll to horizontal scrolling
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const handleWheel = (e: WheelEvent) => {
+      // Only horizontal scroll if container has horizontal scroll content
+      if (container.scrollWidth > container.clientWidth) {
+        if (e.deltaY !== 0) {
+          e.preventDefault()
+          container.scrollLeft += e.deltaY * 1.0 // smooth scroll step
+        }
+      }
+    }
+
+    container.addEventListener('wheel', handleWheel, { passive: false })
+    return () => {
+      container.removeEventListener('wheel', handleWheel)
+    }
+  }, [])
+
   return (
     <section className="relative bg-[#0B0F19] text-white rounded-[28px] p-6 md:p-10 shadow-2xl border border-white/5 overflow-hidden">
       {/* Grid overlay background */}
@@ -142,6 +172,7 @@ export function BigSavingCoupons({ coupons }: BigSavingCouponsProps) {
             : 'Special Offer'
 
           const productImage = getProductImage(coupon.title, coupon.store.name)
+          const logoUrl = sanitizeLogoUrl(coupon.store.logo_url)
 
           // Bigger card sizes and wider spacing (reduced overlap to -mr-6)
           const cardClass = isFeatured
@@ -173,9 +204,9 @@ export function BigSavingCoupons({ coupons }: BigSavingCouponsProps) {
                     />
                     {/* Floating Store Logo Overlay in Top Right */}
                     <div className="absolute top-2.5 right-2.5 w-14 h-7 bg-white border border-gray-150 rounded-lg flex items-center justify-center p-1 shadow-md z-10">
-                      {coupon.store.logo_url ? (
+                      {logoUrl ? (
                         <img
-                          src={coupon.store.logo_url}
+                          src={logoUrl}
                           alt={coupon.store.name}
                           className="object-contain max-h-full max-w-full"
                           loading="lazy"
@@ -190,9 +221,9 @@ export function BigSavingCoupons({ coupons }: BigSavingCouponsProps) {
                 ) : (
                   /* Fallback: Centered Store Logo as main image for accuracy */
                   <div className="w-full h-full flex flex-col items-center justify-center p-4">
-                    {coupon.store.logo_url ? (
+                    {logoUrl ? (
                       <img
-                        src={coupon.store.logo_url}
+                        src={logoUrl}
                         alt={coupon.store.name}
                         className="object-contain max-h-[70%] max-w-[85%] hover:scale-105 transition-transform duration-500"
                         loading="lazy"
@@ -221,10 +252,10 @@ export function BigSavingCoupons({ coupons }: BigSavingCouponsProps) {
                     </div>
                     {/* Store Logo Tag Inline */}
                     <div className="flex items-center gap-1.5">
-                      {coupon.store.logo_url && (
+                      {logoUrl && (
                         <div className="w-7 h-4 bg-white rounded border border-white/10 flex items-center justify-center p-0.5 overflow-hidden">
                           <img
-                            src={coupon.store.logo_url}
+                            src={logoUrl}
                             alt={coupon.store.name}
                             className="object-contain w-full h-full"
                           />

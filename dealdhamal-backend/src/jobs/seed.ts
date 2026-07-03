@@ -255,7 +255,7 @@ const SEED_STORES = [
     affiliate_url: 'CUELINKS_AFFILIATE_URL_AJIO',
     cashback_rate: 'Up to 12%',
     category: 'fashion',
-    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/9/9b/AJIO_Logo.svg',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/AJIO_Logo.svg/250px-AJIO_Logo.svg.png',
     banner_url: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80',
     description: 'Ajio — curated fashion from top Indian and international brands',
     coupons: [
