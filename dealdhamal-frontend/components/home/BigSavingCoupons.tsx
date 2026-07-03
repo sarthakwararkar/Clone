@@ -8,8 +8,8 @@ interface BigSavingCouponsProps {
   coupons: Coupon[]
 }
 
-// Client-side helper to resolve accurate product images from titles/keywords
-function getProductImage(title: string, storeName: string): string {
+// Client-side helper to resolve accurate product images from titles/keywords. Returns null if none match.
+function getProductImage(title: string, storeName: string): string | null {
   const t = title.toLowerCase()
   const s = storeName.toLowerCase()
   
@@ -63,8 +63,8 @@ function getProductImage(title: string, storeName: string): string {
     return 'https://images.unsplash.com/photo-1593508512255-86ab42a8e620?w=600&auto=format&fit=crop&q=80'
   }
   
-  // Default fallback
-  return 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80'
+  // No strong product match -> fallback to store logo centering
+  return null
 }
 
 export function BigSavingCoupons({ coupons }: BigSavingCouponsProps) {
@@ -143,9 +143,10 @@ export function BigSavingCoupons({ coupons }: BigSavingCouponsProps) {
 
           const productImage = getProductImage(coupon.title, coupon.store.name)
 
+          // Bigger card sizes and wider spacing (reduced overlap to -mr-6)
           const cardClass = isFeatured
-            ? "w-[290px] min-w-[290px] md:w-[320px] md:min-w-[320px] snap-start glass-card glass-card-featured tilted-card tilted-card-hover tilted-card-featured-hover featured rounded-[22px] overflow-hidden flex flex-col relative shadow-purple-900/10 z-10 -mr-12 last:mr-0 group cursor-pointer"
-            : "w-[260px] min-w-[260px] md:w-[280px] md:min-w-[280px] snap-start glass-card glass-card-hover tilted-card tilted-card-hover rounded-[20px] overflow-hidden flex flex-col relative z-0 -mr-12 last:mr-0 cursor-pointer group"
+            ? "w-[325px] min-w-[325px] md:w-[350px] md:min-w-[350px] snap-start glass-card glass-card-featured tilted-card tilted-card-hover tilted-card-featured-hover featured rounded-[22px] overflow-hidden flex flex-col relative shadow-purple-900/10 z-10 -mr-6 last:mr-0 group cursor-pointer animate-[fade-in_0.3s_ease-out]"
+            : "w-[290px] min-w-[290px] md:w-[310px] md:min-w-[310px] snap-start glass-card glass-card-hover tilted-card tilted-card-hover rounded-[20px] overflow-hidden flex flex-col relative z-0 -mr-6 last:mr-0 cursor-pointer group animate-[fade-in_0.2s_ease-out]"
 
           return (
             <div
@@ -156,17 +157,53 @@ export function BigSavingCoupons({ coupons }: BigSavingCouponsProps) {
               {/* Card Image Header */}
               <div className="h-44 bg-neutral-100 dark:bg-white m-3 rounded-2xl relative overflow-hidden flex items-center justify-center p-3 border border-white/10 group-hover:scale-[0.98] transition-transform duration-300">
                 {coupon.is_exclusive && (
-                  <span className="absolute top-2.5 left-2.5 text-[9px] font-black tracking-widest text-teal-400 bg-brandDark/85 border border-teal-400/30 px-2 py-0.5 rounded shadow">
+                  <span className="absolute top-2.5 left-2.5 text-[9px] font-black tracking-widest text-teal-400 bg-brandDark/85 border border-teal-400/30 px-2 py-0.5 rounded shadow z-10">
                     EXCLUSIVE
                   </span>
                 )}
-                {/* Product Image */}
-                <img
-                  src={productImage}
-                  alt={coupon.title}
-                  className="object-contain max-h-full max-w-full hover:scale-110 transition-transform duration-500"
-                  loading="lazy"
-                />
+                
+                {productImage ? (
+                  <>
+                    {/* Render matching product image */}
+                    <img
+                      src={productImage}
+                      alt={coupon.title}
+                      className="object-contain max-h-full max-w-full hover:scale-110 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                    {/* Floating Store Logo Overlay in Top Right */}
+                    <div className="absolute top-2.5 right-2.5 w-14 h-7 bg-white border border-gray-150 rounded-lg flex items-center justify-center p-1 shadow-md z-10">
+                      {coupon.store.logo_url ? (
+                        <img
+                          src={coupon.store.logo_url}
+                          alt={coupon.store.name}
+                          className="object-contain max-h-full max-w-full"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tight truncate max-w-full">
+                          {coupon.store.name.slice(0, 3)}
+                        </span>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  /* Fallback: Centered Store Logo as main image for accuracy */
+                  <div className="w-full h-full flex flex-col items-center justify-center p-4">
+                    {coupon.store.logo_url ? (
+                      <img
+                        src={coupon.store.logo_url}
+                        alt={coupon.store.name}
+                        className="object-contain max-h-[70%] max-w-[85%] hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <span className="text-gray-400 font-black text-2xl tracking-tighter uppercase select-none">
+                        {coupon.store.name}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Card Content Body */}
@@ -182,10 +219,21 @@ export function BigSavingCoupons({ coupons }: BigSavingCouponsProps) {
                         {discountText}
                       </span>
                     </div>
-                    {/* Store Tag */}
-                    <span className="text-[10px] font-black text-gray-500 tracking-widest uppercase">
-                      {coupon.store.name}
-                    </span>
+                    {/* Store Logo Tag Inline */}
+                    <div className="flex items-center gap-1.5">
+                      {coupon.store.logo_url && (
+                        <div className="w-7 h-4 bg-white rounded border border-white/10 flex items-center justify-center p-0.5 overflow-hidden">
+                          <img
+                            src={coupon.store.logo_url}
+                            alt={coupon.store.name}
+                            className="object-contain w-full h-full"
+                          />
+                        </div>
+                      )}
+                      <span className="text-[10px] font-black text-gray-500 tracking-widest uppercase truncate max-w-[80px]">
+                        {coupon.store.name}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Product Title */}
@@ -243,4 +291,3 @@ export function BigSavingCoupons({ coupons }: BigSavingCouponsProps) {
     </section>
   )
 }
-
