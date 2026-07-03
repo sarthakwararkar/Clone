@@ -19,12 +19,14 @@ const FLAP_MULT_MAP: Record<number, number> = { 1: 8, 2: 18, 3: 30, 4: 48, 5: 72
 const SPEED_MULT_MAP: Record<number, number> = { 1: 0.3, 2: 0.6, 3: 1.0, 4: 1.6, 5: 2.5 } // Flight speed multipliers
 
 export default function ButterflyOverlay() {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const backdropContainerRef = useRef<HTMLDivElement>(null)
+  const butterfliesContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!containerRef.current) return
+    if (!backdropContainerRef.current || !butterfliesContainerRef.current) return
 
-    const container = containerRef.current
+    const backdropContainer = backdropContainerRef.current
+    const butterfliesContainer = butterfliesContainerRef.current
     let isModelLoaded = false
     let objSplitGeos: {
       leftWing: THREE.BufferGeometry
@@ -32,32 +34,46 @@ export default function ButterflyOverlay() {
       body: THREE.BufferGeometry
     } | null = null
 
-    // 1. Setup Three.js Scene, Camera, and Renderer
-    const scene = new THREE.Scene()
+    // 1. Setup Dual Scenes
+    const backdropScene = new THREE.Scene()
+    const butterfliesScene = new THREE.Scene()
+
+    // 2. Setup Camera
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000)
-    camera.position.set(0, 0.5, 12) // Slightly raise camera to look down on the terrain
+    camera.position.set(0, 0.5, 12)
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)) // cap pixel ratio for performance
-    renderer.setSize(window.innerWidth, window.innerHeight)
-    container.appendChild(renderer.domElement)
+    // 3. Setup Renderers
+    const backdropRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+    backdropRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)) // Optimize pixel ratio
+    backdropRenderer.setSize(window.innerWidth, window.innerHeight)
+    backdropContainer.appendChild(backdropRenderer.domElement)
 
-    // 2. Setup exponential fog for landscape depth
-    scene.fog = new THREE.FogExp2(0xbde0fe, 0.045)
+    const butterfliesRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+    butterfliesRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
+    butterfliesRenderer.setSize(window.innerWidth, window.innerHeight)
+    butterfliesContainer.appendChild(butterfliesRenderer.domElement)
 
-    // 3. Setup Lighting matching sunny landscape
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7)
-    scene.add(ambientLight)
+    // 4. Setup Lighting for both scenes
+    const addLights = (sceneInstance: THREE.Scene) => {
+      const ambient = new THREE.AmbientLight(0xffffff, 0.7)
+      sceneInstance.add(ambient)
 
-    const sunLight = new THREE.DirectionalLight(0xfff5e6, 1.7) // Warm sun light
-    sunLight.position.set(10, 15, 10)
-    scene.add(sunLight)
+      const sun = new THREE.DirectionalLight(0xfff5e6, 1.7)
+      sun.position.set(10, 15, 10)
+      sceneInstance.add(sun)
 
-    const skyLight = new THREE.DirectionalLight(0x8ecae6, 0.9) // Cool sky light
-    skyLight.position.set(-10, 10, -5)
-    scene.add(skyLight)
+      const sky = new THREE.DirectionalLight(0x8ecae6, 0.9)
+      sky.position.set(-10, 10, -5)
+      sceneInstance.add(sky)
+    }
+    
+    addLights(backdropScene)
+    addLights(butterfliesScene)
 
-    // 4. Fallback Procedural Geometries (used while base.obj is loading)
+    // Setup backdrop fog
+    backdropScene.fog = new THREE.FogExp2(0xbde0fe, 0.045)
+
+    // 5. Fallback Procedural Geometries (used while base.obj is loading)
     const proceduralWingGeo = new THREE.PlaneGeometry(2.0, 2.0, 12, 12)
     const posAttr = proceduralWingGeo.attributes.position as THREE.BufferAttribute
     for (let i = 0; i < posAttr.count; i++) {
@@ -73,8 +89,8 @@ export default function ButterflyOverlay() {
     const proceduralBodyGeo = new THREE.CylinderGeometry(0.04, 0.03, 0.6, 8)
     proceduralBodyGeo.rotateX(Math.PI / 2)
 
-    // 5. HIGH-RES CONTINUOUS TERRAIN HEIGHTMAP (Meadow to Snow Mountains)
-    const terrainGeo = new THREE.PlaneGeometry(35, 35, 150, 150)
+    // 6. HIGH-RES CONTINUOUS TERRAIN HEIGHTMAP (Meadow to Snow Mountains)
+    const terrainGeo = new THREE.PlaneGeometry(35, 35, 110, 110)
     terrainGeo.rotateX(-Math.PI / 2) // lie flat
 
     const colors: number[] = []
@@ -84,13 +100,13 @@ export default function ButterflyOverlay() {
       const x = terrainPos.getX(i)
       const z = terrainPos.getZ(i)
 
-      // 5.1 Meadow height
+      // 6.1 Meadow height
       const meadowY = Math.sin(x * 0.12) * Math.cos(z * 0.12) * 0.8 + Math.sin(x * 0.3) * Math.cos(z * 0.3) * 0.2
       
       let finalY = meadowY
       let r = 0.18, g = 0.38, b = 0.15 // default grass green
       
-      // 5.2 Rising mountain range at the back (z < -2)
+      // 6.2 Rising mountain range at the back (z < -2)
       if (z < -2) {
         // Transition weight (0 at z=-2, 1 at z=-17.5)
         const t = (Math.abs(z) - 2) / 15.5 
@@ -119,7 +135,7 @@ export default function ButterflyOverlay() {
         }
       }
       
-      // 5.3 Winding dirt path (only in the front meadow area z > -5)
+      // 6.3 Winding dirt path (only in the front meadow area z > -5)
       if (z >= -5) {
         const pathCenter = Math.sin(z * 0.22) * 2.2
         const distToPath = Math.abs(x - pathCenter)
@@ -157,7 +173,7 @@ export default function ButterflyOverlay() {
 
     const terrain = new THREE.Mesh(terrainGeo, terrainMat)
     terrain.position.y = -3.2
-    scene.add(terrain)
+    backdropScene.add(terrain)
 
     // -------------------------------------------------------------
     // HIGH-RES PROCEDURAL TEXTURES
@@ -337,12 +353,12 @@ export default function ButterflyOverlay() {
     }
 
     // -------------------------------------------------------------
-    // INSTANCED FOLIAGE (2,500 Swaying Grass Blades)
+    // INSTANCED FOLIAGE (2,500 Swaying Grass Blades - Optimized)
     // -------------------------------------------------------------
     const grassGeo = new THREE.PlaneGeometry(0.2, 0.7)
     grassGeo.translate(0, 0.35, 0)
 
-    const totalGrass = 2500
+    const totalGrass = 1800 // Optimized density for high FPS
     const grassTex = createHighResTexture('grass')
     const grassMat = new THREE.MeshLambertMaterial({
       map: grassTex,
@@ -350,6 +366,23 @@ export default function ButterflyOverlay() {
       alphaTest: 0.5,
       side: THREE.DoubleSide
     })
+
+    // High performance GPU Sway Vertex Shader Injection
+    grassMat.onBeforeCompile = (shader) => {
+      shader.uniforms.uTime = { value: 0 }
+      shader.vertexShader = 'uniform float uTime;\n' + shader.vertexShader
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        `
+        #include <begin_vertex>
+        float swayFactor = position.y;
+        float sway = sin(uTime * 1.5 + instanceMatrix[3].x * 0.2 + instanceMatrix[3].z * 0.2) * 0.15 * swayFactor;
+        transformed.x += sway;
+        transformed.z += sway * 0.4;
+        `
+      )
+      grassMat.userData.shader = shader
+    }
 
     const grassMesh = new THREE.InstancedMesh(grassGeo, grassMat, totalGrass)
     const grassDummy = new THREE.Object3D()
@@ -360,7 +393,6 @@ export default function ButterflyOverlay() {
         rx = (Math.random() - 0.5) * 28
         rz = (Math.random() - 0.5) * 28
         
-        // Spawn restriction: meadow only (z > -6)
         if (rz < -6) continue
         
         const pCenter = Math.sin(rz * 0.22) * 2.2
@@ -378,7 +410,7 @@ export default function ButterflyOverlay() {
       grassDummy.updateMatrix()
       grassMesh.setMatrixAt(i, grassDummy.matrix)
     }
-    scene.add(grassMesh)
+    backdropScene.add(grassMesh)
 
     // -------------------------------------------------------------
     // INSTANCED WILDFLOWERS
@@ -386,7 +418,7 @@ export default function ButterflyOverlay() {
     const flowerGeo = new THREE.PlaneGeometry(0.35, 0.7)
     flowerGeo.translate(0, 0.35, 0)
 
-    const totalFlowersPerType = 150
+    const totalFlowersPerType = 100 // Optimized density
     const flowerColors = ['red', 'yellow', 'purple', 'blue']
     const instancedMeshes: { mesh: THREE.InstancedMesh; color: string }[] = []
 
@@ -399,6 +431,23 @@ export default function ButterflyOverlay() {
         side: THREE.DoubleSide
       })
 
+      // High performance GPU Sway Vertex Shader Injection for Flowers
+      mat.onBeforeCompile = (shader) => {
+        shader.uniforms.uTime = { value: 0 }
+        shader.vertexShader = 'uniform float uTime;\n' + shader.vertexShader
+        shader.vertexShader = shader.vertexShader.replace(
+          '#include <begin_vertex>',
+          `
+          #include <begin_vertex>
+          float swayFactor = position.y;
+          float sway = sin(uTime * 1.5 + instanceMatrix[3].x * 0.2 + instanceMatrix[3].z * 0.2) * 0.10 * swayFactor;
+          transformed.x += sway;
+          transformed.z += sway * 0.3;
+          `
+        )
+        mat.userData.shader = shader
+      }
+
       const mesh = new THREE.InstancedMesh(flowerGeo, mat, totalFlowersPerType)
       const dummy = new THREE.Object3D()
 
@@ -408,7 +457,7 @@ export default function ButterflyOverlay() {
           rx = (Math.random() - 0.5) * 28
           rz = (Math.random() - 0.5) * 28
           
-          if (rz < -6) continue // meadow only
+          if (rz < -6) continue
           
           const pCenter = Math.sin(rz * 0.22) * 2.2
           distToPath = Math.abs(rx - pCenter)
@@ -426,43 +475,22 @@ export default function ButterflyOverlay() {
         mesh.setMatrixAt(i, dummy.matrix)
       }
       
-      scene.add(mesh)
+      backdropScene.add(mesh)
       instancedMeshes.push({ mesh, color })
     })
 
     // -------------------------------------------------------------
-    // WIND SWAY SIMULATION
+    // WIND SWAY SIMULATION (100% GPU Accelerated)
     // -------------------------------------------------------------
     function animateMeadow(time: number) {
-      const dummy = new THREE.Object3D()
-      const mat = new THREE.Matrix4()
-
-      // Sway Grass
-      for (let i = 0; i < totalGrass; i++) {
-        grassMesh.getMatrixAt(i, mat)
-        dummy.position.setFromMatrixPosition(mat)
-        dummy.scale.setFromMatrixScale(mat)
-        
-        const sway = Math.sin(time * 1.5 + dummy.position.x * 0.2 + dummy.position.z * 0.2) * 0.15
-        dummy.rotation.set(sway, Math.sin(i) * Math.PI, sway * 0.4)
-        dummy.updateMatrix()
-        grassMesh.setMatrixAt(i, dummy.matrix)
+      if (grassMat.userData.shader) {
+        grassMat.userData.shader.uniforms.uTime.value = time
       }
-      grassMesh.instanceMatrix.needsUpdate = true
-
-      // Sway Flowers
       instancedMeshes.forEach(({ mesh }) => {
-        for (let i = 0; i < totalFlowersPerType; i++) {
-          mesh.getMatrixAt(i, mat)
-          dummy.position.setFromMatrixPosition(mat)
-          dummy.scale.setFromMatrixScale(mat)
-          
-          const sway = Math.sin(time * 1.5 + dummy.position.x * 0.2 + dummy.position.z * 0.2) * 0.12
-          dummy.rotation.set(sway, Math.sin(i) * Math.PI, sway * 0.3)
-          dummy.updateMatrix()
-          mesh.setMatrixAt(i, dummy.matrix)
+        const mat = mesh.material as THREE.MeshLambertMaterial
+        if (mat.userData.shader) {
+          mat.userData.shader.uniforms.uTime.value = time
         }
-        mesh.instanceMatrix.needsUpdate = true
       })
     }
 
@@ -637,13 +665,13 @@ export default function ButterflyOverlay() {
       }
 
       destroy() {
-        scene.remove(this.group)
+        butterfliesScene.remove(this.group)
         this.wingMat.dispose()
         this.bodyMat.dispose()
       }
     }
 
-    // 8. Interactive Trail Butterflies
+    // 8. Interactive Trail Butterflies (rendered in Butterflies scene overlay)
     const trailButterflies: TrailButterfly[] = []
     const MAX_TRAIL_BUTTERFLIES = 15
 
@@ -661,7 +689,7 @@ export default function ButterflyOverlay() {
         this.vz = Math.cos(theta) * baseSpeed
 
         this.group.scale.set(0.001, 0.001, 0.001)
-        scene.add(this.group)
+        butterfliesScene.add(this.group)
       }
 
       update() {
@@ -731,7 +759,7 @@ export default function ButterflyOverlay() {
         this.vz = Math.cos(theta) * baseSpeed * 0.5
 
         this.wingMat.opacity = 0.35 + depthPct * 0.5
-        scene.add(this.group)
+        butterfliesScene.add(this.group)
       }
 
       update() {
@@ -842,9 +870,12 @@ export default function ButterflyOverlay() {
 
     // 11. Frame resizing handler
     const handleResize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight
+      const w = window.innerWidth
+      const h = window.innerHeight
+      camera.aspect = w / h
       camera.updateProjectionMatrix()
-      renderer.setSize(window.innerWidth, window.innerHeight)
+      backdropRenderer.setSize(w, h)
+      butterfliesRenderer.setSize(w, h)
     }
     window.addEventListener('resize', handleResize)
 
@@ -858,7 +889,7 @@ export default function ButterflyOverlay() {
 
       animTime += 0.015
 
-      // Animate swaying grass + flowers
+      // Sway foliage on GPU via shader uniforms
       animateMeadow(animTime)
 
       // Update background butterflies
@@ -872,7 +903,9 @@ export default function ButterflyOverlay() {
         }
       }
 
-      renderer.render(scene, camera)
+      backdropRenderer.render(backdropScene, camera)
+      butterfliesRenderer.render(butterfliesScene, camera)
+      
       animationFrameId = requestAnimationFrame(animate)
     }
 
@@ -922,24 +955,37 @@ export default function ButterflyOverlay() {
         } else {
           mesh.material.dispose()
         }
-        scene.remove(mesh)
+        backdropScene.remove(mesh)
       })
 
-      // Dispose WebGL context
-      renderer.dispose()
-      if (renderer.domElement && container.contains(renderer.domElement)) {
-        container.removeChild(renderer.domElement)
+      // Dispose WebGL contexts
+      backdropRenderer.dispose()
+      if (backdropRenderer.domElement && backdropContainer.contains(backdropRenderer.domElement)) {
+        backdropContainer.removeChild(backdropRenderer.domElement)
+      }
+
+      butterfliesRenderer.dispose()
+      if (butterfliesRenderer.domElement && butterfliesContainer.contains(butterfliesRenderer.domElement)) {
+        butterfliesContainer.removeChild(butterfliesRenderer.domElement)
       }
     }
   }, [])
 
   return (
-    <div
-      ref={containerRef}
-      className="fixed inset-0 w-full h-full pointer-events-none z-[-10] overflow-hidden"
-      style={{
-        background: 'linear-gradient(to bottom, #87b9e8 0%, #b8d4ee 40%, #ffcbdc 100%)'
-      }}
-    />
+    <>
+      {/* Background Canvas: renders landscape terrain, mountains, foliage */}
+      <div
+        ref={backdropContainerRef}
+        className="fixed inset-0 w-full h-full pointer-events-none z-[-10] overflow-hidden"
+        style={{
+          background: 'linear-gradient(to bottom, #87b9e8 0%, #b8d4ee 40%, #ffcbdc 100%)'
+        }}
+      />
+      {/* Foreground Canvas: renders only the 3D flying butterflies */}
+      <div
+        ref={butterfliesContainerRef}
+        className="fixed inset-0 w-full h-full pointer-events-none z-[50] overflow-hidden"
+      />
+    </>
   )
 }
