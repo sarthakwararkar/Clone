@@ -417,6 +417,17 @@ export function Header() {
                 New
               </span>
             </Link>
+
+            {/* AI Deals */}
+            <Link
+              href="/ai"
+              className="flex items-center h-full px-4 text-sm font-semibold text-gray-300 hover:text-white hover:bg-neutral-800 transition-colors border-b-2 border-transparent relative mr-6"
+            >
+              <span>AI Deals</span>
+              <span className="absolute -top-1.5 -right-2.5 bg-violet-500 text-white text-[8px] font-black px-1 py-0.5 rounded leading-none uppercase tracking-wider scale-95 shadow-sm animate-pulse">
+                New
+              </span>
+            </Link>
           </div>
 
           {/* Right Action Button */}
@@ -452,6 +463,16 @@ export function Header() {
             onClick={() => setMobileMenuOpen(false)}
           >
             Categories
+          </Link>
+          <Link
+            href="/ai"
+            className="block px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg flex items-center justify-between"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <span>AI Deals</span>
+            <span className="bg-violet-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider scale-95 shadow-sm">
+              New
+            </span>
           </Link>
           {user ? (
             <>

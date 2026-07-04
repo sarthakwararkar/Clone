@@ -14,6 +14,7 @@ const SEED_CATEGORIES = [
   { name: 'Grocery', slug: 'grocery', icon_url: null },
   { name: 'Health', slug: 'health', icon_url: null },
   { name: 'Home & Living', slug: 'home-living', icon_url: null },
+  { name: 'AI Tools', slug: 'ai-tools', icon_url: null },
 ];
 
 const SEED_STORES = [
@@ -346,6 +347,66 @@ const SEED_STORES = [
       { title: "Flat 55% Off on Ethnic Wear Collection", type: "deal", discount_value: "55%" },
       { title: "12% Cashback on Paytm Payments", type: "cashback", discount_value: "12%" },
     ]
+  },
+  {
+    name: 'OpenAI (ChatGPT)',
+    slug: 'openai-chatgpt',
+    website_url: 'https://openai.com',
+    affiliate_url: 'https://openai.com',
+    cashback_rate: 'Free Access',
+    category: 'ai-tools',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg',
+    banner_url: 'https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&w=1200&q=80',
+    description: "OpenAI's advanced conversational AI tool that helps with writing, coding, brainstorming and learning.",
+    coupons: [
+      { title: "ChatGPT Plus for $20/month", type: "deal", discount_value: "Evergreen", is_verified: true, is_featured: true },
+      { title: "Access ChatGPT 4o Mini for Free", type: "deal", discount_value: "Free", is_verified: true, is_featured: true },
+      { title: "Get Free $5 API Credits for New OpenAI Accounts", type: "deal", discount_value: "Free Credits", is_verified: true }
+    ]
+  },
+  {
+    name: 'Midjourney',
+    slug: 'midjourney',
+    website_url: 'https://www.midjourney.com',
+    affiliate_url: 'https://www.midjourney.com',
+    cashback_rate: 'Free Trial',
+    category: 'ai-tools',
+    logo_url: 'https://res.cloudinary.com/dmodstdsx/image/upload/v1782415172/stores/logos/boat.png',
+    banner_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+    description: "Generate stunning AI-generated art, images and graphics from text prompts.",
+    coupons: [
+      { title: "Start Generating AI Images on Discord", type: "deal", discount_value: "Free Trial", is_verified: true, is_featured: true }
+    ]
+  },
+  {
+    name: 'Jasper AI',
+    slug: 'jasper-ai',
+    website_url: 'https://www.jasper.ai',
+    affiliate_url: 'https://www.jasper.ai',
+    cashback_rate: 'Free Words',
+    category: 'ai-tools',
+    logo_url: 'https://res.cloudinary.com/dmodstdsx/image/upload/v1783172825/stores/logos/beautiful-ai.png',
+    banner_url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
+    description: "AI writing assistant for enterprise content creators, marketing copy, and blogs.",
+    coupons: [
+      { title: "Start Jasper AI 7-Day Free Trial", type: "deal", discount_value: "Free Trial", is_verified: true, is_featured: true },
+      { title: "Get 10,000 Free Words on Sign Up", type: "deal", discount_value: "Free Words", is_verified: true }
+    ]
+  },
+  {
+    name: 'Copy.ai',
+    slug: 'copy-ai',
+    website_url: 'https://www.copy.ai',
+    affiliate_url: 'https://www.copy.ai',
+    cashback_rate: 'Free Plan',
+    category: 'ai-tools',
+    logo_url: 'https://res.cloudinary.com/dmodstdsx/image/upload/v1783172532/stores/logos/adcreative-ai.jpg',
+    banner_url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1200&q=80',
+    description: "AI copywriting tool for marketing copy, emails, blog posts, and social media content.",
+    coupons: [
+      { title: "Free Forever Plan: 2,000 Words Per Month", type: "deal", discount_value: "Free Plan", is_verified: true, is_featured: true },
+      { title: "Get Copy.ai Pro Plan 7-Day Free Trial", type: "deal", discount_value: "Free Trial", is_verified: true }
+    ]
   }
 ];
 
@@ -433,7 +494,8 @@ export async function main() {
       let storeCouponsSeeded = 0;
       const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days from now
 
-      for (const cp of storeData.coupons) {
+      for (const couponItem of storeData.coupons) {
+        const cp = couponItem as any;
         try {
           await db.insert(coupons).values({
             store_id: insertedStore.id,
