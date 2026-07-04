@@ -5,13 +5,13 @@ import * as THREE from 'three'
 // @ts-ignore
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 
-// Configuration constants from the user's settings image:
+// Configuration constants:
 const SETTINGS = {
   density: 59,       // Spawn Distance: 59px
   scale: 1.2,        // Butterfly Size: 1.2x
   flap: 3,           // Flapping Speed: Medium (level 3)
   fade: 1.8,         // Lifespan: 1.8s
-  backdrop: 15,      // Backdrop Butterflies: 15
+  backdrop: 8,       // Backdrop Butterflies: 8 (Optimized down from 15)
   speed: 3           // Flight Speed: Normal (level 3)
 }
 
@@ -69,6 +69,17 @@ export default function ButterflyOverlay() {
     })
     backdropRenderer.setPixelRatio(1.0) // Soft backdrop does not need high-DPI scaling
     backdropRenderer.setSize(window.innerWidth, window.innerHeight)
+    
+    // Apply hardware-acceleration CSS styles to canvas
+    backdropRenderer.domElement.style.position = 'absolute'
+    backdropRenderer.domElement.style.top = '0'
+    backdropRenderer.domElement.style.left = '0'
+    backdropRenderer.domElement.style.width = '100%'
+    backdropRenderer.domElement.style.height = '100%'
+    backdropRenderer.domElement.style.pointerEvents = 'none'
+    backdropRenderer.domElement.style.willChange = 'transform'
+    backdropRenderer.domElement.style.transform = 'translate3d(0,0,0)'
+    backdropRenderer.domElement.style.contain = 'paint'
     backdropContainer.appendChild(backdropRenderer.domElement)
 
     const butterfliesRenderer = new THREE.WebGLRenderer({
@@ -79,6 +90,17 @@ export default function ButterflyOverlay() {
     })
     butterfliesRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)) // Maintain crisp outlines for overlays
     butterfliesRenderer.setSize(window.innerWidth, window.innerHeight)
+    
+    // Apply hardware-acceleration CSS styles to canvas
+    butterfliesRenderer.domElement.style.position = 'absolute'
+    butterfliesRenderer.domElement.style.top = '0'
+    butterfliesRenderer.domElement.style.left = '0'
+    butterfliesRenderer.domElement.style.width = '100%'
+    butterfliesRenderer.domElement.style.height = '100%'
+    butterfliesRenderer.domElement.style.pointerEvents = 'none'
+    butterfliesRenderer.domElement.style.willChange = 'transform'
+    butterfliesRenderer.domElement.style.transform = 'translate3d(0,0,0)'
+    butterfliesRenderer.domElement.style.contain = 'paint'
     butterfliesContainer.appendChild(butterfliesRenderer.domElement)
 
     // 4. Setup Lighting for both scenes
@@ -133,7 +155,8 @@ export default function ButterflyOverlay() {
     proceduralBodyGeo.rotateX(Math.PI / 2)
 
     // 6. HIGH-RES CONTINUOUS TERRAIN HEIGHTMAP (Meadow to Snow Mountains)
-    const terrainGeo = new THREE.PlaneGeometry(35, 35, 110, 110)
+    // Downscaled terrain resolution from 110x110 to 70x70 to save GPU rendering cycles
+    const terrainGeo = new THREE.PlaneGeometry(35, 35, 70, 70)
     terrainGeo.rotateX(-Math.PI / 2) // lie flat
 
     const colors: number[] = []
@@ -396,12 +419,12 @@ export default function ButterflyOverlay() {
     }
 
     // -------------------------------------------------------------
-    // INSTANCED FOLIAGE (1800 Grass Blades)
+    // INSTANCED FOLIAGE (Downscaled counts for lighter GPU overhead)
     // -------------------------------------------------------------
     const grassGeo = new THREE.PlaneGeometry(0.2, 0.7)
     grassGeo.translate(0, 0.35, 0)
 
-    const totalGrass = 1800
+    const totalGrass = 700 // Downscaled from 1800
     const grassTex = createHighResTexture('grass')
     const grassMat = new THREE.MeshLambertMaterial({
       map: grassTex,
@@ -456,12 +479,12 @@ export default function ButterflyOverlay() {
     backdropScene.add(grassMesh)
 
     // -------------------------------------------------------------
-    // INSTANCED WILDFLOWERS
+    // INSTANCED WILDFLOWERS (Downscaled from 100 per type to 40)
     // -------------------------------------------------------------
     const flowerGeo = new THREE.PlaneGeometry(0.35, 0.7)
     flowerGeo.translate(0, 0.35, 0)
 
-    const totalFlowersPerType = 100
+    const totalFlowersPerType = 40 // Downscaled from 100
     const flowerColors = ['red', 'yellow', 'purple', 'blue']
     const instancedMeshes: { mesh: THREE.InstancedMesh; color: string }[] = []
 
@@ -618,9 +641,9 @@ export default function ButterflyOverlay() {
     // -------------------------------------------------------------
     // INSTANCED BUTTERFLY SETUP (Unified high-performance rendering)
     // -------------------------------------------------------------
-    const MAX_TRAIL_BUTTERFLIES = 15
-    const MAX_BACKDROP_BUTTERFLIES = SETTINGS.backdrop
-    const TOTAL_BUTTERFLIES = MAX_TRAIL_BUTTERFLIES + MAX_BACKDROP_BUTTERFLIES
+    const MAX_TRAIL_BUTTERFLIES = 8 // Downscaled from 15
+    const MAX_BACKDROP_BUTTERFLIES = SETTINGS.backdrop // 8 backdrop butterflies
+    const TOTAL_BUTTERFLIES = MAX_TRAIL_BUTTERFLIES + MAX_BACKDROP_BUTTERFLIES // 16 total
 
     // Pre-allocate JavaScript states
     const butterflies: ButterflyState[] = []
@@ -765,7 +788,7 @@ export default function ButterflyOverlay() {
       }
     }
 
-    let nextTrailIndex = MAX_BACKDROP_BUTTERFLIES // indices 15 to 29
+    let nextTrailIndex = MAX_BACKDROP_BUTTERFLIES // indices 8 to 15
     function spawnTrailButterfly(x: number, y: number) {
       const idx = nextTrailIndex
       nextTrailIndex = MAX_BACKDROP_BUTTERFLIES + ((nextTrailIndex - MAX_BACKDROP_BUTTERFLIES + 1) % MAX_TRAIL_BUTTERFLIES)
@@ -885,7 +908,7 @@ export default function ButterflyOverlay() {
       // Sway foliage on GPU via shader uniforms
       animateMeadow(animTime)
 
-      // Update and compute matrices for all 30 butterflies in the pool
+      // Update and compute matrices for all 16 butterflies in the pool
       for (let i = 0; i < TOTAL_BUTTERFLIES; i++) {
         const b = butterflies[i]
 
@@ -1091,13 +1114,21 @@ export default function ButterflyOverlay() {
         ref={backdropContainerRef}
         className="fixed inset-0 w-full h-full pointer-events-none z-[-10] overflow-hidden"
         style={{
-          background: 'linear-gradient(to bottom, #87b9e8 0%, #b8d4ee 40%, #ffcbdc 100%)'
+          background: 'linear-gradient(to bottom, #87b9e8 0%, #b8d4ee 40%, #ffcbdc 100%)',
+          transform: 'translate3d(0,0,0)',
+          willChange: 'transform',
+          contain: 'paint'
         }}
       />
       {/* Foreground Canvas: renders only the 3D flying butterflies */}
       <div
         ref={butterfliesContainerRef}
         className="fixed inset-0 w-full h-full pointer-events-none z-[50] overflow-hidden"
+        style={{
+          transform: 'translate3d(0,0,0)',
+          willChange: 'transform',
+          contain: 'paint'
+        }}
       />
     </>
   )
