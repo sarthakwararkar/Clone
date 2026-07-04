@@ -224,7 +224,7 @@ export default function IntroSplash({ children }: IntroSplashProps) {
 
   // If the flow is resolved to main, render only the site children
   if (flow === 'main') {
-    return <div className={styles.fadeIn}>{children}</div>;
+    return <>{children}</>;
   }
 
   return (
