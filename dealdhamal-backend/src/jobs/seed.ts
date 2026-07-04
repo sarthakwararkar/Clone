@@ -371,7 +371,7 @@ const SEED_STORES = [
     affiliate_url: 'https://www.midjourney.com',
     cashback_rate: 'Free Trial',
     category: 'ai-tools',
-    logo_url: 'https://logo.clearbit.com/midjourney.com',
+    logo_url: 'https://logos.hunter.io/midjourney.com',
     banner_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
     description: "Generate stunning AI-generated art, images and graphics from text prompts.",
     coupons: [
@@ -385,7 +385,7 @@ const SEED_STORES = [
     affiliate_url: 'https://www.jasper.ai',
     cashback_rate: 'Free Words',
     category: 'ai-tools',
-    logo_url: 'https://logo.clearbit.com/jasper.ai',
+    logo_url: 'https://logos.hunter.io/jasper.ai',
     banner_url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
     description: "AI writing assistant for enterprise content creators, marketing copy, and blogs.",
     coupons: [
@@ -400,7 +400,7 @@ const SEED_STORES = [
     affiliate_url: 'https://www.copy.ai',
     cashback_rate: 'Free Plan',
     category: 'ai-tools',
-    logo_url: 'https://logo.clearbit.com/copy.ai',
+    logo_url: 'https://logos.hunter.io/copy.ai',
     banner_url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1200&q=80',
     description: "AI copywriting tool for marketing copy, emails, blog posts, and social media content.",
     coupons: [
@@ -439,7 +439,7 @@ const SEED_STORES = [
     affiliate_url: 'https://www.browse.ai',
     cashback_rate: 'Free Credits',
     category: 'ai-tools',
-    logo_url: 'https://logo.clearbit.com/browse.ai',
+    logo_url: 'https://logos.hunter.io/browse.ai',
     banner_url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
     description: "The easiest way to extract and monitor data from any website without coding.",
     coupons: [

@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
         hostname: 'logo.clearbit.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'logos.hunter.io',
+        pathname: '/**',
+      },
     ],
   },
   experimental: {
