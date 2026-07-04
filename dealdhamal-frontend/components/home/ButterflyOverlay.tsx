@@ -2,6 +2,93 @@
 
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
+// @ts-ignore
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
+
+// Geometry Splitting Helper for base.obj
+function splitButterflyGeometry(geo: THREE.BufferGeometry) {
+  const positionAttr = geo.attributes.position as THREE.BufferAttribute
+  if (!positionAttr) return null
+
+  // Ensure geometry is non-indexed for simple triangle parsing
+  const tempGeo = geo.index ? geo.clone().toNonIndexed() : geo.clone()
+  const positions = (tempGeo.attributes.position as THREE.BufferAttribute).array as Float32Array
+  const normals = tempGeo.attributes.normal 
+    ? ((tempGeo.attributes.normal as THREE.BufferAttribute).array as Float32Array) 
+    : null
+
+  const leftVerts: number[] = []
+  const leftNorms: number[] = []
+
+  const rightVerts: number[] = []
+  const rightNorms: number[] = []
+
+  const bodyVerts: number[] = []
+  const bodyNorms: number[] = []
+
+  const bodyThreshold = 0.08
+
+  for (let i = 0; i < positions.length; i += 9) {
+    const x1 = positions[i],     y1 = positions[i+1], z1 = positions[i+2]
+    const x2 = positions[i+3],   y2 = positions[i+4], z2 = positions[i+5]
+    const x3 = positions[i+6],   y3 = positions[i+7], z3 = positions[i+8]
+
+    const centroidX = (x1 + x2 + x3) / 3
+
+    let vTarget: number[], nTarget: number[]
+
+    if (centroidX < -bodyThreshold) {
+      vTarget = leftVerts
+      nTarget = leftNorms
+    } else if (centroidX > bodyThreshold) {
+      vTarget = rightVerts
+      nTarget = rightNorms
+    } else {
+      vTarget = bodyVerts
+      nTarget = bodyNorms
+    }
+
+    vTarget.push(x1, y1, z1, x2, y2, z2, x3, y3, z3)
+
+    if (normals) {
+      nTarget.push(
+        normals[i],   normals[i+1], normals[i+2],
+        normals[i+3], normals[i+4], normals[i+5],
+        normals[i+6], normals[i+7], normals[i+8]
+      )
+    }
+  }
+
+  const leftGeo = new THREE.BufferGeometry()
+  leftGeo.setAttribute('position', new THREE.Float32BufferAttribute(leftVerts, 3))
+  if (leftNorms.length) leftGeo.setAttribute('normal', new THREE.Float32BufferAttribute(leftNorms, 3))
+  leftGeo.computeVertexNormals()
+
+  const rightGeo = new THREE.BufferGeometry()
+  rightGeo.setAttribute('position', new THREE.Float32BufferAttribute(rightVerts, 3))
+  if (rightNorms.length) rightGeo.setAttribute('normal', new THREE.Float32BufferAttribute(rightNorms, 3))
+  rightGeo.computeVertexNormals()
+
+  const bGeo = new THREE.BufferGeometry()
+  bGeo.setAttribute('position', new THREE.Float32BufferAttribute(bodyVerts, 3))
+  if (bodyNorms.length) bGeo.setAttribute('normal', new THREE.Float32BufferAttribute(bodyNorms, 3))
+  bGeo.computeVertexNormals()
+
+  // Hinge translations: translate meshes so pivots lie at X = 0
+  leftGeo.translate(bodyThreshold, 0, 0)
+  rightGeo.translate(-bodyThreshold, 0, 0)
+
+  if (tempGeo !== geo) {
+    tempGeo.dispose()
+  }
+
+  return {
+    leftWing: leftGeo,
+    rightWing: rightGeo,
+    body: bGeo
+  }
+}
+
 
 // Configuration constants:
 const SETTINGS = {
@@ -268,6 +355,38 @@ export default function ButterflyOverlay() {
     butterfliesScene.add(leftWingMesh)
     butterfliesScene.add(rightWingMesh)
 
+    let currentHingeOffset = 0.0
+    let loadedGeos: { body: THREE.BufferGeometry, leftWing: THREE.BufferGeometry, rightWing: THREE.BufferGeometry } | null = null
+
+    const objLoader = new OBJLoader()
+    objLoader.load(
+      '/base.obj',
+      (object: any) => {
+        let butterflyMesh: THREE.Mesh | null = null
+        object.traverse((child: any) => {
+          if (child instanceof THREE.Mesh) {
+            butterflyMesh = child
+          }
+        })
+
+        if (butterflyMesh) {
+          const split = splitButterflyGeometry((butterflyMesh as THREE.Mesh).geometry)
+          if (split) {
+            bodyMesh.geometry = split.body
+            leftWingMesh.geometry = split.leftWing
+            rightWingMesh.geometry = split.rightWing
+            loadedGeos = split
+            currentHingeOffset = 0.08
+          }
+        }
+      },
+      undefined,
+      (err: any) => {
+        console.warn('Error loading base.obj, running fallback procedural renderer.', err)
+      }
+    )
+
+
     // ── Butterfly state controllers ──
     function initBackdrop() {
       for (let i = 0; i < MAX_BACKDROP; i++) {
@@ -329,6 +448,7 @@ export default function ButterflyOverlay() {
     let animId: number, isVisible=true, animTime=0, frameCount=0
     const dummy = new THREE.Object3D()
     const wingRot = new THREE.Matrix4(), tmp = new THREE.Matrix4()
+    const leftLocal = new THREE.Matrix4(), rightLocal = new THREE.Matrix4(), tMat = new THREE.Matrix4()
     const colBuf = new THREE.Color()
 
     const animate = () => {
@@ -364,8 +484,21 @@ export default function ButterflyOverlay() {
         dummy.rotation.z=-Math.atan2(vx,vy); dummy.rotation.x=-Math.atan2(vz,Math.hypot(vx,vy))
         dummy.scale.set(sc,sc,sc); dummy.updateMatrix()
         bodyMesh.setMatrixAt(i, dummy.matrix)
-        wingRot.makeRotationY(flap); tmp.multiplyMatrices(dummy.matrix,wingRot); leftWingMesh.setMatrixAt(i,tmp)
-        wingRot.makeRotationY(-flap); tmp.multiplyMatrices(dummy.matrix,wingRot); rightWingMesh.setMatrixAt(i,tmp)
+
+        // Left Wing Matrix: Translate(-offset, 0, 0) * RotateY(flap)
+        tMat.makeTranslation(-currentHingeOffset, 0, 0)
+        wingRot.makeRotationY(flap)
+        leftLocal.multiplyMatrices(tMat, wingRot)
+        tmp.multiplyMatrices(dummy.matrix, leftLocal)
+        leftWingMesh.setMatrixAt(i, tmp)
+
+        // Right Wing Matrix: Translate(offset, 0, 0) * RotateY(-flap)
+        tMat.makeTranslation(currentHingeOffset, 0, 0)
+        wingRot.makeRotationY(-flap)
+        rightLocal.multiplyMatrices(tMat, wingRot)
+        tmp.multiplyMatrices(dummy.matrix, rightLocal)
+        rightWingMesh.setMatrixAt(i, tmp)
+
         colBuf.setRGB(op,op,op); bodyMesh.setColorAt(i,colBuf); leftWingMesh.setColorAt(i,colBuf); rightWingMesh.setColorAt(i,colBuf)
       }
 
@@ -401,6 +534,11 @@ export default function ButterflyOverlay() {
       bodyMesh.dispose(); leftWingMesh.dispose(); rightWingMesh.dispose()
       wingMat.dispose(); bodyMat.dispose()
       proceduralLeftWingGeo.dispose(); proceduralRightWingGeo.dispose(); proceduralBodyGeo.dispose()
+      if (loadedGeos) {
+        loadedGeos.body.dispose()
+        loadedGeos.leftWing.dispose()
+        loadedGeos.rightWing.dispose()
+      }
       terrainGeo.dispose(); terrainMat.dispose()
       grassGeo.dispose(); grassMat.dispose(); grassTex.dispose(); flowerGeo.dispose()
       flowerMeshes.forEach(({mesh})=>{ (mesh.material as THREE.Material).dispose(); backdropScene.remove(mesh) })
