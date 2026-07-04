@@ -32,7 +32,7 @@ storesRouter.get('/', async (c) => {
   const query = listStoresSchema.parse(c.req.query());
   const cache = createCacheService(c.env.UPSTASH_REDIS_URL, c.env.UPSTASH_REDIS_TOKEN);
 
-  const cacheKey = `stores:page:${query.page}:${query.category || ''}:${query.featured ?? ''}`;
+  const cacheKey = `stores:page:${query.page}:${query.limit}:${query.category || ''}:${query.featured ?? ''}`;
   const cached = await cache.get<PaginatedResponse<StoreResponse>>(cacheKey);
   if (cached) {
     return c.json({ success: true, ...cached });
