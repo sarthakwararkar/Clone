@@ -1,32 +1,27 @@
-.shutterContainer {
+.canvasContainer {
   position: fixed;
   inset: 0;
-  display: flex;
   width: 100vw;
   height: 100vh;
-  z-index: 999999;
+  z-index: 99998;
   pointer-events: none;
-  perspective: 1200px;
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 1;
 }
 
-.shutterBar {
-  width: 10vw;
-  height: 100%;
-  background-color: #ffffff;
-  transform: rotateY(-90deg);
-  transform-origin: left center;
-  transition: transform 0.8s cubic-bezier(0.76, 0, 0.24, 1);
-  transition-delay: var(--delay);
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.15);
+.canvasContainer.fadeOut {
+  opacity: 0;
 }
 
-/* Close phase: rotate columns to cover screen with white */
-.shutterBar.closing {
-  transform: rotateY(0deg);
+.fadeIn {
+  animation: fadeInEffect 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Open phase: rotate columns outward to reveal next screen */
-.shutterBar.opening {
-  transform: rotateY(90deg);
-  transform-origin: right center;
+@keyframes fadeInEffect {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }

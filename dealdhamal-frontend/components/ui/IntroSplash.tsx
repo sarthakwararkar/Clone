@@ -1,17 +1,26 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import * as THREE from 'three';
 import styles from './IntroSplash.module.css';
 
 interface IntroSplashProps {
   children: React.ReactNode;
 }
 
-type FlowState = 'intro' | 'transition-closing' | 'transition-opening' | 'main';
+type FlowState = 'intro' | 'transitioning' | 'main';
 
 export default function IntroSplash({ children }: IntroSplashProps) {
   const [flow, setFlow] = useState<FlowState>('intro');
+  const [canvasFadeOut, setCanvasFadeOut] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const requestRef = useRef<number | null>(null);
+  const uniformsRef = useRef<any>(null);
+  const progressRef = useRef<number>(0);
+  const animatingRef = useRef<boolean>(false);
+  const animStartTimeRef = useRef<number>(0);
 
   useEffect(() => {
     // Check if the user has already seen the intro during this browser session
@@ -38,24 +47,184 @@ export default function IntroSplash({ children }: IntroSplashProps) {
     };
   }, [flow, isMounted]);
 
-  const handleStartTransition = () => {
-    setFlow('transition-closing');
-    
-    // Once shutters close completely (approx 1.3 seconds for staggered timings)
-    setTimeout(() => {
-      setFlow('transition-opening');
-      sessionStorage.setItem('hasSeenIntro', 'true');
-    }, 1300);
+  useEffect(() => {
+    if (!isMounted || flow === 'main') return;
+    if (!containerRef.current) return;
 
-    // Once shutters open completely (approx 2.5 seconds total)
+    const container = containerRef.current;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    // Create Scene, Camera, Renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x0d0d0f, 1);
+    container.appendChild(renderer.domElement);
+
+    // Shaders
+    const vertexShader = `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = vec4(position, 1.0);
+      }
+    `;
+
+    const fragmentShader = `
+      uniform sampler2D uTexture;
+      uniform float uProgress;
+      uniform float uTime;
+      uniform vec2 uResolution;
+      uniform vec2 uTextureResolution;
+      uniform float uIntensity;
+      uniform float uFrequency;
+      varying vec2 vUv;
+
+      void main() {
+        float textureAspect = uTextureResolution.x / uTextureResolution.y;
+        float quadAspect = uResolution.x / uResolution.y;
+        vec2 coverUv = vUv;
+        if (quadAspect < textureAspect) {
+          float scaleX = quadAspect / textureAspect;
+          coverUv.x = (vUv.x - 0.5) * scaleX + 0.5;
+        } else {
+          float scaleY = textureAspect / quadAspect;
+          coverUv.y = (vUv.y - 0.5) * scaleY + 0.5;
+        }
+
+        vec2 center = vec2(0.5);
+        float dist = distance(coverUv, center);
+        float envelope = sin(uProgress * 3.14159265);
+        float wave = sin(dist * uFrequency - uProgress * 25.0) * uIntensity * envelope;
+        
+        vec2 dir = normalize(coverUv - center);
+        if (dist == 0.0) dir = vec2(0.0);
+        
+        vec2 distortedUv = coverUv + dir * wave;
+        gl_FragColor = texture2D(uTexture, distortedUv);
+      }
+    `;
+
+    // Load Texture
+    const textureLoader = new THREE.TextureLoader();
+    const textureResolution = new THREE.Vector2(1920, 1080); // Default fallback
+    
+    const texture = textureLoader.load('/unseen-bg.png', (tex) => {
+      if (tex.image) {
+        textureResolution.set(tex.image.width, tex.image.height);
+      }
+      renderer.render(scene, camera);
+    });
+
+    texture.wrapS = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.minFilter = THREE.LinearFilter;
+
+    // Uniforms
+    const uniforms = {
+      uTexture: { value: texture },
+      uProgress: { value: 0.0 },
+      uTime: { value: 0.0 },
+      uResolution: { value: new THREE.Vector2(width, height) },
+      uTextureResolution: { value: textureResolution },
+      uIntensity: { value: 0.08 },
+      uFrequency: { value: 30.0 }
+    };
+
+    uniformsRef.current = uniforms;
+
+    const material = new THREE.ShaderMaterial({
+      vertexShader,
+      fragmentShader,
+      uniforms,
+      depthWrite: false,
+      depthTest: false
+    });
+
+    const geometry = new THREE.PlaneGeometry(2, 2);
+    const mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+
+    // Easing helper
+    const easeInOutCubic = (t: number) =>
+      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+    // Animation Loop
+    let time = 0;
+    const animate = (timestamp: number) => {
+      time += 0.01;
+      uniforms.uTime.value = time;
+
+      if (animatingRef.current) {
+        const elapsed = timestamp - animStartTimeRef.current;
+        const p = Math.min(elapsed / 1600, 1.0);
+        progressRef.current = p;
+        uniforms.uProgress.value = easeInOutCubic(p);
+
+        if (p >= 1.0) {
+          animatingRef.current = false;
+        }
+      }
+
+      renderer.render(scene, camera);
+      requestRef.current = requestAnimationFrame(animate);
+    };
+
+    requestRef.current = requestAnimationFrame(animate);
+
+    // Resize Handler
+    const handleResize = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      renderer.setSize(w, h);
+      uniforms.uResolution.value.set(w, h);
+    };
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+      
+      // Dispose resources
+      geometry.dispose();
+      material.dispose();
+      texture.dispose();
+      renderer.dispose();
+      
+      if (renderer.domElement && container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
+    };
+  }, [isMounted, flow]);
+
+  const handleStartTransition = () => {
+    if (flow !== 'intro') return;
+    setFlow('transitioning');
+    
+    // Start WebGL progress animation
+    animStartTimeRef.current = performance.now();
+    animatingRef.current = true;
+
+    // Trigger canvas fade out at 1.0 seconds (gives 0.6 seconds for fade out to complete by 1.6s)
+    setTimeout(() => {
+      setCanvasFadeOut(true);
+    }, 1000);
+
+    // Complete the flow at 1.6 seconds
     setTimeout(() => {
       setFlow('main');
-    }, 2500);
+      sessionStorage.setItem('hasSeenIntro', 'true');
+    }, 1600);
   };
 
   // If the flow is resolved to main, render only the site children
   if (flow === 'main') {
-    return <>{children}</>;
+    return <div className={styles.fadeIn}>{children}</div>;
   }
 
   return (
@@ -70,17 +239,11 @@ export default function IntroSplash({ children }: IntroSplashProps) {
 
       {/* Splash Screen Overlay */}
       <div className="fixed inset-0 w-screen h-screen overflow-hidden bg-[#0d0d0f] text-white z-[99999]">
-        {/* Background Ambient Elements */}
-        <div className="absolute inset-0 z-0 pointer-events-none">
-          <div 
-            className="absolute inset-0 bg-cover bg-center scale-102 transition-all duration-[1.5s] ease-[cubic-bezier(0.16,1,0.3,1)]"
-            style={{ 
-              backgroundImage: 'url("/unseen-bg.png")',
-              transform: flow === 'transition-closing' ? 'scale(1.1) blur(10px)' : 'scale(1.02)'
-            }}
-          />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(13,13,15,0.2)_0%,rgba(13,13,15,0.8)_100%)]" />
-        </div>
+        {/* Background WebGL Canvas Container */}
+        <div 
+          ref={containerRef} 
+          className={`${styles.canvasContainer} ${canvasFadeOut ? styles.fadeOut : ''}`}
+        />
 
         {/* Hero Landing Content */}
         <div 
@@ -125,19 +288,6 @@ export default function IntroSplash({ children }: IntroSplashProps) {
             <div className="text-xs text-white/60 font-sans">©2026</div>
           </footer>
         </div>
-
-        {/* 3D Shutters Transition Overlay */}
-        {(flow === 'transition-closing' || flow === 'transition-opening') && (
-          <div className={styles.shutterContainer}>
-            {[...Array(10)].map((_, i) => (
-              <div 
-                key={i} 
-                className={`${styles.shutterBar} ${flow === 'transition-closing' ? styles.closing : styles.opening}`}
-                style={{ '--delay': `${i * 0.05}s` } as React.CSSProperties}
-              />
-            ))}
-          </div>
-        )}
       </div>
     </>
   );
