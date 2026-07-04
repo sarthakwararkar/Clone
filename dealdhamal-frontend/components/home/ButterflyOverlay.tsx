@@ -18,6 +18,24 @@ const SETTINGS = {
 const FLAP_MULT_MAP: Record<number, number> = { 1: 8, 2: 18, 3: 30, 4: 48, 5: 72 } // Wing flap frequency multipliers
 const SPEED_MULT_MAP: Record<number, number> = { 1: 0.3, 2: 0.6, 3: 1.0, 4: 1.6, 5: 2.5 } // Flight speed multipliers
 
+interface ButterflyState {
+  active: boolean
+  isTrail: boolean
+  x: number
+  y: number
+  z: number
+  vx: number
+  vy: number
+  vz: number
+  scaleMult: number
+  age: number
+  maxAge: number
+  time: number
+  flapSpeed: number
+  flapOffset: number
+  opacity: number
+}
+
 export default function ButterflyOverlay() {
   const backdropContainerRef = useRef<HTMLDivElement>(null)
   const butterfliesContainerRef = useRef<HTMLDivElement>(null)
@@ -42,14 +60,24 @@ export default function ButterflyOverlay() {
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000)
     camera.position.set(0, 0.5, 12)
 
-    // 3. Setup Renderers
-    const backdropRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
-    backdropRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)) // Optimize pixel ratio
+    // 3. Setup Renderers with High-Performance Settings (Disable Antialias, Optimize Fill-Rate)
+    const backdropRenderer = new THREE.WebGLRenderer({
+      antialias: false,
+      alpha: true,
+      powerPreference: 'high-performance',
+      precision: 'mediump'
+    })
+    backdropRenderer.setPixelRatio(1.0) // Soft backdrop does not need high-DPI scaling
     backdropRenderer.setSize(window.innerWidth, window.innerHeight)
     backdropContainer.appendChild(backdropRenderer.domElement)
 
-    const butterfliesRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
-    butterfliesRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
+    const butterfliesRenderer = new THREE.WebGLRenderer({
+      antialias: false,
+      alpha: true,
+      powerPreference: 'high-performance',
+      precision: 'mediump'
+    })
+    butterfliesRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)) // Maintain crisp outlines for overlays
     butterfliesRenderer.setSize(window.innerWidth, window.innerHeight)
     butterfliesContainer.appendChild(butterfliesRenderer.domElement)
 
@@ -73,18 +101,33 @@ export default function ButterflyOverlay() {
     // Setup backdrop fog
     backdropScene.fog = new THREE.FogExp2(0xbde0fe, 0.045)
 
-    // 5. Fallback Procedural Geometries (used while base.obj is loading)
-    const proceduralWingGeo = new THREE.PlaneGeometry(2.0, 2.0, 12, 12)
-    const posAttr = proceduralWingGeo.attributes.position as THREE.BufferAttribute
-    for (let i = 0; i < posAttr.count; i++) {
-      const x = posAttr.getX(i)
-      const y = posAttr.getY(i)
+    // 5. Fallback Procedural Geometries (pre-aligned hinges to X=0 for uniform matrix transforms)
+    const proceduralLeftWingGeo = new THREE.PlaneGeometry(2.0, 2.0, 12, 12)
+    const posAttrLeft = proceduralLeftWingGeo.attributes.position as THREE.BufferAttribute
+    for (let i = 0; i < posAttrLeft.count; i++) {
+      const x = posAttrLeft.getX(i)
+      const y = posAttrLeft.getY(i)
       const normX = x + 1
       const normY = y + 1
       const z = Math.sin(normX * Math.PI / 2) * Math.sin(normY * Math.PI / 2) * 0.35
-      posAttr.setZ(i, z)
+      posAttrLeft.setZ(i, z)
     }
-    proceduralWingGeo.computeVertexNormals()
+    proceduralLeftWingGeo.computeVertexNormals()
+    proceduralLeftWingGeo.translate(-1.0, 0, 0) // Align left wing right-edge (hinge) at X=0
+
+    const proceduralRightWingGeo = new THREE.PlaneGeometry(2.0, 2.0, 12, 12)
+    const posAttrRight = proceduralRightWingGeo.attributes.position as THREE.BufferAttribute
+    for (let i = 0; i < posAttrRight.count; i++) {
+      const x = posAttrRight.getX(i)
+      const y = posAttrRight.getY(i)
+      const normX = x + 1
+      const normY = y + 1
+      const z = Math.sin(normX * Math.PI / 2) * Math.sin(normY * Math.PI / 2) * 0.35
+      posAttrRight.setZ(i, z)
+    }
+    proceduralRightWingGeo.computeVertexNormals()
+    proceduralRightWingGeo.scale(-1, 1, 1) // Mirror X
+    proceduralRightWingGeo.translate(1.0, 0, 0) // Align right wing left-edge (hinge) at X=0
 
     const proceduralBodyGeo = new THREE.CylinderGeometry(0.04, 0.03, 0.6, 8)
     proceduralBodyGeo.rotateX(Math.PI / 2)
@@ -353,12 +396,12 @@ export default function ButterflyOverlay() {
     }
 
     // -------------------------------------------------------------
-    // INSTANCED FOLIAGE (2,500 Swaying Grass Blades - Optimized)
+    // INSTANCED FOLIAGE (1800 Grass Blades)
     // -------------------------------------------------------------
     const grassGeo = new THREE.PlaneGeometry(0.2, 0.7)
     grassGeo.translate(0, 0.35, 0)
 
-    const totalGrass = 1800 // Optimized density for high FPS
+    const totalGrass = 1800
     const grassTex = createHighResTexture('grass')
     const grassMat = new THREE.MeshLambertMaterial({
       map: grassTex,
@@ -418,7 +461,7 @@ export default function ButterflyOverlay() {
     const flowerGeo = new THREE.PlaneGeometry(0.35, 0.7)
     flowerGeo.translate(0, 0.35, 0)
 
-    const totalFlowersPerType = 100 // Optimized density
+    const totalFlowersPerType = 100
     const flowerColors = ['red', 'yellow', 'purple', 'blue']
     const instancedMeshes: { mesh: THREE.InstancedMesh; color: string }[] = []
 
@@ -572,7 +615,101 @@ export default function ButterflyOverlay() {
       }
     }
 
-    // 6. Load base.obj dynamically
+    // -------------------------------------------------------------
+    // INSTANCED BUTTERFLY SETUP (Unified high-performance rendering)
+    // -------------------------------------------------------------
+    const MAX_TRAIL_BUTTERFLIES = 15
+    const MAX_BACKDROP_BUTTERFLIES = SETTINGS.backdrop
+    const TOTAL_BUTTERFLIES = MAX_TRAIL_BUTTERFLIES + MAX_BACKDROP_BUTTERFLIES
+
+    // Pre-allocate JavaScript states
+    const butterflies: ButterflyState[] = []
+    for (let i = 0; i < TOTAL_BUTTERFLIES; i++) {
+      butterflies.push({
+        active: false,
+        isTrail: false,
+        x: 0, y: 0, z: 0,
+        vx: 0, vy: 0, vz: 0,
+        scaleMult: 1,
+        age: 0,
+        maxAge: 0,
+        time: Math.random() * 100,
+        flapSpeed: 15 + Math.random() * 15,
+        flapOffset: Math.random() * Math.PI * 2,
+        opacity: 0
+      })
+    }
+
+    // Allocate materials
+    const wingMat = new THREE.MeshLambertMaterial({
+      color: 0xffffff,
+      emissive: 0x444444,
+      transparent: true,
+      opacity: 0.85,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    })
+
+    const bodyMat = new THREE.MeshLambertMaterial({
+      color: 0x181c26,
+      emissive: 0x07090e,
+      transparent: true,
+      opacity: 1.0
+    })
+
+    // Custom shader modifications to map InstancedMesh color to alpha transparency on the GPU
+    const injectInstanceOpacity = (shader: any) => {
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <color_fragment>',
+        `
+        #include <color_fragment>
+        #ifdef USE_INSTANCING_COLOR
+        diffuseColor.a *= vInstanceColor.r;
+        #endif
+        `
+      )
+    }
+    wingMat.onBeforeCompile = injectInstanceOpacity
+    bodyMat.onBeforeCompile = injectInstanceOpacity
+
+    // Create instanced meshes using fallback procedural geometries on load
+    const bodyMesh = new THREE.InstancedMesh(proceduralBodyGeo as THREE.BufferGeometry, bodyMat, TOTAL_BUTTERFLIES)
+    const leftWingMesh = new THREE.InstancedMesh(proceduralLeftWingGeo as THREE.BufferGeometry, wingMat, TOTAL_BUTTERFLIES)
+    const rightWingMesh = new THREE.InstancedMesh(proceduralRightWingGeo as THREE.BufferGeometry, wingMat, TOTAL_BUTTERFLIES)
+
+    bodyMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+    leftWingMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+    rightWingMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+
+    // Initialize all color attributes to avoid allocation gaps
+    const initColor = new THREE.Color(1, 1, 1)
+    for (let i = 0; i < TOTAL_BUTTERFLIES; i++) {
+      bodyMesh.setColorAt(i, initColor)
+      leftWingMesh.setColorAt(i, initColor)
+      rightWingMesh.setColorAt(i, initColor)
+    }
+
+    if (bodyMesh.instanceColor) bodyMesh.instanceColor.setUsage(THREE.DynamicDrawUsage)
+    if (leftWingMesh.instanceColor) leftWingMesh.instanceColor.setUsage(THREE.DynamicDrawUsage)
+    if (rightWingMesh.instanceColor) rightWingMesh.instanceColor.setUsage(THREE.DynamicDrawUsage)
+
+    butterfliesScene.add(bodyMesh)
+    butterfliesScene.add(leftWingMesh)
+    butterfliesScene.add(rightWingMesh)
+
+    function rebuildGeometries() {
+      if (isModelLoaded && objSplitGeos) {
+        bodyMesh.geometry = objSplitGeos.body
+        leftWingMesh.geometry = objSplitGeos.leftWing
+        rightWingMesh.geometry = objSplitGeos.rightWing
+      } else {
+        bodyMesh.geometry = proceduralBodyGeo
+        leftWingMesh.geometry = proceduralLeftWingGeo
+        rightWingMesh.geometry = proceduralRightWingGeo
+      }
+    }
+
+    // Load base.obj dynamically
     const objLoader = new OBJLoader()
     objLoader.load(
       '/base.obj',
@@ -587,6 +724,7 @@ export default function ButterflyOverlay() {
         if (butterflyMesh) {
           objSplitGeos = splitButterflyGeometry((butterflyMesh as THREE.Mesh).geometry)
           isModelLoaded = true
+          rebuildGeometries()
           rebuildBackdrop()
         }
       },
@@ -596,220 +734,75 @@ export default function ButterflyOverlay() {
       }
     )
 
-    // 7. Base Butterfly Logic
-    class ButterflyInstance {
-      group: THREE.Group
-      wingMat: THREE.MeshLambertMaterial
-      bodyMat: THREE.MeshLambertMaterial
-      leftWingGroup: THREE.Group
-      rightWingGroup: THREE.Group
-      leftWingMesh: THREE.Mesh
-      rightWingMesh: THREE.Mesh
-      bodyMesh: THREE.Mesh
-      scaleMult: number
-      flapOffset: number
-      vx: number = 0
-      vy: number = 0
-      vz: number = 0
-      age: number = 0
-      maxAge: number = 60 * SETTINGS.fade
-      time: number = Math.random() * 100
-      flapSpeed: number = 15 + Math.random() * 15
-
-      constructor() {
-        this.group = new THREE.Group()
-
-        this.wingMat = new THREE.MeshLambertMaterial({
-          color: 0xffffff,
-          emissive: 0x444444,
-          transparent: true,
-          opacity: 0.85,
-          side: THREE.DoubleSide,
-          depthWrite: false
-        })
-
-        this.bodyMat = new THREE.MeshLambertMaterial({
-          color: 0x181c26,
-          emissive: 0x07090e
-        })
-
-        const leftG = isModelLoaded && objSplitGeos ? objSplitGeos.leftWing : proceduralWingGeo
-        const rightG = isModelLoaded && objSplitGeos ? objSplitGeos.rightWing : proceduralWingGeo
-        const bG = isModelLoaded && objSplitGeos ? objSplitGeos.body : proceduralBodyGeo
-
-        this.bodyMesh = new THREE.Mesh(bG, this.bodyMat)
-        this.group.add(this.bodyMesh)
-
-        this.leftWingGroup = new THREE.Group()
-        this.leftWingMesh = new THREE.Mesh(leftG, this.wingMat)
-        if (!isModelLoaded) {
-          this.leftWingMesh.position.x = 1.0
-          this.leftWingGroup.position.set(-0.02, 0, 0)
-        }
-        this.leftWingGroup.add(this.leftWingMesh)
-        this.group.add(this.leftWingGroup)
-
-        this.rightWingGroup = new THREE.Group()
-        this.rightWingMesh = new THREE.Mesh(rightG, this.wingMat)
-        if (!isModelLoaded) {
-          this.rightWingMesh.scale.x = -1
-          this.rightWingMesh.position.x = -1.0
-          this.rightWingGroup.position.set(0.02, 0, 0)
-        }
-        this.rightWingGroup.add(this.rightWingMesh)
-        this.group.add(this.rightWingGroup)
-
-        this.scaleMult = SETTINGS.scale * (0.8 + Math.random() * 0.4)
-        this.flapOffset = Math.random() * Math.PI * 2
-        this.group.scale.set(0.25, 0.25, 0.25)
-      }
-
-      destroy() {
-        butterfliesScene.remove(this.group)
-        this.wingMat.dispose()
-        this.bodyMat.dispose()
-      }
-    }
-
-    // 8. Interactive Trail Butterflies (rendered in Butterflies scene overlay)
-    const trailButterflies: TrailButterfly[] = []
-    const MAX_TRAIL_BUTTERFLIES = 15
-
-    class TrailButterfly extends ButterflyInstance {
-      constructor(x: number, y: number) {
-        super()
-        this.group.position.set(x + (Math.random() - 0.5) * 0.2, y + (Math.random() - 0.5) * 0.2, 0.5)
-
-        const phi = Math.random() * Math.PI * 2
-        const theta = Math.acos((Math.random() * 2) - 1)
-        const baseSpeed = 0.05 + Math.random() * 0.05
-
-        this.vx = Math.sin(theta) * Math.cos(phi) * baseSpeed
-        this.vy = Math.sin(theta) * Math.sin(phi) * baseSpeed + 0.01
-        this.vz = Math.cos(theta) * baseSpeed
-
-        this.group.scale.set(0.001, 0.001, 0.001)
-        butterfliesScene.add(this.group)
-      }
-
-      update() {
-        this.age++
-        const pct = this.age / this.maxAge
-
-        let scaleVal = 1
-        if (pct < 0.15) {
-          scaleVal = (pct / 0.15) * this.scaleMult * 0.25
-        } else {
-          scaleVal = (1.0 - (pct - 0.15) / 0.85) * this.scaleMult * 0.25
-        }
-        this.group.scale.set(scaleVal, scaleVal, scaleVal)
-
-        const speedMult = SPEED_MULT_MAP[SETTINGS.speed]
-        this.group.position.x += this.vx * speedMult
-        this.group.position.y += this.vy * speedMult
-        this.group.position.z += this.vz * speedMult
-
-        const flapMult = FLAP_MULT_MAP[SETTINGS.flap]
-        const flapAngle = Math.sin(this.age * flapMult * 0.02 + this.flapOffset) * (Math.PI / 2.8)
-        this.leftWingGroup.rotation.y = flapAngle
-        this.rightWingGroup.rotation.y = -flapAngle
-
-        const travelSpeed = Math.hypot(this.vx, this.vy, this.vz)
-        if (travelSpeed > 0.01) {
-          const yaw = Math.atan2(this.vx, this.vy)
-          const pitch = -Math.atan2(this.vz, Math.hypot(this.vx, this.vy))
-          this.group.rotation.z = -yaw
-          this.group.rotation.x = pitch
-        }
-
-        const opacityDecay = pct < 0.15 ? (pct / 0.15) : Math.max(0, 1.0 - (pct - 0.15) / 0.85)
-        this.wingMat.opacity = opacityDecay * 0.85
-
-        if (this.age >= this.maxAge) {
-          this.destroy()
-          return false
-        }
-        return true
-      }
-    }
-
-    // 9. Backdrop Ambient Butterflies
-    const backdropButterflies: BackdropButterfly[] = []
-
-    class BackdropButterfly extends ButterflyInstance {
-      constructor(isInitial = false) {
-        super()
+    // -------------------------------------------------------------
+    // BUTTERFLY LIFE STATE CONTROLLER
+    // -------------------------------------------------------------
+    function initBackdrop() {
+      for (let i = 0; i < MAX_BACKDROP_BUTTERFLIES; i++) {
+        const b = butterflies[i]
+        b.active = true
+        b.isTrail = false
         const depthZ = -8 + Math.random() * 8.0
-        this.group.position.set(
-          (Math.random() - 0.5) * 12,
-          isInitial ? (Math.random() - 0.5) * 10 : -4.5,
-          depthZ
-        )
+        b.x = (Math.random() - 0.5) * 12
+        b.y = (Math.random() - 0.5) * 10
+        b.z = depthZ
 
         const depthPct = (depthZ + 8) / 8.0
-        this.scaleMult = 0.1 + depthPct * 0.18
-        this.group.scale.set(this.scaleMult, this.scaleMult, this.scaleMult)
-
+        b.scaleMult = 0.1 + depthPct * 0.18
+        
         const phi = Math.random() * Math.PI * 2
         const theta = Math.acos((Math.random() * 2) - 1)
         const baseSpeed = 0.015 + Math.random() * 0.02
 
-        this.vx = Math.sin(theta) * Math.cos(phi) * baseSpeed
-        this.vy = Math.sin(theta) * Math.sin(phi) * baseSpeed + 0.015
-        this.vz = Math.cos(theta) * baseSpeed * 0.5
+        b.vx = Math.sin(theta) * Math.cos(phi) * baseSpeed
+        b.vy = Math.sin(theta) * Math.sin(phi) * baseSpeed + 0.015
+        b.vz = Math.cos(theta) * baseSpeed * 0.5
 
-        this.wingMat.opacity = 0.35 + depthPct * 0.5
-        butterfliesScene.add(this.group)
-      }
-
-      update() {
-        this.time += 0.015
-        const speedMult = SPEED_MULT_MAP[SETTINGS.speed]
-
-        this.group.position.x += (this.vx + Math.sin(this.time) * 0.005) * speedMult
-        this.group.position.y += (this.vy + Math.cos(this.time * 0.5) * 0.003) * speedMult
-        this.group.position.z += (this.vz + Math.sin(this.time * 0.8) * 0.004) * speedMult
-
-        const yaw = Math.atan2(this.vx + Math.sin(this.time) * 0.005, this.vy)
-        const pitch = -Math.atan2(this.vz, Math.hypot(this.vx, this.vy))
-        this.group.rotation.z = -yaw;
-        this.group.rotation.x = pitch;
-
-        const flapAngle = Math.sin(this.time * this.flapSpeed + this.flapOffset) * (Math.PI / 3)
-        this.leftWingGroup.rotation.y = flapAngle
-        this.rightWingGroup.rotation.y = -flapAngle
-
-        // Loop bounds
-        if (this.group.position.y > 6 || this.group.position.x > 8 || this.group.position.x < -8 || this.group.position.z > 2 || this.group.position.z < -10) {
-          this.group.position.y = -4.5
-          this.group.position.x = (Math.random() - 0.5) * 12
-          this.group.position.z = -8 + Math.random() * 8.0
-          const depthPct = (this.group.position.z + 8) / 8.0
-          this.scaleMult = 0.1 + depthPct * 0.18
-          this.group.scale.set(this.scaleMult, this.scaleMult, this.scaleMult)
-          this.wingMat.opacity = 0.35 + depthPct * 0.5
-        }
-        return true
+        b.opacity = 0.35 + depthPct * 0.5
+        b.time = Math.random() * 100
+        b.flapSpeed = 15 + Math.random() * 15
+        b.flapOffset = Math.random() * Math.PI * 2
       }
     }
 
-    function initBackdrop() {
-      for (let i = 0; i < SETTINGS.backdrop; i++) {
-        backdropButterflies.push(new BackdropButterfly(true))
-      }
+    let nextTrailIndex = MAX_BACKDROP_BUTTERFLIES // indices 15 to 29
+    function spawnTrailButterfly(x: number, y: number) {
+      const idx = nextTrailIndex
+      nextTrailIndex = MAX_BACKDROP_BUTTERFLIES + ((nextTrailIndex - MAX_BACKDROP_BUTTERFLIES + 1) % MAX_TRAIL_BUTTERFLIES)
+
+      const b = butterflies[idx]
+      b.active = true
+      b.isTrail = true
+      b.x = x + (Math.random() - 0.5) * 0.2
+      b.y = y + (Math.random() - 0.5) * 0.2
+      b.z = 0.5
+
+      const phi = Math.random() * Math.PI * 2
+      const theta = Math.acos((Math.random() * 2) - 1)
+      const baseSpeed = 0.05 + Math.random() * 0.05
+
+      b.vx = Math.sin(theta) * Math.cos(phi) * baseSpeed
+      b.vy = Math.sin(theta) * Math.sin(phi) * baseSpeed + 0.01
+      b.vz = Math.cos(theta) * baseSpeed
+
+      b.scaleMult = SETTINGS.scale * (0.8 + Math.random() * 0.4)
+      b.flapOffset = Math.random() * Math.PI * 2
+      b.age = 0
+      b.maxAge = 60 * SETTINGS.fade
+      b.time = Math.random() * 100
+      b.flapSpeed = 15 + Math.random() * 15
+      b.opacity = 0
     }
 
     function rebuildBackdrop() {
-      for (let i = backdropButterflies.length - 1; i >= 0; i--) {
-        backdropButterflies[i].destroy()
-      }
-      backdropButterflies.length = 0
       initBackdrop()
     }
 
     initBackdrop()
 
-    // 10. Mouse Projector & Spawner
+    // -------------------------------------------------------------
+    // MOUSE PROJECTION
+    // -------------------------------------------------------------
     function projectMouseTo3D(clientX: number, clientY: number) {
       const vector = new THREE.Vector3(
         (clientX / window.innerWidth) * 2 - 1,
@@ -845,13 +838,9 @@ export default function ButterflyOverlay() {
           const currY = lastScreenY + (e.clientY - lastScreenY) * pct
           const pos3D = projectMouseTo3D(currX, currY)
 
-          // Spawn cluster of 3
+          // Spawn cluster of 3 trail butterflies in the circular instanced pool
           for (let c = 0; c < 3; c++) {
-            if (trailButterflies.length >= MAX_TRAIL_BUTTERFLIES) {
-              const oldest = trailButterflies.shift()
-              if (oldest) oldest.destroy()
-            }
-            trailButterflies.push(new TrailButterfly(pos3D.x, pos3D.y))
+            spawnTrailButterfly(pos3D.x, pos3D.y)
           }
         }
 
@@ -884,6 +873,10 @@ export default function ButterflyOverlay() {
     let isVisible = true
     let animTime = 0
 
+    const dummy = new THREE.Object3D()
+    const wingRotationMatrix = new THREE.Matrix4()
+    const tempMatrix = new THREE.Matrix4()
+
     const animate = () => {
       if (!isVisible) return
 
@@ -892,16 +885,126 @@ export default function ButterflyOverlay() {
       // Sway foliage on GPU via shader uniforms
       animateMeadow(animTime)
 
-      // Update background butterflies
-      backdropButterflies.forEach((b) => b.update())
+      // Update and compute matrices for all 30 butterflies in the pool
+      for (let i = 0; i < TOTAL_BUTTERFLIES; i++) {
+        const b = butterflies[i]
 
-      // Update trail butterflies
-      for (let i = trailButterflies.length - 1; i >= 0; i--) {
-        const active = trailButterflies[i].update()
-        if (!active) {
-          trailButterflies.splice(i, 1)
+        if (!b.active) {
+          // Hide instances by translating them outside view and setting scale to 0
+          dummy.position.set(0, 0, -9999)
+          dummy.scale.set(0, 0, 0)
+          dummy.updateMatrix()
+          bodyMesh.setMatrixAt(i, dummy.matrix)
+          leftWingMesh.setMatrixAt(i, dummy.matrix)
+          rightWingMesh.setMatrixAt(i, dummy.matrix)
+          continue
         }
+
+        let currentScale = 0
+        let flapAngle = 0
+        let opacity = 0
+
+        if (b.isTrail) {
+          b.age++
+          const pct = b.age / b.maxAge
+
+          if (b.age >= b.maxAge) {
+            b.active = false
+            dummy.position.set(0, 0, -9999)
+            dummy.scale.set(0, 0, 0)
+            dummy.updateMatrix()
+            bodyMesh.setMatrixAt(i, dummy.matrix)
+            leftWingMesh.setMatrixAt(i, dummy.matrix)
+            rightWingMesh.setMatrixAt(i, dummy.matrix)
+            continue
+          }
+
+          if (pct < 0.15) {
+            currentScale = (pct / 0.15) * b.scaleMult * 0.25
+          } else {
+            currentScale = (1.0 - (pct - 0.15) / 0.85) * b.scaleMult * 0.25
+          }
+
+          const speedMult = SPEED_MULT_MAP[SETTINGS.speed]
+          b.x += b.vx * speedMult
+          b.y += b.vy * speedMult
+          b.z += b.vz * speedMult
+
+          const flapMult = FLAP_MULT_MAP[SETTINGS.flap]
+          flapAngle = Math.sin(b.age * flapMult * 0.02 + b.flapOffset) * (Math.PI / 2.8)
+
+          const opacityDecay = pct < 0.15 ? (pct / 0.15) : Math.max(0, 1.0 - (pct - 0.15) / 0.85)
+          opacity = opacityDecay * 0.85
+        } else {
+          // Backdrop ambient butterfly
+          b.time += 0.015
+          const speedMult = SPEED_MULT_MAP[SETTINGS.speed]
+
+          b.x += (b.vx + Math.sin(b.time) * 0.005) * speedMult
+          b.y += (b.vy + Math.cos(b.time * 0.5) * 0.003) * speedMult
+          b.z += (b.vz + Math.sin(b.time * 0.8) * 0.004) * speedMult
+
+          flapAngle = Math.sin(b.time * b.flapSpeed + b.flapOffset) * (Math.PI / 3)
+
+          const depthPct = (b.z + 8) / 8.0
+          currentScale = b.scaleMult
+          opacity = 0.35 + depthPct * 0.5
+
+          // Bound looping
+          if (b.y > 6 || b.x > 8 || b.x < -8 || b.z > 2 || b.z < -10) {
+            b.y = -4.5
+            b.x = (Math.random() - 0.5) * 12
+            b.z = -8 + Math.random() * 8.0
+            const depthPct = (b.z + 8) / 8.0
+            b.scaleMult = 0.1 + depthPct * 0.18
+            b.opacity = 0.35 + depthPct * 0.5
+            b.time = Math.random() * 100
+          }
+        }
+
+        // Flight orientation
+        const vxVal = b.isTrail ? b.vx : (b.vx + Math.sin(b.time) * 0.005)
+        const vyVal = b.isTrail ? b.vy : (b.vy + Math.cos(b.time * 0.5) * 0.003)
+        const vzVal = b.isTrail ? b.vz : (b.vz + Math.sin(b.time * 0.8) * 0.004)
+
+        const yaw = Math.atan2(vxVal, vyVal)
+        const pitch = -Math.atan2(vzVal, Math.hypot(vxVal, vyVal))
+
+        dummy.position.set(b.x, b.y, b.z)
+        dummy.rotation.set(0, 0, 0)
+        dummy.rotation.z = -yaw
+        dummy.rotation.x = pitch
+        dummy.scale.set(currentScale, currentScale, currentScale)
+        dummy.updateMatrix()
+
+        // 1. Set Body Matrix
+        bodyMesh.setMatrixAt(i, dummy.matrix)
+
+        // 2. Set Left Wing Matrix (with rotation around local hinge Y-axis)
+        wingRotationMatrix.makeRotationY(flapAngle)
+        tempMatrix.multiplyMatrices(dummy.matrix, wingRotationMatrix)
+        leftWingMesh.setMatrixAt(i, tempMatrix)
+
+        // 3. Set Right Wing Matrix (with rotation around local hinge Y-axis)
+        wingRotationMatrix.makeRotationY(-flapAngle)
+        tempMatrix.multiplyMatrices(dummy.matrix, wingRotationMatrix)
+        rightWingMesh.setMatrixAt(i, tempMatrix)
+
+        // 4. Set Instance Colors to represent opacity
+        const col = new THREE.Color(opacity, opacity, opacity)
+        bodyMesh.setColorAt(i, col)
+        leftWingMesh.setColorAt(i, col)
+        rightWingMesh.setColorAt(i, col)
       }
+
+      // Propagate updates to GPU
+      bodyMesh.instanceMatrix.needsUpdate = true
+      leftWingMesh.instanceMatrix.needsUpdate = true
+      rightWingMesh.instanceMatrix.needsUpdate = true
+
+      if (bodyMesh.instanceColor) bodyMesh.instanceColor.needsUpdate = true
+      if (leftWingMesh.instanceColor) leftWingMesh.instanceColor.needsUpdate = true
+      if (rightWingMesh.instanceColor) rightWingMesh.instanceColor.needsUpdate = true
 
       backdropRenderer.render(backdropScene, camera)
       butterfliesRenderer.render(butterfliesScene, camera)
@@ -932,12 +1035,22 @@ export default function ButterflyOverlay() {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       cancelAnimationFrame(animationFrameId)
 
-      // Dispose active butterflies
-      trailButterflies.forEach((b) => b.destroy())
-      backdropButterflies.forEach((b) => b.destroy())
+      // Remove meshes
+      butterfliesScene.remove(bodyMesh)
+      butterfliesScene.remove(leftWingMesh)
+      butterfliesScene.remove(rightWingMesh)
+
+      // Dispose shared meshes/materials
+      bodyMesh.dispose()
+      leftWingMesh.dispose()
+      rightWingMesh.dispose()
+
+      wingMat.dispose()
+      bodyMat.dispose()
 
       // Dispose procedural geometries
-      proceduralWingGeo.dispose()
+      proceduralLeftWingGeo.dispose()
+      proceduralRightWingGeo.dispose()
       proceduralBodyGeo.dispose()
 
       // Dispose terrain geometries
