@@ -5,16 +5,26 @@ import { Redis } from '@upstash/redis';
  * Provides get, set, delete, and pattern-based deletion.
  */
 export class CacheService {
-  private redis: Redis;
+  private redis: Redis | null = null;
 
-  constructor(url: string, token: string) {
-    this.redis = new Redis({ url, token });
+  constructor(url: string | undefined, token: string | undefined) {
+    if (url && token) {
+      try {
+        this.redis = new Redis({ url, token });
+      } catch (error) {
+        console.error('Failed to initialize Redis client in CacheService:', error);
+        this.redis = null;
+      }
+    } else {
+      console.warn('CacheService initialized without Redis credentials. Caching is disabled.');
+    }
   }
 
   /**
    * Get a cached value by key.
    */
   async get<T>(key: string): Promise<T | null> {
+    if (!this.redis) return null;
     try {
       const data = await this.redis.get<T>(key);
       return data;
@@ -28,6 +38,7 @@ export class CacheService {
    * Set a cached value with TTL in seconds.
    */
   async set<T>(key: string, value: T, ttlSeconds: number): Promise<void> {
+    if (!this.redis) return;
     try {
       await this.redis.set(key, value, { ex: ttlSeconds });
     } catch (error) {
@@ -39,6 +50,7 @@ export class CacheService {
    * Delete a specific cache key.
    */
   async del(key: string): Promise<void> {
+    if (!this.redis) return;
     try {
       await this.redis.del(key);
     } catch (error) {
@@ -53,6 +65,7 @@ export class CacheService {
    * Example: delPattern('stores:') deletes all keys starting with 'stores:'
    */
   async delPattern(pattern: string): Promise<void> {
+    if (!this.redis) return;
     try {
       let cursor: string | number = 0;
       const keysToDelete: string[] = [];
@@ -70,7 +83,7 @@ export class CacheService {
         // Delete in batches of 100
         for (let i = 0; i < keysToDelete.length; i += 100) {
           const batch = keysToDelete.slice(i, i + 100);
-          await Promise.all(batch.map((key) => this.redis.del(key)));
+          await Promise.all(batch.map((key) => this.redis!.del(key)));
         }
       }
     } catch (error) {
@@ -82,6 +95,6 @@ export class CacheService {
 /**
  * Factory function to create a CacheService instance.
  */
-export function createCacheService(url: string, token: string): CacheService {
+export function createCacheService(url: string | undefined, token: string | undefined): CacheService {
   return new CacheService(url, token);
 }

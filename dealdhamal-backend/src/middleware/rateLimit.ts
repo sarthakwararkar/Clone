@@ -22,27 +22,33 @@ export const rateLimitMiddleware = createMiddleware<AppBindings>(async (c, next)
     return;
   }
 
-  const redis = new Redis({
-    url: c.env.UPSTASH_REDIS_URL,
-    token: c.env.UPSTASH_REDIS_TOKEN,
-  });
-
-  const user = c.get('user');
-  const isAuthenticated = !!user;
-
-  const config = isAuthenticated ? AUTH_RATE_LIMIT : PUBLIC_RATE_LIMIT;
-
-  // Identify the client: use user ID for authenticated requests, IP hash for public
-  const clientIp = c.req.header('cf-connecting-ip') ||
-    c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ||
-    'unknown';
-  const identifier = isAuthenticated ? `auth:${user.id}` : `ip:${clientIp}`;
-  const key = `ratelimit:${identifier}`;
-
-  const now = Date.now();
-  const windowStart = now - config.windowSeconds * 1000;
-
   try {
+    const url = c.env.UPSTASH_REDIS_URL;
+    const token = c.env.UPSTASH_REDIS_TOKEN;
+
+    if (!url || !token) {
+      console.warn('Rate limiting skipped: UPSTASH_REDIS_URL or UPSTASH_REDIS_TOKEN environment variables are missing.');
+      await next();
+      return;
+    }
+
+    const redis = new Redis({ url, token });
+
+    const user = c.get('user');
+    const isAuthenticated = !!user;
+
+    const config = isAuthenticated ? AUTH_RATE_LIMIT : PUBLIC_RATE_LIMIT;
+
+    // Identify the client: use user ID for authenticated requests, IP hash for public
+    const clientIp = c.req.header('cf-connecting-ip') ||
+      c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ||
+      'unknown';
+    const identifier = isAuthenticated ? `auth:${user.id}` : `ip:${clientIp}`;
+    const key = `ratelimit:${identifier}`;
+
+    const now = Date.now();
+    const windowStart = now - config.windowSeconds * 1000;
+
     // Use a Redis pipeline for atomicity
     const pipeline = redis.pipeline();
 
