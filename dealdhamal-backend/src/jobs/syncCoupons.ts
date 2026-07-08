@@ -11,6 +11,7 @@
 import { createDb } from '../db';
 import { createAffiliateService } from '../services/affiliateService';
 import { createCacheService } from '../services/cacheService';
+import { ensureDefaultCoupons } from './ensureCoupons';
 
 async function main() {
   console.log('═══════════════════════════════════════════════════════');
@@ -125,6 +126,14 @@ async function main() {
     console.log(`   ✅ Inserted: ${inserted}, Updated: ${updated}`);
   } else {
     console.log('   ⏩ No coupons to upsert');
+  }
+
+  // Ensure every store has at least one active coupon
+  try {
+    console.log('\n🛡️  Ensuring every store has at least one active coupon...');
+    await ensureDefaultCoupons(db);
+  } catch (err) {
+    console.error('   ⚠️ Failed to ensure default coupons:', err);
   }
 
   // ─── Invalidate Cache ────────────────────────────────────────────────

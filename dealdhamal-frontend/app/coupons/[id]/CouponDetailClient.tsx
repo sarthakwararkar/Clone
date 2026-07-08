@@ -208,8 +208,12 @@ export function CouponDetailClient({ coupon, moreCoupons }: CouponDetailClientPr
               <Clock className="w-3.5 h-3.5" />
               {coupon.expires_at ? `Expires ${timeAgo(coupon.expires_at)}` : 'No Expiry'}
             </span>
-            <span>•</span>
-            <span>{coupon.used_count} times used</span>
+            {coupon.used_count > 0 && (
+              <>
+                <span>•</span>
+                <span>{coupon.used_count} times used</span>
+              </>
+            )}
             {coupon.success_rate > 0 && (
               <>
                 <span>•</span>

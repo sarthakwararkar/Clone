@@ -17,31 +17,21 @@ export function getDealTheme(title: string, storeName: string, categoryName?: st
 
   // 1. Determine Image URL based on keywords
   // We use high-quality, transparent or clean background Unsplash images representing the items
-  let imageUrl = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=400&auto=format&fit=crop&q=80'; // Default: Premium wrapped gift box
+  let imageUrl = '';
   
+  // First pass: Match based on specific item keywords in title or category name
   if (
     t.includes('laptop') || 
     t.includes('macbook') || 
     t.includes('computer') || 
-    t.includes('pc') || 
-    s.includes('hp') || 
-    s.includes('dell') || 
-    s.includes('lenovo') || 
-    s.includes('acer') || 
-    s.includes('asus')
+    t.includes('pc')
   ) {
-    // Beautiful floating/isolated-feel laptop
     imageUrl = 'https://images.unsplash.com/photo-1496181130204-755241524eab?w=400&auto=format&fit=crop&q=80';
   } else if (
     t.includes('phone') || 
     t.includes('mobile') || 
-    t.includes('iphone') || 
-    t.includes('samsung') || 
-    t.includes('oneplus') || 
-    t.includes('redmi') || 
-    t.includes('realme')
+    t.includes('iphone')
   ) {
-    // Premium smartphone
     imageUrl = 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&auto=format&fit=crop&q=80';
   } else if (
     t.includes('headphone') || 
@@ -49,24 +39,15 @@ export function getDealTheme(title: string, storeName: string, categoryName?: st
     t.includes('earbuds') || 
     t.includes('audio') || 
     t.includes('soundbar') || 
-    t.includes('speaker') || 
-    s.includes('boat') || 
-    s.includes('jbl') || 
-    s.includes('sony')
+    t.includes('speaker')
   ) {
-    // Sleek headphones
     imageUrl = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80';
   } else if (
     t.includes('shoe') || 
     t.includes('sneaker') || 
     t.includes('footwear') || 
-    t.includes('slipper') || 
-    s.includes('nike') || 
-    s.includes('puma') || 
-    s.includes('adidas') || 
-    s.includes('bata')
+    t.includes('slipper')
   ) {
-    // Stylish red athletic sneaker
     imageUrl = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop&q=80';
   } else if (
     t.includes('flight') || 
@@ -77,12 +58,8 @@ export function getDealTheme(title: string, storeName: string, categoryName?: st
     t.includes('booking') || 
     t.includes('stay') || 
     t.includes('holiday') || 
-    s.includes('makemytrip') || 
-    s.includes('yatra') || 
-    s.includes('booking.com') || 
     c.includes('travel')
   ) {
-    // Travel suitcase / luggage bag
     imageUrl = 'https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&auto=format&fit=crop&q=80';
   } else if (
     t.includes('pizza') || 
@@ -91,12 +68,8 @@ export function getDealTheme(title: string, storeName: string, categoryName?: st
     t.includes('dining') || 
     t.includes('restaurant') || 
     t.includes('meal') || 
-    s.includes('swiggy') || 
-    s.includes('zomato') || 
-    s.includes('domino') || 
     c.includes('food')
   ) {
-    // Delicious fresh pizza
     imageUrl = 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80';
   } else if (
     t.includes('makeup') || 
@@ -105,11 +78,8 @@ export function getDealTheme(title: string, storeName: string, categoryName?: st
     t.includes('skincare') || 
     t.includes('perfume') || 
     t.includes('cosmetics') || 
-    s.includes('nykaa') || 
-    s.includes('mamaearth') || 
     c.includes('beauty')
   ) {
-    // Cosmetic & beauty items
     imageUrl = 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&auto=format&fit=crop&q=80';
   } else if (
     t.includes('appliance') || 
@@ -118,14 +88,8 @@ export function getDealTheme(title: string, storeName: string, categoryName?: st
     t.includes('oven') || 
     t.includes('vacuum') || 
     t.includes('iron') || 
-    t.includes('kettle') || 
-    s.includes('havells') || 
-    s.includes('philips') || 
-    s.includes('bajaj') || 
-    s.includes('prestige') || 
-    s.includes('croma')
+    t.includes('kettle')
   ) {
-    // Modern kitchen appliance (blender/airfryer)
     imageUrl = 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=400&auto=format&fit=crop&q=80';
   } else if (
     c.includes('fashion') || 
@@ -134,15 +98,82 @@ export function getDealTheme(title: string, storeName: string, categoryName?: st
     t.includes('t-shirt') || 
     t.includes('jeans') || 
     t.includes('kurtis') || 
-    t.includes('saree') || 
-    s.includes('myntra') || 
-    s.includes('ajio')
+    t.includes('saree')
   ) {
-    // Premium shopping bags / apparel
     imageUrl = 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&auto=format&fit=crop&q=80';
   } else if (c.includes('electronics')) {
-    // General electronics gadget
     imageUrl = 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=400&auto=format&fit=crop&q=80';
+  }
+
+  // Second pass: If no specific item matched, fall back to store name associations
+  if (!imageUrl) {
+    if (
+      s.includes('hp') || 
+      s.includes('dell') || 
+      s.includes('lenovo') || 
+      s.includes('acer') || 
+      s.includes('asus')
+    ) {
+      imageUrl = 'https://images.unsplash.com/photo-1496181130204-755241524eab?w=400&auto=format&fit=crop&q=80';
+    } else if (
+      s.includes('phone') || 
+      s.includes('samsung') || 
+      s.includes('oneplus') || 
+      s.includes('redmi') || 
+      s.includes('realme')
+    ) {
+      imageUrl = 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&auto=format&fit=crop&q=80';
+    } else if (
+      s.includes('boat') || 
+      s.includes('jbl') || 
+      s.includes('sony')
+    ) {
+      imageUrl = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80';
+    } else if (
+      s.includes('nike') || 
+      s.includes('puma') || 
+      s.includes('adidas') || 
+      s.includes('bata') || 
+      s.includes('campus') || 
+      s.includes('crocs')
+    ) {
+      imageUrl = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop&q=80';
+    } else if (
+      s.includes('makemytrip') || 
+      s.includes('yatra') || 
+      s.includes('booking.com')
+    ) {
+      imageUrl = 'https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&auto=format&fit=crop&q=80';
+    } else if (
+      s.includes('swiggy') || 
+      s.includes('zomato') || 
+      s.includes('domino')
+    ) {
+      imageUrl = 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80';
+    } else if (
+      s.includes('nykaa') || 
+      s.includes('mamaearth') || 
+      s.includes('bella-vita')
+    ) {
+      imageUrl = 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&auto=format&fit=crop&q=80';
+    } else if (
+      s.includes('havells') || 
+      s.includes('philips') || 
+      s.includes('bajaj') || 
+      s.includes('prestige') || 
+      s.includes('croma')
+    ) {
+      imageUrl = 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=400&auto=format&fit=crop&q=80';
+    } else if (
+      s.includes('myntra') || 
+      s.includes('ajio') || 
+      s.includes('meesho') || 
+      s.includes('bewakoof')
+    ) {
+      imageUrl = 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&auto=format&fit=crop&q=80';
+    } else {
+      imageUrl = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=400&auto=format&fit=crop&q=80';
+    }
   }
 
   // 2. Determine gradients and theme matching merchant/category branding

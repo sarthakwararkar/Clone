@@ -5,6 +5,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { createDb } from '../db';
 import { stores, coupons, categories } from '../db/schema';
+import { ensureDefaultCoupons } from './ensureCoupons';
 
 // ─── Directories & Paths ──────────────────────────────────────────────────────
 
@@ -323,6 +324,39 @@ function validateDeal(deal: any): { valid: boolean; reason?: string } {
   if (expiredPattern.test(deal.title) || expiredPattern.test(deal.description) || expiredPattern.test(deal.discount)) {
     return { valid: false, reason: 'EXPIRED_BADGE_TEXT' };
   }
+
+  // Content Quality Validation (Issue 5)
+  const lowerTitle = (deal.title || '').toLowerCase().trim();
+  const lowerDesc = (deal.description || '').toLowerCase().trim();
+
+  // 1. Reject if headline is generic CTA text
+  const ctaPatterns = ['get deal', 'get code', 'grab deal', 'click here', 'shop now', 'show code', 'reveal code', 'reveal', 'grab offer'];
+  if (ctaPatterns.includes(lowerTitle)) {
+    return { valid: false, reason: 'GENERIC_TITLE_CTA' };
+  }
+
+  // 2. Reject if title is too short (less than 10 characters)
+  if (lowerTitle.length < 10) {
+    return { valid: false, reason: 'TITLE_TOO_SHORT' };
+  }
+
+  // 3. Reject if description matches generic placeholder text
+  const fillerPatterns = [
+    'signup now & visit the page best features',
+    'visit the page to get this deal',
+    'visit the page for details',
+    'best features',
+  ];
+  const isFillerDesc = fillerPatterns.some(pat => lowerDesc.includes(pat));
+  if (isFillerDesc) {
+    return { valid: false, reason: 'FILLER_DESCRIPTION' };
+  }
+
+  // 4. Reject if description is too short (less than 10 chars) unless it's identical to title and title is good
+  if (lowerDesc.length < 10 && lowerDesc !== lowerTitle) {
+    return { valid: false, reason: 'DESCRIPTION_TOO_SHORT' };
+  }
+
   return { valid: true };
 }
 
@@ -612,6 +646,14 @@ export async function main() {
   }
 
   log(`   Database ingestion finished: upserted ${dbInsertedCount} coupons.`);
+
+  // Ensure every store has at least one active coupon
+  try {
+    log('   Ensuring every store has at least one active coupon...');
+    await ensureDefaultCoupons(db);
+  } catch (err) {
+    log(`   ⚠️ Failed to ensure default coupons: ${err}`);
+  }
   
   log('\n═══════════════════════════════════════════════════════');
   log('  Scraping Pipeline Summary:');

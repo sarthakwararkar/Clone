@@ -473,6 +473,38 @@ export class AffiliateService {
 
       // Upsert coupons for this store
       for (const couponData of storeCoupons) {
+        // Content Quality Validation (Issue 5)
+        const lowerTitle = (couponData.title || '').toLowerCase().trim();
+        const lowerDesc = (couponData.description || '').toLowerCase().trim();
+
+        // 1. Reject if headline is generic CTA text
+        const ctaPatterns = ['get deal', 'get code', 'grab deal', 'click here', 'shop now', 'show code', 'reveal code', 'reveal', 'grab offer'];
+        if (ctaPatterns.includes(lowerTitle)) {
+          continue;
+        }
+
+        // 2. Reject if title is too short (less than 10 characters)
+        if (lowerTitle.length < 10) {
+          continue;
+        }
+
+        // 3. Reject if description matches generic placeholder text
+        const fillerPatterns = [
+          'signup now & visit the page best features',
+          'visit the page to get this deal',
+          'visit the page for details',
+          'best features',
+        ];
+        const isFillerDesc = fillerPatterns.some(pat => lowerDesc.includes(pat));
+        if (isFillerDesc) {
+          continue;
+        }
+
+        // 4. Reject if description is too short (less than 10 chars) unless it's identical to title and title is good
+        if (lowerDesc.length < 10 && lowerDesc !== lowerTitle) {
+          continue;
+        }
+
         try {
           const result = await this.db
             .insert(coupons)

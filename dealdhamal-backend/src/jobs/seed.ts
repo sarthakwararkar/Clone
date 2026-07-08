@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { createDb } from '../db';
 import { categories, stores, coupons } from '../db/schema';
 import { createCacheService } from '../services/cacheService';
+import { ensureDefaultCoupons } from './ensureCoupons';
 
 // ─── Data Definitions ────────────────────────────────────────────────────────
 
@@ -579,6 +580,13 @@ export async function main() {
   console.log(`  Seeded ${categoriesSeeded} categories, ${storesSeeded} stores, ${couponsSeeded} coupons`);
   console.log(`  Completed at: ${new Date().toISOString()}`);
   console.log('═══════════════════════════════════════════════════════');
+
+  // Ensure every store has at least one active coupon
+  try {
+    await ensureDefaultCoupons(db);
+  } catch (err) {
+    console.error('⚠️ Failed to ensure default coupons during seed:', err);
+  }
 
   if (process.env.UPSTASH_REDIS_URL && process.env.UPSTASH_REDIS_TOKEN) {
     console.log('\n🧹 Clearing Cache...');

@@ -204,7 +204,9 @@ function BigSavingCouponCard({ coupon, onSelect }: BigSavingCouponCardProps) {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               VERIFIED
             </span>
-            <span className="text-cyan-400">{coupon.used_count || 0} Claims Today</span>
+            {coupon.used_count > 0 && (
+              <span className="text-cyan-400">{coupon.used_count} Claims Today</span>
+            )}
           </div>
 
           {/* Wavy Separator */}

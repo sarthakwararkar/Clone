@@ -168,8 +168,12 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
                 <Clock className="w-3 h-3 text-white/60" />
                 {coupon.expires_at ? `Expires ${timeAgo(coupon.expires_at)}` : 'No Expiry'}
               </span>
-              <span>•</span>
-              <span>{formatNumber(coupon.used_count)} used</span>
+              {coupon.used_count > 0 && (
+                <>
+                  <span>•</span>
+                  <span>{formatNumber(coupon.used_count)} used</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -362,7 +366,9 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
 
         {/* Right */}
         <div className="flex flex-col items-end gap-2 flex-shrink-0 w-36" onClick={(e) => e.stopPropagation()}>
-          <span className="text-xs text-gray-400">{formatNumber(coupon.used_count)} used</span>
+          {coupon.used_count > 0 && (
+            <span className="text-xs text-gray-400">{formatNumber(coupon.used_count)} used</span>
+          )}
 
           {coupon.coupon_type === 'code' ? (
             <div
@@ -425,7 +431,9 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
               >
                 {coupon.store.name}
               </Link>
-              <span className="text-[10px] text-gray-400">{formatNumber(coupon.used_count)} used</span>
+              {coupon.used_count > 0 && (
+                <span className="text-[10px] text-gray-400">{formatNumber(coupon.used_count)} used</span>
+              )}
             </div>
           </div>
 
