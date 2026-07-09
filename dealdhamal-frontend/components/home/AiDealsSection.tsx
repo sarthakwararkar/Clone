@@ -27,7 +27,7 @@ export function AiDealsSection({ coupons }: AiDealsSectionProps) {
           Explore AI Deals →
         </Link>
       </div>
-      <TopDealsCarousel coupons={coupons} />
+      <TopDealsCarousel coupons={coupons} isAi={true} />
     </section>
   )
 }

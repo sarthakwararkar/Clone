@@ -10,12 +10,13 @@ export interface DealTheme {
  * Classifies a coupon/deal based on its title, store name, and category
  * to return a matching premium gradient, button styling, and relevant Unsplash image.
  */
-export function getDealTheme(title: string, storeName: string, categoryName?: string): DealTheme {
+export function getDealTheme(title: string, storeName: string, categoryName?: string, isAiProp?: boolean): DealTheme {
   const t = title.toLowerCase();
   const s = storeName.toLowerCase();
   const c = categoryName?.toLowerCase() || '';
 
   const isAi =
+    isAiProp ||
     /\bai\b/.test(t) ||
     t.includes('chatgpt') ||
     t.includes('gpt') ||
@@ -35,7 +36,7 @@ export function getDealTheme(title: string, storeName: string, categoryName?: st
   
   // First pass: Match based on specific item keywords in title or category name
   if (isAi) {
-    imageUrl = 'https://images.unsplash.com/photo-1677442136019-21780efad99a?w=400&auto=format&fit=crop&q=80';
+    imageUrl = 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400&auto=format&fit=crop&q=80';
   } else if (
     t.includes('laptop') || 
     t.includes('macbook') || 
@@ -97,16 +98,17 @@ export function getDealTheme(title: string, storeName: string, categoryName?: st
     c.includes('beauty')
   ) {
     imageUrl = 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&auto=format&fit=crop&q=80';
+  } else if (t.includes('vacuum')) {
+    imageUrl = 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?w=400&auto=format&fit=crop&q=80';
   } else if (
     t.includes('appliance') || 
     t.includes('ac') || 
     t.includes('fridge') || 
     t.includes('oven') || 
-    t.includes('vacuum') || 
     t.includes('iron') || 
     t.includes('kettle')
   ) {
-    imageUrl = 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=400&auto=format&fit=crop&q=80';
+    imageUrl = 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=400&auto=format&fit=crop&q=80';
   } else if (
     c.includes('fashion') || 
     t.includes('clothing') || 
@@ -179,7 +181,7 @@ export function getDealTheme(title: string, storeName: string, categoryName?: st
       s.includes('prestige') || 
       s.includes('croma')
     ) {
-      imageUrl = 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=400&auto=format&fit=crop&q=80';
+      imageUrl = 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=400&auto=format&fit=crop&q=80';
     } else if (
       s.includes('myntra') || 
       s.includes('ajio') || 

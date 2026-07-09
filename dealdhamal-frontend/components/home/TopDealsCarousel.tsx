@@ -7,9 +7,10 @@ import { cn } from '@/lib/utils'
 
 interface TopDealsCarouselProps {
   coupons: Coupon[]
+  isAi?: boolean
 }
 
-export function TopDealsCarousel({ coupons }: TopDealsCarouselProps) {
+export function TopDealsCarousel({ coupons, isAi }: TopDealsCarouselProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [showLeftArrow, setShowLeftArrow] = useState(false)
   const [showRightArrow, setShowRightArrow] = useState(true)
@@ -66,7 +67,7 @@ export function TopDealsCarousel({ coupons }: TopDealsCarouselProps) {
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {coupons.map((coupon) => (
-          <PremiumDealCard key={coupon.id} coupon={coupon} />
+          <PremiumDealCard key={coupon.id} coupon={coupon} isAi={isAi} />
         ))}
       </div>
 

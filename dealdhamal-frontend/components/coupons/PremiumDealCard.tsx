@@ -14,9 +14,10 @@ import { ShareModal } from './ShareModal'
 
 interface PremiumDealCardProps {
   coupon: Coupon
+  isAi?: boolean
 }
 
-export function PremiumDealCard({ coupon }: PremiumDealCardProps) {
+export function PremiumDealCard({ coupon, isAi }: PremiumDealCardProps) {
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [loginPromptOpen, setLoginPromptOpen] = useState(false)
   const { user } = useAuthStore()
@@ -27,7 +28,7 @@ export function PremiumDealCard({ coupon }: PremiumDealCardProps) {
   const initials = coupon.store.name.slice(0, 2).toUpperCase()
   
   // Get dynamic visual theme from regex match of titles/categories
-  const theme = getDealTheme(coupon.title, coupon.store.name, coupon.store.category?.name)
+  const theme = getDealTheme(coupon.title, coupon.store.name, coupon.store.category?.name, isAi)
 
   const handleSaveToggle = (e: React.MouseEvent) => {
     e.preventDefault()
