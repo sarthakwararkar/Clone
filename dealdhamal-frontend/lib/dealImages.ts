@@ -15,12 +15,28 @@ export function getDealTheme(title: string, storeName: string, categoryName?: st
   const s = storeName.toLowerCase();
   const c = categoryName?.toLowerCase() || '';
 
+  const isAi =
+    /\bai\b/.test(t) ||
+    t.includes('chatgpt') ||
+    t.includes('gpt') ||
+    t.includes('midjourney') ||
+    t.includes('jasper') ||
+    t.includes('saas') ||
+    t.includes('copilot') ||
+    s.includes('browse ai') ||
+    s.includes('ai') ||
+    c.includes('ai') ||
+    c.includes('saas') ||
+    c.includes('ai-tools');
+
   // 1. Determine Image URL based on keywords
   // We use high-quality, transparent or clean background Unsplash images representing the items
   let imageUrl = '';
   
   // First pass: Match based on specific item keywords in title or category name
-  if (
+  if (isAi) {
+    imageUrl = 'https://images.unsplash.com/photo-1677442136019-21780efad99a?w=400&auto=format&fit=crop&q=80';
+  } else if (
     t.includes('laptop') || 
     t.includes('macbook') || 
     t.includes('computer') || 
@@ -181,7 +197,11 @@ export function getDealTheme(title: string, storeName: string, categoryName?: st
   let btnBg = 'bg-white text-slate-950 hover:bg-white/90';
   let badgeBg = 'bg-white/20 text-white backdrop-blur-md';
 
-  if (s.includes('hp') || s.includes('dell') || s.includes('samsung') || s.includes('intel') || s.includes('reliance')) {
+  if (isAi) {
+    gradient = 'from-violet-600 via-indigo-700 to-indigo-950';
+    btnBg = 'bg-white text-indigo-950 hover:bg-indigo-50';
+    badgeBg = 'bg-violet-500/30 text-violet-100 border border-violet-500/20 backdrop-blur-md';
+  } else if (s.includes('hp') || s.includes('dell') || s.includes('samsung') || s.includes('intel') || s.includes('reliance')) {
     gradient = 'from-blue-600 via-blue-700 to-indigo-900';
     btnBg = 'bg-white text-indigo-950 hover:bg-white/90';
   } else if (s.includes('havells') || s.includes('philips') || s.includes('amazon') || s.includes('oneplus')) {

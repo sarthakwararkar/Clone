@@ -4,6 +4,7 @@ import { HeroBanner } from '@/components/home/HeroBanner'
 import { BigSavingCoupons } from '@/components/home/BigSavingCoupons'
 import { FeaturedStores } from '@/components/home/FeaturedStores'
 import { TrendingCoupons } from '@/components/home/TrendingCoupons'
+import { AiDealsSection } from '@/components/home/AiDealsSection'
 import { NewsletterBanner } from '@/components/home/NewsletterBanner'
 import { HomePageSchema } from '@/components/seo/HomePageSchema'
 import IntroSplash from '@/components/ui/IntroSplash'
@@ -22,16 +23,32 @@ export const metadata: Metadata = {
 
 export default async function Homepage() {
   // Fetch homepage data in parallel
-  const [categories, storesResponse, couponsResponse, dealsResponse] = await Promise.all([
+  const [
+    categories,
+    storesResponse,
+    couponsResponse,
+    dealsResponse,
+    aiStoresResponse,
+    aiDealsResponse
+  ] = await Promise.all([
     api.getCategories().catch(() => []),
     api.getStores({ featured: true, limit: 12 }).catch(() => ({ data: [], total: 0 })),
     api.getCoupons({ type: 'code', featured: true, diverse: true, limit: 12 }).catch(() => ({ data: [], total: 0 })),
-    api.getCoupons({ type: 'deal', sort: 'latest', diverse: true, limit: 12 }).catch(() => ({ data: [], total: 0 })),
+    api.getCoupons({ type: 'deal', sort: 'latest', diverse: true, limit: 40 }).catch(() => ({ data: [], total: 0 })),
+    api.getStores({ category: 'ai-tools', limit: 100 }).catch(() => ({ data: [] })),
+    api.getCoupons({ category: 'ai-tools', type: 'deal', limit: 12 }).catch(() => ({ data: [] })),
   ])
 
   const featuredStores = storesResponse.data
   const featuredCoupons = couponsResponse.data
   const bestDeals = dealsResponse.data
+  const aiStores = aiStoresResponse.data
+  const aiDeals = aiDealsResponse.data
+
+  const aiStoreSlugs = new Set(aiStores.map((s: any) => s.slug))
+  const nonAiDeals = bestDeals
+    .filter((coupon) => !aiStoreSlugs.has(coupon.store.slug))
+    .slice(0, 12)
 
   return (
     <IntroSplash>
@@ -54,8 +71,13 @@ export default async function Homepage() {
         )}
 
         {/* Today's Best Deals */}
-        {bestDeals.length > 0 && (
-          <TrendingCoupons coupons={bestDeals} />
+        {nonAiDeals.length > 0 && (
+          <TrendingCoupons coupons={nonAiDeals} />
+        )}
+
+        {/* Hot AI SaaS Deals */}
+        {aiDeals.length > 0 && (
+          <AiDealsSection coupons={aiDeals} />
         )}
 
         {/* Newsletter signup */}
