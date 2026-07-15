@@ -346,9 +346,18 @@ export class CouponService {
     const successful = row.successful || 0;
     const successRate = total > 0 ? Math.round((successful / total) * 100) : 0;
 
+    const updateData: Record<string, any> = { 
+      success_rate: successRate, 
+      updated_at: new Date() 
+    };
+
+    if (total >= 3 && successRate < 40) {
+      updateData.expires_at = new Date(Date.now() - 1000);
+    }
+
     await this.db
       .update(coupons)
-      .set({ success_rate: successRate, updated_at: new Date() })
+      .set(updateData)
       .where(eq(coupons.id, couponId));
 
     return true;

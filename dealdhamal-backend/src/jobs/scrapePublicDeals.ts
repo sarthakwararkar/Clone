@@ -6,6 +6,7 @@ import * as crypto from 'crypto';
 import { createDb } from '../db';
 import { stores, coupons, categories } from '../db/schema';
 import { ensureDefaultCoupons } from './ensureCoupons';
+import { runAutomaticVerification } from './verifyCoupons';
 
 // ─── Directories & Paths ──────────────────────────────────────────────────────
 
@@ -653,6 +654,14 @@ export async function main() {
     await ensureDefaultCoupons(db);
   } catch (err) {
     log(`   ⚠️ Failed to ensure default coupons: ${err}`);
+  }
+
+  // Run automatic verification job on all active coupons to prune bad links and content quality issues
+  try {
+    log('   Running automatic coupon verification...');
+    await runAutomaticVerification(db);
+  } catch (err) {
+    log(`   ⚠️ Automatic verification failed: ${err}`);
   }
   
   log('\n═══════════════════════════════════════════════════════');

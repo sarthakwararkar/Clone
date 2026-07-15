@@ -63,10 +63,8 @@ export async function ensureDefaultCoupons(db: any) {
     }
     
     // Generic fallback for any other store
-    const cleanSlug = slug.replace(/[^a-z0-9]/g, '').toUpperCase();
-    const codeName = cleanSlug.length > 3 ? cleanSlug.slice(0, 6) : `${cleanSlug}10`;
     return [
-      { title: `Flat 10% Off on All Orders at ${name}`, type: 'code', code: `${codeName}10`, discount_value: '10% Off' },
+      { title: `Check Latest Offers & Product Deals at ${name}`, type: 'deal', discount_value: 'Active Deal' },
       { title: `Up to 45% Off on Selected ${name} Products`, type: 'deal', discount_value: '45% Off' }
     ];
   };
@@ -96,8 +94,8 @@ export async function ensureDefaultCoupons(db: any) {
             discount_value: cp.discount_value,
             affiliate_url: store.affiliate_url || store.website_url || 'https://www.google.com',
             source: 'manual',
-            is_verified: true,
-            is_featured: true,
+            is_verified: false,
+            is_featured: false,
             expires_at: expiresAt,
           }).onConflictDoNothing();
           populatedCount++;

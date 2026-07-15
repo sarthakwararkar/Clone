@@ -12,6 +12,7 @@ import { createDb } from '../db';
 import { createAffiliateService } from '../services/affiliateService';
 import { createCacheService } from '../services/cacheService';
 import { ensureDefaultCoupons } from './ensureCoupons';
+import { runAutomaticVerification } from './verifyCoupons';
 
 async function main() {
   console.log('═══════════════════════════════════════════════════════');
@@ -134,6 +135,14 @@ async function main() {
     await ensureDefaultCoupons(db);
   } catch (err) {
     console.error('   ⚠️ Failed to ensure default coupons:', err);
+  }
+
+  // Run automatic verification job on all active coupons to prune bad links and content quality issues
+  try {
+    console.log('\n🛡️  Running automatic coupon verification...');
+    await runAutomaticVerification(db);
+  } catch (err) {
+    console.error('   ⚠️ Automatic verification failed:', err);
   }
 
   // ─── Invalidate Cache ────────────────────────────────────────────────
