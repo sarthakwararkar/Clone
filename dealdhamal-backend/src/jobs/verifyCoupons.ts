@@ -92,30 +92,35 @@ export async function runAutomaticVerification(db: any): Promise<{ totalVerified
 
     // ─── Check 4: Link Health Check (Non-blocking ping) ───
     if (!shouldDeactivate && url) {
-      try {
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          },
-          redirect: 'follow',
-          signal: AbortSignal.timeout(5000), // 5 seconds timeout
-        });
+      // Skip placeholder/non-URL values (e.g. seed data with literal variable names)
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        console.log(`   [Skip] Non-URL affiliate_url for "${title}": "${url}"`);
+      } else {
+        try {
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            },
+            redirect: 'follow',
+            signal: AbortSignal.timeout(5000), // 5 seconds timeout
+          });
 
-        // 404 indicates a dead redirect page
-        if (response.status === 404) {
-          shouldDeactivate = true;
-          reason = `URL health check returned 404`;
-        } else {
-          const finalUrl = response.url.toLowerCase();
-          if (finalUrl.includes('/404') || finalUrl.includes('/error') || finalUrl.includes('/expired') || finalUrl.includes('/page-not-found')) {
+          // 404 indicates a dead redirect page
+          if (response.status === 404) {
             shouldDeactivate = true;
-            reason = `URL redirected to a dead page: ${response.url}`;
+            reason = `URL health check returned 404`;
+          } else {
+            const finalUrl = response.url.toLowerCase();
+            if (finalUrl.includes('/404') || finalUrl.includes('/error') || finalUrl.includes('/expired') || finalUrl.includes('/page-not-found')) {
+              shouldDeactivate = true;
+              reason = `URL redirected to a dead page: ${response.url}`;
+            }
           }
+        } catch (err: any) {
+          // Log connection failures, but don't auto-deactivate immediately to prevent false positives from transient network issues
+          console.log(`   [Ping Warning] Failed to fetch url for coupon "${title}": ${err.message || err}`);
         }
-      } catch (err: any) {
-        // Log connection failures, but don't auto-deactivate immediately to prevent false positives from transient network issues
-        console.log(`   [Ping Warning] Failed to fetch url for coupon "${title}": ${err.message || err}`);
       }
     }
 

@@ -33,7 +33,8 @@ export class AffiliateService {
       });
 
       if (!response.ok) {
-        console.error(`vCommission API returned ${response.status}`);
+        const errText = await response.text();
+        console.error(`[vCommission] API returned ${response.status}: ${errText}`);
         return [];
       }
 
@@ -46,6 +47,8 @@ export class AffiliateService {
           valid_till: string | null;
           tracking_url: string;
           merchant_name: string;
+          merchant_logo?: string;
+          merchant_website?: string;
           coupon_description?: string;
         }>;
       };
@@ -55,30 +58,35 @@ export class AffiliateService {
         return [];
       }
 
-      const dbStores = await this.db.select({ slug: stores.slug }).from(stores);
-      const storeSlugs = new Set(dbStores.map(s => s.slug));
+      console.log(`[vCommission] Received ${data.coupons.length} coupons from API`);
 
+      // Accept ALL coupons — let upsertCoupons handle store creation
       const mappedCoupons: CouponData[] = [];
       for (const item of data.coupons) {
-        const storeSlug = this.slugify(item.merchant_name || '');
-        if (storeSlugs.has(storeSlug)) {
-          mappedCoupons.push({
-            title: item.coupon_title || 'Untitled Offer',
-            description: item.coupon_description || null,
-            code: item.coupon_code || null,
-            coupon_type: this.mapCouponType(item.coupon_type),
-            discount_value: item.coupon_title || '',
-            affiliate_url: item.tracking_url || '',
-            source: 'vcommission' as CouponSource,
-            external_id: String(item.coupon_id),
-            store_slug: storeSlug,
-            starts_at: null,
-            expires_at: item.valid_till ? new Date(item.valid_till) : null,
-            is_exclusive: false,
-          });
-        }
+        if (!item.merchant_name) continue;
+        const storeSlug = this.slugify(this.normalizeAffiliateName(item.merchant_name));
+        if (!storeSlug) continue;
+
+        mappedCoupons.push({
+          title: item.coupon_title || 'Untitled Offer',
+          description: item.coupon_description || null,
+          code: item.coupon_code || null,
+          coupon_type: this.mapCouponType(item.coupon_type),
+          discount_value: item.coupon_title || '',
+          affiliate_url: item.tracking_url || '',
+          source: 'vcommission' as CouponSource,
+          external_id: String(item.coupon_id),
+          store_slug: storeSlug,
+          store_name: item.merchant_name,
+          store_logo_url: item.merchant_logo || undefined,
+          store_website_url: item.merchant_website || undefined,
+          starts_at: null,
+          expires_at: item.valid_till ? new Date(item.valid_till) : null,
+          is_exclusive: false,
+        });
       }
 
+      console.log(`[vCommission] Mapped ${mappedCoupons.length} coupons for upsert`);
       return mappedCoupons;
     } catch (error) {
       console.error('[vCommission] Sync error:', error);
@@ -150,7 +158,8 @@ export class AffiliateService {
         }
 
         for (const item of offers) {
-          const merchantName = item.merchant_name || item.campaign_name || '';
+          const rawName = item.merchant_name || item.campaign_name || '';
+          const merchantName = this.normalizeAffiliateName(rawName);
           const storeSlug = this.slugify(merchantName);
           if (!storeSlug) continue;
 
@@ -167,6 +176,7 @@ export class AffiliateService {
             source: 'cuelinks' as CouponSource,
             external_id: String(item.id),
             store_slug: storeSlug,
+            store_name: rawName || undefined,
             starts_at: item.start_date ? new Date(item.start_date) : null,
             expires_at: (item.end_date || item.expiry_date)
               ? new Date(item.end_date || item.expiry_date!)
@@ -474,11 +484,16 @@ export class AffiliateService {
       if (!storeSlug) continue;
 
       // Resolve store ID — find existing or auto-create
-      let [store] = await this.db
+      let store: { id: string; isNew?: boolean } | undefined;
+      const [foundStore] = await this.db
         .select({ id: stores.id })
         .from(stores)
         .where(eq(stores.slug, storeSlug))
         .limit(1);
+
+      if (foundStore) {
+        store = { id: foundStore.id, isNew: false };
+      }
 
       if (!store) {
         // Auto-create the store from affiliate data
@@ -513,7 +528,7 @@ export class AffiliateService {
             .returning();
 
           if (newStore) {
-            store = { id: newStore.id };
+            store = { id: newStore.id, isNew: true };
             storesCreated++;
             console.log(`[AffiliateService] ✅ Auto-created store: ${storeName} (${storeSlug})`);
           } else {
@@ -524,7 +539,7 @@ export class AffiliateService {
               .where(eq(stores.slug, storeSlug))
               .limit(1);
             if (existingStore) {
-              store = existingStore;
+              store = { id: existingStore.id, isNew: false };
             } else {
               console.log(`[AffiliateService] Store creation failed for slug: ${storeSlug}, skipping ${storeCoupons.length} coupons`);
               continue;
@@ -566,6 +581,10 @@ export class AffiliateService {
       }
 
       // Upsert coupons for this store
+      // Mark is_exclusive=true for any store that was auto-created (not manually curated),
+      // so these deals appear in the Exclusive Deals section on the homepage.
+      const isNewlyCreatedStore = (store as any).isNew === true;
+
       for (const couponData of storeCoupons) {
         // Content Quality Validation (Issue 5)
         const lowerTitle = (couponData.title || '').toLowerCase().trim();
@@ -612,7 +631,8 @@ export class AffiliateService {
               affiliate_url: couponData.affiliate_url,
               source: couponData.source,
               external_id: couponData.external_id,
-              is_exclusive: couponData.is_exclusive,
+              // Mark as exclusive if the coupon itself is marked OR if this store was just auto-created
+              is_exclusive: couponData.is_exclusive || isNewlyCreatedStore,
               starts_at: couponData.starts_at,
               expires_at: couponData.expires_at,
             })
@@ -653,6 +673,22 @@ export class AffiliateService {
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
+
+  /**
+   * Normalize a raw affiliate campaign/merchant name before slugifying.
+   * Strips platform tags like [Web, App, CPS], country codes like IN/WW/US,
+   * and extra whitespace so that:
+   *   "Bewakoof [Web, App, CPS] IN" → "Bewakoof"
+   *   "hidemyname vpn"              → "hidemyname vpn"
+   *   "Asus [CPS] IN"               → "Asus"
+   */
+  private normalizeAffiliateName(name: string): string {
+    return name
+      .replace(/\[.*?\]/g, '')           // Remove anything in [brackets]
+      .replace(/\b(IN|WW|US|UK|AU|GLOBAL|CPS|CPA|CPL)\b/gi, '') // Strip country/model codes
+      .replace(/\s+/g, ' ')             // Collapse whitespace
+      .trim();
+  }
 
   private mapCouponType(type: string): 'code' | 'deal' | 'cashback' {
     const normalized = type?.toLowerCase() || '';

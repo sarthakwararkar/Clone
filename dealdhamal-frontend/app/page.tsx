@@ -5,6 +5,7 @@ import { BigSavingCoupons } from '@/components/home/BigSavingCoupons'
 import { FeaturedStores } from '@/components/home/FeaturedStores'
 import { TrendingCoupons } from '@/components/home/TrendingCoupons'
 import { AiDealsSection } from '@/components/home/AiDealsSection'
+import { ExclusiveDealsSection } from '@/components/home/ExclusiveDealsSection'
 import { NewsletterBanner } from '@/components/home/NewsletterBanner'
 import { HomePageSchema } from '@/components/seo/HomePageSchema'
 import IntroSplash from '@/components/ui/IntroSplash'
@@ -29,7 +30,8 @@ export default async function Homepage() {
     couponsResponse,
     dealsResponse,
     aiStoresResponse,
-    aiDealsResponse
+    aiDealsResponse,
+    exclusiveDealsResponse,
   ] = await Promise.all([
     api.getCategories().catch(() => []),
     api.getStores({ featured: true, limit: 12 }).catch(() => ({ data: [], total: 0 })),
@@ -37,6 +39,7 @@ export default async function Homepage() {
     api.getCoupons({ type: 'deal', sort: 'latest', diverse: true, limit: 40 }).catch(() => ({ data: [], total: 0 })),
     api.getStores({ category: 'ai-tools', limit: 100 }).catch(() => ({ data: [] })),
     api.getCoupons({ category: 'ai-tools', type: 'deal', limit: 12 }).catch(() => ({ data: [] })),
+    api.getExclusiveDeals(16).catch(() => ({ data: [] })),
   ])
 
   const featuredStores = storesResponse.data
@@ -44,6 +47,7 @@ export default async function Homepage() {
   const bestDeals = dealsResponse.data
   const aiStores = aiStoresResponse.data
   const aiDeals = aiDealsResponse.data
+  const exclusiveDeals = exclusiveDealsResponse.data
 
   const aiStoreSlugs = new Set(aiStores.map((s: any) => s.slug))
   const nonAiDeals = bestDeals
@@ -73,6 +77,11 @@ export default async function Homepage() {
         {/* Today's Best Deals */}
         {nonAiDeals.length > 0 && (
           <TrendingCoupons coupons={nonAiDeals} />
+        )}
+
+        {/* Exclusive Affiliate Deals */}
+        {exclusiveDeals.length > 0 && (
+          <ExclusiveDealsSection coupons={exclusiveDeals} />
         )}
 
         {/* Hot AI SaaS Deals */}

@@ -38,3 +38,5 @@ jobs:
           npx tsx src/jobs/scrapePublicDeals.ts
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          UPSTASH_REDIS_URL: ${{ secrets.UPSTASH_REDIS_URL }}
+          UPSTASH_REDIS_TOKEN: ${{ secrets.UPSTASH_REDIS_TOKEN }}

@@ -176,12 +176,18 @@ class ApiClient {
     category?: string
     type?: string
     featured?: boolean
+    exclusive?: boolean
     sort?: string
     diverse?: boolean
     page?: number
     limit?: number
   } = {}): Promise<PaginatedResponse<Coupon>> {
     const q = this.buildQuery(params as Record<string, string | number | boolean | undefined>)
+    return this.request<PaginatedResponse<Coupon>>(`/api/coupons${q}`)
+  }
+
+  async getExclusiveDeals(limit = 16): Promise<PaginatedResponse<Coupon>> {
+    const q = this.buildQuery({ exclusive: true, sort: 'latest', diverse: true, limit })
     return this.request<PaginatedResponse<Coupon>>(`/api/coupons${q}`)
   }
 

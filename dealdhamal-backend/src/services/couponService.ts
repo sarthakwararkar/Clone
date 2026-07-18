@@ -24,11 +24,12 @@ export class CouponService {
     categorySlug?: string;
     type?: 'code' | 'deal' | 'cashback';
     featured?: boolean;
+    exclusive?: boolean;
     sort?: 'featured' | 'latest' | 'popular';
     diverse?: boolean;
     pagination: PaginationParams;
   }): Promise<PaginatedResponse<CouponResponse>> {
-    const { storeSlug, categorySlug, type, featured, sort, diverse, pagination } = params;
+    const { storeSlug, categorySlug, type, featured, exclusive, sort, diverse, pagination } = params;
     const { page, limit } = pagination;
     const offset = (page - 1) * limit;
 
@@ -108,6 +109,10 @@ export class CouponService {
 
     if (featured !== undefined) {
       whereParts.push(sql`c.is_featured = ${featured}`);
+    }
+
+    if (exclusive !== undefined) {
+      whereParts.push(sql`c.is_exclusive = ${exclusive}`);
     }
 
     const whereClause = sql.join(whereParts, sql` AND `);

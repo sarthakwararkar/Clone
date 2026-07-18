@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebGL 3D Butterfly Interactive Trail & Ambient Backdrop - DealDhamal</title>
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            outfit: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            brandDark: '#05070B',
+            brandCyan: '#00E5FF',
+            brandPurple: '#BD00FF',
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- OBJLoader CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      background: linear-gradient(to bottom, #87b9e8 0%, #b8d4ee 40%, #ffcbdc 100%);
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+    }
+    
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+
+    .glow-cyan {
+      box-shadow: 0 0 45px rgba(0, 229, 255, 0.12);
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(0, 0, 0, 0.15);
+      height: 6px;
+      border-radius: 9999px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #00E5FF;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.25);
+    }
+  </style>
+</head>
+<body class="text-slate-900 min-h-screen relative flex flex-col justify-between p-6 md:p-8 select-none">
+
+  <!-- Three.js WebGL Container -->
+  <div id="webgl-container" class="absolute inset-0 w-full h-full z-0 pointer-events-none"></div>
+
+  <!-- Subtle grid overlay -->
+  <div class="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.01)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.01)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none z-10"></div>
+
+  <!-- Header -->
+  <header class="relative z-20 flex items-center justify-between border-b border-black/5 pb-4">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-indigo-600 font-outfit">
+        DEALDHAMAL
+      </span>
+      <span class="text-[9px] font-black tracking-widest text-teal-600 border border-teal-600/30 px-2 py-0.5 rounded bg-teal-50 uppercase">
+        WebGL Motion Lab
+      </span>
+    </div>
+    <div class="text-xs text-slate-600 font-medium font-sans flex items-center gap-2">
+      <span id="loader-badge" class="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse"></span>
+      <span id="loader-text">Loading base.obj model...</span>
+    </div>
+  </header>
+
+  <!-- Workspace Instruction -->
+  <main class="flex-1 relative z-20 flex items-center justify-center pointer-events-none">
+    <div class="text-center max-w-md bg-white/30 p-8 rounded-3xl border border-white/40 backdrop-blur-md shadow-xl">
+      <div class="w-16 h-16 rounded-full bg-teal-600/10 border border-teal-600/20 flex items-center justify-center mx-auto mb-4 animate-[bounce_2.5s_infinite]">
+        <i data-lucide="sparkles" class="w-6 h-6 text-teal-600"></i>
+      </div>
+      <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight mb-2 font-outfit text-slate-800">
+        Snow-Capped 3D Landscape
+      </h1>
+      <p class="text-xs md:text-sm text-slate-600 font-medium leading-relaxed font-sans">
+        Glide your cursor to spawn 3D white butterflies. A continuous high-definition heightmap landscape features lush green meadow, a winding path, and towering snow-capped mountain ridges at the back.
+      </p>
+    </div>
+  </main>
+
+  <!-- Configuration Panel -->
+  <div class="fixed left-6 top-24 z-30 w-80 glass-panel rounded-2xl p-5 shadow-xl glow-cyan select-none pointer-events-auto text-slate-800">
+    <div class="flex items-center justify-between mb-4 pb-3 border-b border-black/10">
+      <div class="flex items-center gap-2">
+        <i data-lucide="sliders" class="w-4 h-4 text-teal-600"></i>
+        <h2 class="font-extrabold text-sm tracking-wide uppercase font-outfit font-black">3D Controls</h2>
+      </div>
+      <span class="text-[10px] bg-white/5 border border-white/10 text-slate-600 px-2 py-0.5 rounded font-mono font-bold" id="fps-counter">60 FPS</span>
+    </div>
+
+    <div class="space-y-4 font-sans text-slate-700">
+      <!-- Spawn Distance -->
+      <div>
+        <div class="flex justify-between text-xs font-bold mb-1.5">
+          <span class="text-slate-500">Spawn Distance</span>
+          <span class="text-teal-600 font-bold" id="val-density">59px</span>
+        </div>
+        <input type="range" id="slider-density" min="10" max="80" value="59" oninput="updateSetting('density', this.value)" class="w-full">
+      </div>
+
+      <!-- Butterfly Scale -->
+      <div>
+        <div class="flex justify-between text-xs font-bold mb-1.5">
+          <span class="text-slate-500">Butterfly Size</span>
+          <span class="text-teal-600 font-bold" id="val-scale">1.2x</span>
+        </div>
+        <input type="range" id="slider-scale" min="4" max="20" value="12" oninput="updateSetting('scale', this.value / 10)" class="w-full">
+      </div>
+
+      <!-- Flapping Speed -->
+      <div>
+        <div class="flex justify-between text-xs font-bold mb-1.5">
+          <span class="text-slate-500">Flapping Speed</span>
+          <span class="text-teal-600 font-bold" id="val-flap">Medium</span>
+        </div>
+        <input type="range" id="slider-flap" min="1" max="5" value="3" oninput="updateSetting('flap', this.value)" class="w-full">
+      </div>
+
+      <!-- Backdrop Butterflies Count -->
+      <div>
+        <div class="flex justify-between text-xs font-bold mb-1.5">
+          <span class="text-slate-500">Backdrop Butterflies</span>
+          <span class="text-teal-600 font-bold" id="val-backdrop">15</span>
+        </div>
+        <input type="range" id="slider-backdrop" min="0" max="25" value="15" oninput="updateSetting('backdrop', this.value)" class="w-full">
+      </div>
+
+      <!-- Flight Speed -->
+      <div>
+        <div class="flex justify-between text-xs font-bold mb-1.5">
+          <span class="text-slate-500">Flight Speed (all axes)</span>
+          <span class="text-teal-600 font-bold" id="val-speed">Normal</span>
+        </div>
+        <input type="range" id="slider-speed" min="1" max="5" value="3" oninput="updateSetting('speed', this.value)" class="w-full">
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="relative z-20 flex flex-col sm:flex-row items-center justify-between border-t border-black/5 pt-4 text-xs text-slate-500 font-medium font-sans">
+    <div>
+      © 2026 DealDhamal. WebGL Butterfly Motion System.
+    </div>
+    <div class="flex gap-4 mt-2 sm:mt-0">
+      <a href="#" class="hover:text-slate-900 transition-colors">Documentation</a>
+      <a href="#" class="hover:text-slate-900 transition-colors">Three.js Engine</a>
+    </div>
+  </footer>
+
+  <script>
+    // Initialize icons
+    lucide.createIcons();
+
+    // Settings Configuration
+    const settings = {
+      density: 59,
+      scale: 1.2,
+      flap: 3,
+      fade: 1.8,
+      backdrop: 15,
+      speed: 3
+    };
+
+    const flapSpeedMap = { 1: 'Very Slow', 2: 'Slow', 3: 'Medium', 4: 'Fast', 5: 'Hyper' };
+    const flapMultMap = { 1: 8, 2: 18, 3: 30, 4: 48, 5: 72 };
+
+    const speedLabelMap = { 1: 'Very Slow', 2: 'Slow', 3: 'Normal', 4: 'Fast', 5: 'Sonic' };
+    const speedMultMap = { 1: 0.3, 2: 0.6, 3: 1.0, 4: 1.6, 5: 2.5 };
+
+    function updateSetting(key, val) {
+      if (key === 'density') {
+        settings.density = parseFloat(val);
+        document.getElementById('val-density').innerText = val + 'px';
+      } else if (key === 'scale') {
+        settings.scale = parseFloat(val);
+        document.getElementById('val-scale').innerText = val + 'x';
+      } else if (key === 'backdrop') {
+        const oldVal = settings.backdrop;
+        settings.backdrop = parseInt(val);
+        document.getElementById('val-backdrop').innerText = val;
+        adjustBackdropCount(oldVal, settings.backdrop);
+      } else if (key === 'flap') {
+        settings.flap = parseInt(val);
+        document.getElementById('val-flap').innerText = flapSpeedMap[val];
+      } else if (key === 'speed') {
+        settings.speed = parseInt(val);
+        document.getElementById('val-speed').innerText = speedLabelMap[val];
+      }
+    }
+
+    // Set up Three.js Scene
+    const container = document.getElementById('webgl-container');
+    const scene = new THREE.Scene();
+    
+    // Set up camera
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0.5, 12);
+
+    // Set up renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer.domElement);
+
+    // Setup exponential fog
+    scene.fog = new THREE.FogExp2(0xbde0fe, 0.045);
+
+    // Setup Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.72);
+    scene.add(ambientLight);
+
+    const sunLight = new THREE.DirectionalLight(0xfff5e6, 1.7);
+    sunLight.position.set(10, 15, 10);
+    scene.add(sunLight);
+
+    const skyLight = new THREE.DirectionalLight(0x8ecae6, 0.9);
+    skyLight.position.set(-10, 10, -5);
+    scene.add(skyLight);
+
+    // Dynamic resize handler
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // -------------------------------------------------------------
+    // PROCEDURAL FALLBACK WING GEOMETRY (Until base.obj is loaded)
+    // -------------------------------------------------------------
+    let proceduralWingGeo, proceduralBodyGeo;
+
+    function buildProceduralGeometry() {
+      proceduralWingGeo = new THREE.PlaneGeometry(2.0, 2.0, 12, 12);
+      const posAttr = proceduralWingGeo.attributes.position;
+      for (let i = 0; i < posAttr.count; i++) {
+        const x = posAttr.getX(i);
+        const y = posAttr.getY(i);
+        const normX = x + 1;
+        const normY = y + 1;
+        const z = Math.sin(normX * Math.PI / 2) * Math.sin(normY * Math.PI / 2) * 0.35;
+        posAttr.setZ(i, z);
+      }
+      proceduralWingGeo.computeVertexNormals();
+      
+      proceduralBodyGeo = new THREE.CylinderGeometry(0.04, 0.03, 0.6, 8);
+      proceduralBodyGeo.rotateX(Math.PI / 2);
+    }
+    buildProceduralGeometry();
+
+    // -------------------------------------------------------------
+    // HIGH-RES CONTINUOUS TERRAIN HEIGHTMAP (Meadow to Snow Mountains)
+    // -------------------------------------------------------------
+    const terrainGeo = new THREE.PlaneGeometry(35, 35, 150, 150);
+    terrainGeo.rotateX(-Math.PI / 2); // lie flat
+
+    const colors = [];
+    const terrainPos = terrainGeo.attributes.position;
+    
+    for (let i = 0; i < terrainPos.count; i++) {
+      const x = terrainPos.getX(i);
+      const z = terrainPos.getZ(i);
+
+      // 1. Rolling meadow height
+      const meadowY = Math.sin(x * 0.12) * Math.cos(z * 0.12) * 0.8 + Math.sin(x * 0.3) * Math.cos(z * 0.3) * 0.2;
+      
+      let finalY = meadowY;
+      let r = 0.18, g = 0.38, b = 0.15; // default grass green
+      
+      // 2. Rising mountain range at the back (z < -2)
+      if (z < -2) {
+        // Transition weight (0 at z=-2, 1 at z=-17.5)
+        const t = (Math.abs(z) - 2) / 15.5; 
+        
+        // Rugged mountain ridges (fractional Brownian motion approximation)
+        let mountainNoise = Math.sin(x * 0.4) * 2.8;       // giant peaks
+        mountainNoise += Math.sin(x * 1.2) * 0.75;         // secondary ridges
+        mountainNoise += Math.sin(x * 3.5) * 0.25;         // rocky details
+        mountainNoise += Math.sin(x * 8.0) * 0.08;         // fine gravel
+        
+        // Blend meadow plane to mountain peaks
+        finalY = meadowY * (1 - t) + (2.5 + mountainNoise) * t;
+
+        // Color coding by altitude & slope
+        if (t > 0.35) {
+          if (finalY > 2.1) {
+            // Snow-capped peaks
+            r = 0.95; g = 0.95; b = 0.95;
+          } else if (finalY > 1.0) {
+            // Rocky dark grey
+            r = 0.36; g = 0.40; b = 0.42;
+          } else {
+            // Alpine forest transition
+            r = 0.22; g = 0.33; b = 0.20;
+          }
+        }
+      }
+      
+      // 3. Winding dirt path (only in the front meadow area z > -5)
+      if (z >= -5) {
+        const pathCenter = Math.sin(z * 0.22) * 2.2;
+        const distToPath = Math.abs(x - pathCenter);
+
+        if (distToPath < 1.2) {
+          const factor = distToPath / 1.2;
+          finalY -= (1 - factor) * 0.28; // path depression
+
+          // Sandy dirt trail color
+          r = 0.64 - (1 - factor) * 0.1;
+          g = 0.50 - (1 - factor) * 0.08;
+          b = 0.38 - (1 - factor) * 0.05;
+        } else if (distToPath < 2.0) {
+          // Blend path edge
+          const factor = (distToPath - 1.2) / 0.8;
+          const rBrown = 0.54, gBrown = 0.44, bBrown = 0.34;
+          const rGrass = 0.18, gGrass = 0.38, bGrass = 0.15;
+
+          r = rBrown * (1 - factor) + rGrass * factor;
+          g = gBrown * (1 - factor) + gGrass * factor;
+          b = bBrown * (1 - factor) + bGrass * factor;
+        }
+      }
+
+      terrainPos.setY(i, finalY);
+      colors.push(r, g, b);
+    }
+    terrainGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    terrainGeo.computeVertexNormals();
+
+    const terrainMat = new THREE.MeshLambertMaterial({
+      vertexColors: true,
+      flatShading: true
+    });
+
+    const terrain = new THREE.Mesh(terrainGeo, terrainMat);
+    terrain.position.y = -3.2;
+    scene.add(terrain);
+
+    // -------------------------------------------------------------
+    // HIGH-RES PROCEDURAL TEXTURES
+    // -------------------------------------------------------------
+    function createHighResTexture(type) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 128, 256);
+
+      if (type === 'grass') {
+        const grad = ctx.createLinearGradient(64, 256, 64, 10);
+        grad.addColorStop(0, '#132a13');
+        grad.addColorStop(0.3, '#3f5e3d');
+        grad.addColorStop(0.8, '#52b788');
+        grad.addColorStop(1, '#b7e4c7');
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(56, 256);
+        ctx.quadraticCurveTo(50, 120, 72, 10);
+        ctx.quadraticCurveTo(74, 120, 72, 256);
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(64, 256);
+        ctx.quadraticCurveTo(57, 120, 72, 20);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(62, 256);
+        ctx.quadraticCurveTo(55, 120, 70, 20);
+        ctx.stroke();
+      } else if (type === 'red') {
+        ctx.strokeStyle = '#2d6a4f';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(64, 256);
+        ctx.quadraticCurveTo(58, 150, 64, 60);
+        ctx.stroke();
+
+        ctx.fillStyle = '#3B7A3E';
+        ctx.beginPath();
+        ctx.ellipse(50, 160, 6, 18, -Math.PI/6, 0, Math.PI*2);
+        ctx.ellipse(78, 120, 5, 15, Math.PI/4, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.fillStyle = '#b7094c';
+        ctx.beginPath();
+        ctx.ellipse(64, 60, 26, 22, 0, 0, Math.PI*2);
+        ctx.fill();
+
+        const flowerGrad = ctx.createRadialGradient(64, 60, 2, 64, 60, 28);
+        flowerGrad.addColorStop(0, '#000814');
+        flowerGrad.addColorStop(0.25, '#780000');
+        flowerGrad.addColorStop(0.7, '#c1121f');
+        flowerGrad.addColorStop(1, '#f25c54');
+
+        ctx.fillStyle = flowerGrad;
+        for (let i = 0; i < 4; i++) {
+          const angle = (i * Math.PI) / 2;
+          const ox = Math.cos(angle) * 8;
+          const oy = Math.sin(angle) * 8;
+          ctx.beginPath();
+          ctx.arc(64 + ox, 60 + oy, 18, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.fillStyle = '#ffb703';
+        for (let i = 0; i < 12; i++) {
+          const a = (i * Math.PI) / 6;
+          const px = 64 + Math.cos(a) * 8;
+          const py = 60 + Math.sin(a) * 8;
+          ctx.beginPath();
+          ctx.arc(px, py, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (type === 'yellow') {
+        ctx.strokeStyle = '#2d6a4f';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(64, 256);
+        ctx.quadraticCurveTo(66, 160, 64, 60);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffb703';
+        for (let i = 0; i < 16; i++) {
+          const angle = (i * Math.PI) / 8;
+          ctx.save();
+          ctx.translate(64, 60);
+          ctx.rotate(angle);
+          ctx.fillStyle = i % 2 === 0 ? '#ffb703' : '#ffc300';
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.quadraticCurveTo(-6, -18, 0, -28);
+          ctx.quadraticCurveTo(6, -18, 0, 0);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        const centerGrad = ctx.createRadialGradient(64, 60, 0, 64, 60, 10);
+        centerGrad.addColorStop(0, '#582f0e');
+        centerGrad.addColorStop(0.7, '#7f4f24');
+        centerGrad.addColorStop(1, '#a68a64');
+        ctx.fillStyle = centerGrad;
+        ctx.beginPath();
+        ctx.arc(64, 60, 10, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (type === 'purple') {
+        ctx.strokeStyle = '#3a5a40';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(64, 256);
+        ctx.lineTo(64, 30);
+        ctx.stroke();
+
+        const blossomColors = ['#5e548e', '#9f86c0', '#be95c4', '#e0b1cb'];
+        for (let y = 30; y < 140; y += 6) {
+          const sizeX = Math.max(6, 16 - (y - 30) * 0.08);
+          ctx.fillStyle = blossomColors[Math.floor(Math.random() * blossomColors.length)];
+          ctx.beginPath();
+          ctx.ellipse(64 - sizeX/2, y, sizeX/2.5, 4, -Math.PI/6, 0, Math.PI*2);
+          ctx.ellipse(64 + sizeX/2, y, sizeX/2.5, 4, Math.PI/6, 0, Math.PI*2);
+          ctx.fill();
+
+          ctx.fillStyle = blossomColors[Math.floor(Math.random() * blossomColors.length)];
+          ctx.beginPath();
+          ctx.arc(64, y - 2, 3, 0, Math.PI*2);
+          ctx.fill();
+        }
+      } else {
+        ctx.strokeStyle = '#2d6a4f';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.moveTo(64, 256);
+        ctx.quadraticCurveTo(68, 140, 64, 60);
+        ctx.stroke();
+
+        ctx.fillStyle = '#0077b6';
+        for (let i = 0; i < 8; i++) {
+          const angle = (i * Math.PI) / 4;
+          ctx.save();
+          ctx.translate(64, 60);
+          ctx.rotate(angle);
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(-7, -24);
+          ctx.lineTo(0, -28);
+          ctx.lineTo(7, -24);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.strokeStyle = '#90e0ef';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(0, -22);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        ctx.fillStyle = '#caf0f8';
+        ctx.beginPath();
+        ctx.arc(64, 60, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.minFilter = THREE.LinearMipmapLinearFilter;
+      return texture;
+    }
+
+    // -------------------------------------------------------------
+    // INSTANCED FOLIAGE (2,500 Swaying Grass Blades)
+    // -------------------------------------------------------------
+    const grassGeo = new THREE.PlaneGeometry(0.2, 0.7);
+    grassGeo.translate(0, 0.35, 0);
+
+    const totalGrass = 2500;
+    const grassTex = createHighResTexture('grass');
+    const grassMat = new THREE.MeshLambertMaterial({
+      map: grassTex,
+      transparent: true,
+      alphaTest: 0.5,
+      side: THREE.DoubleSide
+    });
+
+    const grassMesh = new THREE.InstancedMesh(grassGeo, grassMat, totalGrass);
+    const grassDummy = new THREE.Object3D();
+
+    for (let i = 0; i < totalGrass; i++) {
+      let rx, rz, distToPath;
+      do {
+        rx = (Math.random() - 0.5) * 28;
+        rz = (Math.random() - 0.5) * 28;
+        
+        // Spawn restriction: meadow only (z > -6)
+        if (rz < -6) continue;
+        
+        const pCenter = Math.sin(rz * 0.22) * 2.2;
+        distToPath = Math.abs(rx - pCenter);
+      } while (distToPath < 1.1 || rz < -6);
+
+      const ry = Math.sin(rx * 0.15) * Math.cos(rz * 0.15) * 0.8 + Math.sin(rx * 0.4) * 0.2 - 3.2;
+
+      grassDummy.position.set(rx, ry, rz);
+      grassDummy.rotation.y = Math.random() * Math.PI * 2;
+      grassDummy.rotation.x = (Math.random() - 0.5) * 0.2;
+      
+      const scale = 0.7 + Math.random() * 0.8;
+      grassDummy.scale.set(scale, scale, scale);
+      grassDummy.updateMatrix();
+      grassMesh.setMatrixAt(i, grassDummy.matrix);
+    }
+    scene.add(grassMesh);
+
+    // -------------------------------------------------------------
+    // INSTANCED WILDFLOWERS
+    // -------------------------------------------------------------
+    const flowerGeo = new THREE.PlaneGeometry(0.35, 0.7);
+    flowerGeo.translate(0, 0.35, 0);
+
+    const totalFlowersPerType = 150;
+    const flowerColors = ['red', 'yellow', 'purple', 'blue'];
+    const instancedMeshes = [];
+
+    flowerColors.forEach((color) => {
+      const tex = createHighResTexture(color);
+      const mat = new THREE.MeshLambertMaterial({
+        map: tex,
+        transparent: true,
+        alphaTest: 0.5,
+        side: THREE.DoubleSide
+      });
+
+      const mesh = new THREE.InstancedMesh(flowerGeo, mat, totalFlowersPerType);
+      const dummy = new THREE.Object3D();
+
+      for (let i = 0; i < totalFlowersPerType; i++) {
+        let rx, rz, distToPath;
+        do {
+          rx = (Math.random() - 0.5) * 28;
+          rz = (Math.random() - 0.5) * 28;
+          
+          if (rz < -6) continue; // meadow only
+          
+          const pCenter = Math.sin(rz * 0.22) * 2.2;
+          distToPath = Math.abs(rx - pCenter);
+        } while (distToPath < 1.15 || rz < -6);
+
+        const ry = Math.sin(rx * 0.15) * Math.cos(rz * 0.15) * 0.8 + Math.sin(rx * 0.4) * 0.2 - 3.2;
+
+        dummy.position.set(rx, ry, rz);
+        dummy.rotation.y = Math.random() * Math.PI * 2;
+        dummy.rotation.x = (Math.random() - 0.5) * 0.15;
+        
+        const scale = 0.5 + Math.random() * 0.7;
+        dummy.scale.set(scale, scale, scale);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(i, dummy.matrix);
+      }
+      
+      scene.add(mesh);
+      instancedMeshes.push({ mesh, color });
+    });
+
+    // -------------------------------------------------------------
+    // WIND SWAY SIMULATION
+    // -------------------------------------------------------------
+    function animateMeadow(time) {
+      const dummy = new THREE.Object3D();
+      const mat = new THREE.Matrix4();
+
+      // Sway Grass
+      for (let i = 0; i < totalGrass; i++) {
+        grassMesh.getMatrixAt(i, mat);
+        dummy.position.setFromMatrixPosition(mat);
+        dummy.scale.setFromMatrixScale(mat);
+        
+        const sway = Math.sin(time * 1.5 + dummy.position.x * 0.2 + dummy.position.z * 0.2) * 0.15;
+        dummy.rotation.set(sway, Math.sin(i) * Math.PI, sway * 0.4);
+        dummy.updateMatrix();
+        grassMesh.setMatrixAt(i, dummy.matrix);
+      }
+      grassMesh.instanceMatrix.needsUpdate = true;
+
+      // Sway Flowers
+      instancedMeshes.forEach(({ mesh }) => {
+        for (let i = 0; i < totalFlowersPerType; i++) {
+          mesh.getMatrixAt(i, mat);
+          dummy.position.setFromMatrixPosition(mat);
+          dummy.scale.setFromMatrixScale(mat);
+          
+          const sway = Math.sin(time * 1.5 + dummy.position.x * 0.2 + dummy.position.z * 0.2) * 0.12;
+          dummy.rotation.set(sway, Math.sin(i) * Math.PI, sway * 0.3);
+          dummy.updateMatrix();
+          mesh.setMatrixAt(i, dummy.matrix);
+        }
+        mesh.instanceMatrix.needsUpdate = true;
+      });
+    }
+
+    // -------------------------------------------------------------
+    // MODEL SPLITTING ALGORITHM FOR base.obj
+    // -------------------------------------------------------------
+    let objSplitGeos = null;
+    let isModelLoaded = false;
+
+    function splitButterflyGeometry(geo) {
+      if (!geo.attributes.position) return null;
+
+      const tempGeo = geo.index ? geo.clone().toNonIndexed() : geo.clone();
+      const positions = tempGeo.attributes.position.array;
+      const normals = tempGeo.attributes.normal ? tempGeo.attributes.normal.array : null;
+
+      const leftVerts = [];
+      const leftNorms = [];
+      const rightVerts = [];
+      const rightNorms = [];
+      const bodyVerts = [];
+      const bodyNorms = [];
+
+      const bodyThreshold = 0.08;
+
+      for (let i = 0; i < positions.length; i += 9) {
+        const x1 = positions[i],     y1 = positions[i+1], z1 = positions[i+2];
+        const x2 = positions[i+3],   y2 = positions[i+4], z2 = positions[i+5];
+        const x3 = positions[i+6],   y3 = positions[i+7], z3 = positions[i+8];
+
+        const centroidX = (x1 + x2 + x3) / 3;
+
+        let vTarget, nTarget;
+
+        if (centroidX < -bodyThreshold) {
+          vTarget = leftVerts;
+          nTarget = leftNorms;
+        } else if (centroidX > bodyThreshold) {
+          vTarget = rightVerts;
+          nTarget = rightNorms;
+        } else {
+          vTarget = bodyVerts;
+          nTarget = bodyNorms;
+        }
+
+        vTarget.push(x1, y1, z1, x2, y2, z2, x3, y3, z3);
+
+        if (normals) {
+          nTarget.push(
+            normals[i],   normals[i+1], normals[i+2],
+            normals[i+3], normals[i+4], normals[i+5],
+            normals[i+6], normals[i+7], normals[i+8]
+          );
+        }
+      }
+
+      const leftGeo = new THREE.BufferGeometry();
+      leftGeo.setAttribute('position', new THREE.Float32BufferAttribute(leftVerts, 3));
+      if (leftNorms.length) leftGeo.setAttribute('normal', new THREE.Float32BufferAttribute(leftNorms, 3));
+      leftGeo.computeVertexNormals();
+
+      const rightGeo = new THREE.BufferGeometry();
+      rightGeo.setAttribute('position', new THREE.Float32BufferAttribute(rightVerts, 3));
+      if (rightNorms.length) rightGeo.setAttribute('normal', new THREE.Float32BufferAttribute(rightNorms, 3));
+      rightGeo.computeVertexNormals();
+
+      const bGeo = new THREE.BufferGeometry();
+      bGeo.setAttribute('position', new THREE.Float32BufferAttribute(bodyVerts, 3));
+      if (bodyNorms.length) bGeo.setAttribute('normal', new THREE.Float32BufferAttribute(bodyNorms, 3));
+      bGeo.computeVertexNormals();
+
+      leftGeo.translate(bodyThreshold, 0, 0);
+      rightGeo.translate(-bodyThreshold, 0, 0);
+
+      return {
+        leftWing: leftGeo,
+        rightWing: rightGeo,
+        body: bGeo,
+        bodyThreshold: bodyThreshold
+      };
+    }
+
+    // -------------------------------------------------------------
+    // OBJ MODEL LOADER
+    // -------------------------------------------------------------
+    const objLoader = new THREE.OBJLoader();
+    objLoader.load('/base.obj', 
+      (object) => {
+        let butterflyMesh = null;
+        object.traverse((child) => {
+          if (child.isMesh) {
+            butterflyMesh = child;
+          }
+        });
+
+        if (butterflyMesh) {
+          objSplitGeos = splitButterflyGeometry(butterflyMesh.geometry);
+          isModelLoaded = true;
+
+          document.getElementById('loader-badge').className = "w-2.5 h-2.5 rounded-full bg-green-500";
+          document.getElementById('loader-text').innerText = "base.obj loaded and split successfully!";
+          rebuildBackdropWithModel();
+        }
+      },
+      (xhr) => {
+        const pct = Math.floor(xhr.loaded / xhr.total * 100);
+        document.getElementById('loader-text').innerText = `Loading base.obj... ${pct}%`;
+      },
+      (error) => {
+        console.error("Error loading base.obj, falling back to procedural engine:", error);
+        document.getElementById('loader-badge').className = "w-2.5 h-2.5 rounded-full bg-red-500";
+        document.getElementById('loader-text').innerText = "OBJ error. procedural fallback active.";
+      }
+    );
+
+    // -------------------------------------------------------------
+    // BUTTERFLY 3D CLASS
+    // -------------------------------------------------------------
+    class ButterflyMesh {
+      constructor() {
+        this.group = new THREE.Group();
+
+        this.wingMat = new THREE.MeshLambertMaterial({
+          color: 0xffffff,
+          emissive: 0x444444, // subtle emissive white glow
+          transparent: true,
+          opacity: 0.85,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
+
+        this.bodyMat = new THREE.MeshLambertMaterial({
+          color: 0x181c26,
+          emissive: 0x07090e
+        });
+
+        const leftG = isModelLoaded ? objSplitGeos.leftWing : proceduralWingGeo;
+        const rightG = isModelLoaded ? objSplitGeos.rightWing : proceduralWingGeo;
+        const bG = isModelLoaded ? objSplitGeos.body : proceduralBodyGeo;
+
+        this.bodyMesh = new THREE.Mesh(bG, this.bodyMat);
+        this.group.add(this.bodyMesh);
+
+        this.leftWingGroup = new THREE.Group();
+        this.leftWingMesh = new THREE.Mesh(leftG, this.wingMat);
+        if (!isModelLoaded) {
+          this.leftWingMesh.position.x = 1.0;
+          this.leftWingGroup.position.set(-0.02, 0, 0);
+        }
+        this.leftWingGroup.add(this.leftWingMesh);
+        this.group.add(this.leftWingGroup);
+
+        this.rightWingGroup = new THREE.Group();
+        this.rightWingMesh = new THREE.Mesh(rightG, this.wingMat);
+        if (!isModelLoaded) {
+          this.rightWingMesh.scale.x = -1;
+          this.rightWingMesh.position.x = -1.0;
+          this.rightWingGroup.position.set(0.02, 0, 0);
+        }
+        this.rightWingGroup.add(this.rightWingMesh);
+        this.group.add(this.rightWingGroup);
+
+        const scaleVal = 0.25;
+        this.group.scale.set(scaleVal, scaleVal, scaleVal);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // INTERACTIVE TRAIL BUTTERFLY
+    // -------------------------------------------------------------
+    const butterflies = [];
+
+    class TrailButterfly extends ButterflyMesh {
+      constructor(x, y) {
+        super();
+        
+        this.group.position.set(x + (Math.random() - 0.5) * 0.2, y + (Math.random() - 0.5) * 0.2, 0.5);
+
+        const phi = Math.random() * Math.PI * 2;
+        const theta = Math.acos((Math.random() * 2) - 1);
+        const baseSpeed = 0.05 + Math.random() * 0.05;
+        
+        this.vx = Math.sin(theta) * Math.cos(phi) * baseSpeed;
+        this.vy = Math.sin(theta) * Math.sin(phi) * baseSpeed + 0.01;
+        this.vz = Math.cos(theta) * baseSpeed;
+
+        this.scaleMult = settings.scale * (0.8 + Math.random() * 0.4);
+        this.group.scale.set(0.001, 0.001, 0.001); // start tiny
+
+        this.age = 0;
+        this.maxAge = 60 * settings.fade;
+        this.flapOffset = Math.random() * Math.PI * 2;
+
+        scene.add(this.group);
+      }
+
+      update() {
+        this.age++;
+        const pct = this.age / this.maxAge;
+
+        let scaleVal = 1;
+        if (pct < 0.15) {
+          scaleVal = (pct / 0.15) * this.scaleMult * 0.25;
+        } else {
+          scaleVal = (1.0 - (pct - 0.15) / 0.85) * this.scaleMult * 0.25;
+        }
+        this.group.scale.set(scaleVal, scaleVal, scaleVal);
+
+        const speedMult = speedMultMap[settings.speed];
+        this.group.position.x += this.vx * speedMult;
+        this.group.position.y += this.vy * speedMult;
+        this.group.position.z += this.vz * speedMult;
+
+        const flapMult = flapMultMap[settings.flap];
+        const flapAngle = Math.sin(this.age * flapMult * 0.02 + this.flapOffset) * (Math.PI / 2.8);
+        this.leftWingGroup.rotation.y = flapAngle;
+        this.rightWingGroup.rotation.y = -flapAngle;
+
+        const travelSpeed = Math.hypot(this.vx, this.vy, this.vz);
+        if (travelSpeed > 0.01) {
+          const yaw = Math.atan2(this.vx, this.vy);
+          const pitch = -Math.atan2(this.vz, Math.hypot(this.vx, this.vy));
+          this.group.rotation.z = -yaw;
+          this.group.rotation.x = pitch;
+        }
+
+        const opacityDecay = pct < 0.15 ? (pct / 0.15) : Math.max(0, 1.0 - (pct - 0.15) / 0.85);
+        this.wingMat.opacity = opacityDecay * 0.85;
+
+        if (this.age >= this.maxAge) {
+          scene.remove(this.group);
+          this.wingMat.dispose();
+          this.bodyMat.dispose();
+          return false;
+        }
+        return true;
+      }
+    }
+
+    // -------------------------------------------------------------
+    // AMBIENT BACKDROP BUTTERFLY
+    // -------------------------------------------------------------
+    const ambientButterflies = [];
+
+    class BackdropButterfly extends ButterflyMesh {
+      constructor(isInitial = false) {
+        super();
+
+        const depthZ = -8 + Math.random() * 8.0;
+        this.group.position.set(
+          (Math.random() - 0.5) * 12,
+          isInitial ? (Math.random() - 0.5) * 10 : -4.5,
+          depthZ
+        );
+
+        const depthPct = (depthZ + 8) / 8.0;
+        this.scaleMult = 0.1 + depthPct * 0.18;
+        this.group.scale.set(this.scaleMult, this.scaleMult, this.scaleMult);
+
+        this.flapSpeed = 12 + Math.random() * 12;
+        this.flapOffset = Math.random() * Math.PI * 2;
+
+        const phi = Math.random() * Math.PI * 2;
+        const theta = Math.acos((Math.random() * 2) - 1);
+        const baseSpeed = 0.015 + Math.random() * 0.02;
+
+        this.vx = Math.sin(theta) * Math.cos(phi) * baseSpeed;
+        this.vy = Math.sin(theta) * Math.sin(phi) * baseSpeed + 0.015;
+        this.vz = Math.cos(theta) * baseSpeed * 0.5;
+
+        this.time = Math.random() * 100;
+        this.wingMat.opacity = 0.35 + depthPct * 0.5;
+
+        scene.add(this.group);
+      }
+
+      update() {
+        this.time += 0.015;
+        const speedMult = speedMultMap[settings.speed];
+
+        this.group.position.x += (this.vx + Math.sin(this.time) * 0.005) * speedMult;
+        this.group.position.y += (this.vy + Math.cos(this.time * 0.5) * 0.003) * speedMult;
+        this.group.position.z += (this.vz + Math.sin(this.time * 0.8) * 0.004) * speedMult;
+
+        const yaw = Math.atan2(this.vx + Math.sin(this.time) * 0.005, this.vy);
+        const pitch = -Math.atan2(this.vz, Math.hypot(this.vx, this.vy));
+        this.group.rotation.z = -yaw;
+        this.group.rotation.x = pitch;
+
+        const flapAngle = Math.sin(this.time * this.flapSpeed + this.flapOffset) * (Math.PI / 3);
+        this.leftWingGroup.rotation.y = flapAngle;
+        this.rightWingGroup.rotation.y = -flapAngle;
+
+        if (this.group.position.y > 6 || this.group.position.x > 8 || this.group.position.x < -8 || this.group.position.z > 2 || this.group.position.z < -10) {
+          this.group.position.y = -4.5;
+          this.group.position.x = (Math.random() - 0.5) * 12;
+          this.group.position.z = -8 + Math.random() * 8.0;
+          const depthPct = (this.group.position.z + 8) / 8.0;
+          this.scaleMult = 0.1 + depthPct * 0.18;
+          this.group.scale.set(this.scaleMult, this.scaleMult, this.scaleMult);
+          this.wingMat.opacity = 0.35 + depthPct * 0.5;
+        }
+
+        return true;
+      }
+
+      destroy() {
+        scene.remove(this.group);
+        this.wingMat.dispose();
+        this.bodyMat.dispose();
+      }
+    }
+
+    function initBackdropButterflies() {
+      for (let i = 0; i < settings.backdrop; i++) {
+        ambientButterflies.push(new BackdropButterfly(true));
+      }
+    }
+
+    function adjustBackdropCount(oldVal, newVal) {
+      if (newVal > oldVal) {
+        for (let i = oldVal; i < newVal; i++) {
+          ambientButterflies.push(new BackdropButterfly(false));
+        }
+      } else if (newVal < oldVal) {
+        for (let i = oldVal; i > newVal; i--) {
+          const removed = ambientButterflies.pop();
+          if (removed) removed.destroy();
+        }
+      }
+    }
+
+    function rebuildBackdropWithModel() {
+      for (let i = ambientButterflies.length - 1; i >= 0; i--) {
+        ambientButterflies[i].destroy();
+      }
+      ambientButterflies.length = 0;
+      initBackdropButterflies();
+    }
+
+    initBackdropButterflies();
+
+    // -------------------------------------------------------------
+    // COORDINATE PROJECTOR & INTERACTIVE MOUSE trail
+    // -------------------------------------------------------------
+    function projectMouseTo3D(clientX, clientY) {
+      const vector = new THREE.Vector3(
+        (clientX / window.innerWidth) * 2 - 1,
+        -(clientY / window.innerHeight) * 2 + 1,
+        0.5
+      );
+      vector.unproject(camera);
+      const dir = vector.sub(camera.position).normalize();
+      const distance = -camera.position.z / dir.z;
+      return camera.position.clone().add(dir.multiplyScalar(distance));
+    }
+
+    let lastScreenX = null;
+    let lastScreenY = null;
+
+    window.addEventListener('mousemove', (e) => {
+      if (e.target.closest('.glass-panel')) return;
+
+      if (lastScreenX === null || lastScreenY === null) {
+        lastScreenX = e.clientX;
+        lastScreenY = e.clientY;
+        return;
+      }
+
+      const dist = Math.hypot(e.clientX - lastScreenX, e.clientY - lastScreenY);
+
+      if (dist >= settings.density) {
+        const steps = Math.floor(dist / settings.density);
+        
+        for (let i = 1; i <= steps; i++) {
+          const pct = i / steps;
+          const currX = lastScreenX + (e.clientX - lastScreenX) * pct;
+          const currY = lastScreenY + (e.clientY - lastScreenY) * pct;
+          const pos3D = projectMouseTo3D(currX, currY);
+          
+          const MAX_TRAIL_BUTTERFLIES = 15;
+          for (let c = 0; c < 3; c++) {
+            if (butterflies.length >= MAX_TRAIL_BUTTERFLIES) {
+              const oldest = butterflies.shift();
+              if (oldest) {
+                scene.remove(oldest.group);
+                oldest.wingMat.dispose();
+                oldest.bodyMat.dispose();
+              }
+            }
+            butterflies.push(new TrailButterfly(pos3D.x, pos3D.y));
+          }
+        }
+
+        lastScreenX = e.clientX;
+        lastScreenY = e.clientY;
+      }
+    });
+
+    window.addEventListener('mouseleave', () => {
+      lastScreenX = null;
+      lastScreenY = null;
+    });
+
+    // FPS calculations
+    let lastFrameTime = performance.now();
+    let frameCount = 0;
+    const fpsLabel = document.getElementById('fps-counter');
+
+    // -------------------------------------------------------------
+    // MAIN WEBGL TICK LOOP
+    // -------------------------------------------------------------
+    let animTime = 0;
+    function animate() {
+      const now = performance.now();
+      frameCount++;
+      if (now - lastFrameTime >= 1000) {
+        fpsLabel.innerText = `${frameCount} FPS`;
+        frameCount = 0;
+        lastFrameTime = now;
+      }
+
+      animTime += 0.015;
+
+      animateMeadow(animTime);
+
+      ambientButterflies.forEach(b => b.update());
+
+      for (let i = butterflies.length - 1; i >= 0; i--) {
+        const active = butterflies[i].update();
+        if (!active) {
+          butterflies.splice(i, 1);
+        }
+      }
+
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>

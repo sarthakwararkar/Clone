@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Water Ripple Transition Prototype</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #0d0d0f;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #fff;
+    }
+
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+    }
+
+    .ui-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-sizing: border-box;
+      padding: 30px;
+    }
+
+    .interactive {
+      pointer-events: auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+
+    .logo span {
+      font-family: serif;
+      italic: true;
+      color: #e5c9b7;
+    }
+
+    .controls-panel {
+      background: rgba(13, 13, 15, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 20px;
+      width: 320px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+
+    .control-group {
+      margin-bottom: 15px;
+    }
+
+    .control-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #aaa;
+      margin-bottom: 6px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #e5c9b7;
+      background: #333;
+      height: 4px;
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .btn-trigger {
+      background: #fff;
+      color: #0d0d0f;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 10px 20px rgba(255,255,255,0.1);
+    }
+
+    .btn-trigger:hover {
+      background: #e5c9b7;
+      transform: translateY(-2px);
+      box-shadow: 0 15px 25px rgba(229, 201, 183, 0.2);
+    }
+
+    .btn-trigger:active {
+      transform: translateY(0);
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .center-cta {
+      align-self: center;
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .center-cta p {
+      font-size: 12px;
+      letter-spacing: 0.3em;
+      color: #e5c9b7;
+      margin-bottom: 15px;
+    }
+
+    .center-cta h1 {
+      font-size: 48px;
+      font-weight: 300;
+      margin: 0 0 35px 0;
+      line-height: 1.1;
+    }
+
+    .center-cta h1 span {
+      font-family: Georgia, serif;
+      font-style: italic;
+      color: #e5c9b7;
+    }
+  </style>
+  <!-- Load Three.js and GSAP via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <div class="ui-overlay">
+    <header class="interactive">
+      <div class="logo">dealdhamal<span>®</span></div>
+      <button class="btn-trigger" id="trigger-btn">
+        <span>Trigger Transition</span>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+        </svg>
+      </button>
+    </header>
+
+    <div class="center-cta" id="cta-container">
+      <p>SMART SHOPPING, UNEXPECTED SAVINGS</p>
+      <h1>Discover the<br><span>unexpected</span></h1>
+    </div>
+
+    <footer class="interactive">
+      <div class="controls-panel">
+        <div class="control-group">
+          <label>Ripple Intensity (Amplitude)</label>
+          <input type="range" id="param-intensity" min="0.01" max="0.2" step="0.01" value="0.08">
+        </div>
+        <div class="control-group">
+          <label>Wave Speed (Frequency)</label>
+          <input type="range" id="param-frequency" min="5.0" max="60.0" step="1.0" value="30.0">
+        </div>
+        <div class="control-group">
+          <label>Transition Duration</label>
+          <input type="range" id="param-duration" min="0.8" max="3.0" step="0.1" value="1.6">
+        </div>
+      </div>
+      <div style="font-size: 11px; opacity: 0.5;">Water transition WebGL prototype</div>
+    </footer>
+  </div>
+
+  <script>
+    // --- Three.js Setup ---
+    const container = document.getElementById('canvas-container');
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    // --- Shaders ---
+    const vertexShader = `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = vec4(position, 1.0);
+      }
+    `;
+
+    const fragmentShader = `
+      uniform sampler2D uTexture1;
+      uniform sampler2D uTexture2;
+      uniform float uProgress;
+      uniform float uTime;
+      uniform vec2 uResolution;
+      
+      // Control params
+      uniform float uIntensity;
+      uniform float uFrequency;
+      
+      varying vec2 vUv;
+
+      void main() {
+        vec2 uv = vUv;
+        
+        // Liquid distortion ripple centered around (0.5, 0.5)
+        vec2 center = vec2(0.5);
+        float dist = distance(uv, center);
+        
+        // Generate ripple wave shape that expands as uProgress advances
+        // The wave is zero at uProgress = 0 and uProgress = 1
+        float envelope = sin(uProgress * 3.14159265);
+        float wave = sin(dist * uFrequency - uProgress * 25.0) * uIntensity * envelope;
+        
+        // Offset the UVs in the direction of expansion
+        vec2 dir = normalize(uv - center);
+        
+        // Handle center singularity
+        if (dist == 0.0) dir = vec2(0.0);
+        
+        vec2 distortedUv = uv + dir * wave;
+        
+        // Fetch colors from both textures using the distorted coordinates
+        vec4 col1 = texture2D(uTexture1, distortedUv);
+        vec4 col2 = texture2D(uTexture2, distortedUv);
+        
+        // Blend between texture 1 and texture 2 based on progress
+        // We can make the transition sweep radially as well for a premium liquid feel
+        float sweep = smoothstep(0.0, 1.0, uProgress * 1.5 - dist * 0.5);
+        
+        gl_FragColor = mix(col1, col2, sweep);
+      }
+    `;
+
+    // --- Texture Loading ---
+    const textureLoader = new THREE.TextureLoader();
+    
+    // Using two beautiful high-res Unsplash textures (one dark intro theme, one light dashboard theme)
+    const texture1 = textureLoader.load('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1920&q=80', () => {
+      renderer.render(scene, camera);
+    });
+    const texture2 = textureLoader.load('https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1920&q=80', () => {
+      renderer.render(scene, camera);
+    });
+
+    // Make sure textures repeat and filter smoothly
+    [texture1, texture2].forEach(tex => {
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.minFilter = THREE.LinearFilter;
+    });
+
+    // --- Material & Mesh ---
+    const uniforms = {
+      uTexture1: { value: texture1 },
+      uTexture2: { value: texture2 },
+      uProgress: { value: 0.0 },
+      uTime: { value: 0.0 },
+      uResolution: { value: new THREE.Vector2(width, height) },
+      uIntensity: { value: 0.08 },
+      uFrequency: { value: 30.0 }
+    };
+
+    const material = new THREE.ShaderMaterial({
+      vertexShader: vertexShader,
+      fragmentShader: fragmentShader,
+      uniforms: uniforms,
+      depthWrite: false,
+      depthTest: false
+    });
+
+    const geometry = new THREE.PlaneGeometry(2, 2);
+    const mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+
+    // --- Animation & Control Loop ---
+    let time = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      time += 0.01;
+      uniforms.uTime.value = time;
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // --- Handle Resize ---
+    window.addEventListener('resize', () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      renderer.setSize(w, h);
+      uniforms.uResolution.value.set(w, h);
+    });
+
+    // --- Interactivity & GSAP Transition ---
+    let transitionDirection = 1; // 1 = intro to main, 0 = main to intro
+    let isTransitioning = false;
+
+    const triggerBtn = document.getElementById('trigger-btn');
+    const ctaContainer = document.getElementById('cta-container');
+
+    const paramIntensity = document.getElementById('param-intensity');
+    const paramFrequency = document.getElementById('param-frequency');
+    const paramDuration = document.getElementById('param-duration');
+
+    triggerBtn.addEventListener('click', () => {
+      if (isTransitioning) return;
+      isTransitioning = true;
+      triggerBtn.disabled = true;
+
+      // Update uniforms from control panel
+      uniforms.uIntensity.value = parseFloat(paramIntensity.value);
+      uniforms.uFrequency.value = parseFloat(paramFrequency.value);
+      const duration = parseFloat(paramDuration.value);
+
+      const targetProgress = transitionDirection === 1 ? 1.0 : 0.0;
+
+      // Fade out CTA content at the beginning, fade in later
+      gsap.to(ctaContainer, {
+        opacity: transitionDirection === 1 ? 0 : 1,
+        y: transitionDirection === 1 ? -30 : 0,
+        duration: duration * 0.4,
+        ease: "power2.out"
+      });
+
+      // Animate the WebGL progress uniform
+      gsap.to(uniforms.uProgress, {
+        value: targetProgress,
+        duration: duration,
+        ease: "power2.inOut",
+        onComplete: () => {
+          isTransitioning = false;
+          triggerBtn.disabled = false;
+          // Toggle direction for demo looping
+          transitionDirection = transitionDirection === 1 ? 0 : 1;
+          triggerBtn.innerHTML = transitionDirection === 1 
+            ? '<span>Trigger Transition</span><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>'
+            : '<span>Reset View</span><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

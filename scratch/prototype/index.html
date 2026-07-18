@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Big Saving Coupon Cards Preview - NeonDeals</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind config for custom styles -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            primary: '#E84141',
+            brandDark: '#0B0F19',
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* Glassmorphism custom classes */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card-hover {
+      transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+    .glass-card-hover:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(232, 65, 65, 0.4);
+      box-shadow: 0 8px 32px 0 rgba(232, 65, 65, 0.15);
+    }
+    .glass-card-featured {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 10px 40px 0 rgba(147, 51, 234, 0.15);
+    }
+    
+    /* 3D Perspective and Tilt */
+    .perspective-container {
+      perspective: 1200px;
+      perspective-origin: center;
+      transform-style: preserve-3d;
+    }
+    
+    .tilted-card {
+      transform-style: preserve-3d;
+      transform: rotateY(-14deg) rotateX(5deg) rotateZ(-1.5deg) translateZ(0);
+      transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+    
+    .tilted-card:hover {
+      transform: rotateY(0deg) rotateX(0deg) rotateZ(0deg) scale(1.08) translateZ(50px);
+      z-index: 50 !important;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(20, 184, 166, 0.2);
+    }
+
+    .tilted-card-featured {
+      transform-style: preserve-3d;
+      transform: rotateY(-14deg) rotateX(5deg) rotateZ(-1.5deg) scale(1.03) translateZ(10px);
+      transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+      z-index: 10;
+    }
+    
+    .tilted-card-featured:hover {
+      transform: rotateY(0deg) rotateX(0deg) rotateZ(0deg) scale(1.1) translateZ(60px);
+      z-index: 50 !important;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 40px rgba(147, 51, 234, 0.3);
+    }
+    
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    .scrollbar-none::-webkit-scrollbar {
+      display: none;
+    }
+    /* Hide scrollbar for IE, Edge and Firefox */
+    .scrollbar-none {
+      -ms-overflow-style: none;  /* IE and Edge */
+      scrollbar-width: none;  /* Firefox */
+    }
+
+    /* Wave divider effect at card bottom */
+    .wave-divider {
+      height: 8px;
+      width: 100%;
+      background-image: radial-gradient(circle at 6px 0px, transparent 4.5px, #E84141 5px);
+      background-size: 12px 100%;
+    }
+
+    .wave-divider-featured {
+      height: 8px;
+      width: 100%;
+      background-image: radial-gradient(circle at 6px 0px, transparent 4.5px, #9333EA 5px);
+      background-size: 12px 100%;
+    }
+  </style>
+</head>
+<body class="bg-brandDark text-white min-h-screen flex items-center justify-center p-4 md:p-8 font-sans selection:bg-primary selection:text-white">
+
+  <!-- Grid overlay background for premium developer aesthetic -->
+  <div class="fixed inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
+  
+  <!-- Glowing colored radial gradients -->
+  <div class="fixed top-1/4 left-1/4 w-[500px] h-[500px] bg-teal-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+  <div class="fixed bottom-1/4 right-1/4 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[140px] pointer-events-none"></div>
+
+  <!-- Main Container resembling the Stitch frame -->
+  <div class="w-full max-w-5xl relative z-10 glass-card rounded-[28px] overflow-hidden p-6 md:p-10 shadow-2xl border border-white/10">
+    
+    <!-- Top Header bar matching NEONDEALS theme -->
+    <header class="flex items-center justify-between border-b border-white/5 pb-6 mb-8">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-purple-500 to-teal-400">
+          NEONDEALS
+        </span>
+        <span class="text-[10px] font-bold tracking-widest text-teal-400 border border-teal-400/30 px-2 py-0.5 rounded bg-teal-950/30">PROTOTYPE</span>
+      </div>
+      
+      <!-- Category Tabs -->
+      <nav class="flex items-center gap-1 md:gap-2">
+        <button onclick="switchTab('tech')" id="tab-tech" class="px-3.5 py-1.5 rounded-full text-sm font-semibold tracking-wide transition-all duration-300 bg-white/10 text-white shadow-sm cursor-pointer">
+          Tech
+        </button>
+        <button onclick="switchTab('fashion')" id="tab-fashion" class="px-3.5 py-1.5 rounded-full text-sm font-semibold tracking-wide transition-all duration-300 hover:bg-white/5 text-gray-400 cursor-pointer">
+          Fashion
+        </button>
+        <button onclick="switchTab('home')" id="tab-home" class="px-3.5 py-1.5 rounded-full text-sm font-semibold tracking-wide transition-all duration-300 hover:bg-white/5 text-gray-400 cursor-pointer">
+          Home
+        </button>
+        <button onclick="switchTab('gaming')" id="tab-gaming" class="px-3.5 py-1.5 rounded-full text-sm font-semibold tracking-wide transition-all duration-300 hover:bg-white/5 text-gray-400 cursor-pointer">
+          Gaming
+        </button>
+      </nav>
+
+      <!-- Right Utility Icons -->
+      <div class="hidden sm:flex items-center gap-4 text-gray-400">
+        <i data-lucide="bell" class="w-5 h-5 cursor-pointer hover:text-white transition-colors"></i>
+        <i data-lucide="shopping-bag" class="w-5 h-5 cursor-pointer hover:text-white transition-colors"></i>
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-teal-500 to-purple-600 p-[1.5px] cursor-pointer">
+          <div class="w-full h-full rounded-full bg-brandDark flex items-center justify-center text-xs font-bold">SD</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Section -->
+    <main>
+      <!-- Headings and Nav buttons -->
+      <div class="flex items-end justify-between mb-8">
+        <div class="max-w-xl">
+          <h1 id="section-title" class="text-3xl md:text-4xl font-extrabold tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-gray-400">
+            Trending Tech Deals
+          </h1>
+          <p id="section-desc" class="text-sm md:text-base text-gray-400 font-medium leading-relaxed">
+            Exclusive, high-end discounts unlocked for the premium tier. Grab them before they vanish into the grid.
+          </p>
+        </div>
+
+        <!-- Carousel navigation buttons -->
+        <div class="flex items-center gap-2">
+          <button onclick="scrollSlider('left')" class="w-10 h-10 rounded-full glass-card hover:bg-white/10 flex items-center justify-center text-white hover:text-teal-400 transition-all shadow-lg active:scale-95 cursor-pointer" aria-label="Scroll left">
+            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+          </button>
+          <button onclick="scrollSlider('right')" class="w-10 h-10 rounded-full glass-card hover:bg-white/10 flex items-center justify-center text-white hover:text-teal-400 transition-all shadow-lg active:scale-95 cursor-pointer" aria-label="Scroll right">
+            <i data-lucide="chevron-right" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Cards Slider with 3D perspective -->
+      <div id="cards-container" class="flex gap-0 overflow-x-auto scroll-smooth scrollbar-none snap-x snap-mandatory py-14 px-12 -mx-12 perspective-container">
+        <!-- Tech Cards (Default) will load here dynamically -->
+      </div>
+    </main>
+
+    <!-- Footer bar -->
+    <footer class="flex flex-col sm:flex-row items-center justify-between border-t border-white/5 pt-6 mt-10 text-xs text-gray-500 font-medium">
+      <div class="flex items-center gap-2 mb-4 sm:mb-0">
+        <span class="font-extrabold tracking-tighter text-gray-400">NEONDEALS</span>
+        <span>© 2026 NEONDEALS. FUTURE OF SAVINGS.</span>
+      </div>
+      <div class="flex items-center gap-6">
+        <a href="#" class="hover:text-white transition-colors">Terms</a>
+        <a href="#" class="hover:text-white transition-colors">Privacy</a>
+        <a href="#" class="hover:text-white transition-colors">Support</a>
+        <a href="#" class="hover:text-white transition-colors">API</a>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Interactive Coupon Modal Mockup -->
+  <div id="coupon-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brandDark/80 backdrop-blur-md hidden transition-opacity duration-300 opacity-0">
+    <div class="glass-card max-w-md w-full rounded-[24px] overflow-hidden border border-white/15 p-6 shadow-2xl relative">
+      <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors cursor-pointer">
+        <i data-lucide="x" class="w-6 h-6"></i>
+      </button>
+      <div class="flex flex-col items-center text-center mt-4">
+        <!-- Store Icon / Logo Mock -->
+        <div class="w-16 h-16 rounded-2xl bg-white p-2.5 shadow-lg flex items-center justify-center mb-4">
+          <span id="modal-store-placeholder" class="text-brandDark font-black text-xl tracking-tight"></span>
+        </div>
+        <span id="modal-discount" class="text-xs font-black tracking-widest text-teal-400 border border-teal-400/30 px-3 py-1 rounded-full bg-teal-950/30 mb-2"></span>
+        <h3 id="modal-title" class="text-xl font-bold mb-2"></h3>
+        <p id="modal-desc" class="text-sm text-gray-400 mb-6 px-4"></p>
+        
+        <!-- Code Display Box -->
+        <div class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center gap-3 mb-6">
+          <span class="text-xs text-gray-500 font-bold tracking-widest uppercase">Copy Coupon Code</span>
+          <div class="flex items-center gap-3 w-full max-w-xs bg-brandDark/50 border border-white/10 rounded-xl px-4 py-2.5 justify-between">
+            <span id="modal-code" class="font-mono font-bold text-lg tracking-wider text-teal-400"></span>
+            <button onclick="copyCode()" class="text-gray-400 hover:text-white transition-all hover:scale-105 active:scale-95 cursor-pointer">
+              <i id="copy-icon" data-lucide="copy" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </div>
+        
+        <a id="modal-link" href="#" target="_blank" class="w-full py-4 rounded-xl bg-gradient-to-r from-teal-500 to-purple-600 hover:from-teal-400 hover:to-purple-500 text-white font-extrabold text-sm tracking-wide text-center transition-all shadow-lg hover:shadow-teal-500/20 active:scale-[0.98]">
+          Go to Merchant Website
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 bg-teal-500 text-brandDark font-bold px-5 py-3 rounded-xl shadow-xl transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2">
+    <i data-lucide="check-circle" class="w-5 h-5"></i>
+    <span>Code copied to clipboard!</span>
+  </div>
+
+  <!-- JavaScript Logic -->
+  <script>
+    // Mock Data for Categories
+    const categoriesData = {
+      tech: {
+        title: "Trending Tech Deals",
+        desc: "Exclusive, high-end discounts unlocked for the premium tier. Grab them before they vanish into the grid.",
+        items: [
+          {
+            id: "tech-1",
+            store: "Aura X",
+            logo: "AX",
+            discount: "30% OFF",
+            title: "Aura X Pro Smartphone",
+            desc: "Next-gen processing meets liquid retina display. Upgrade your hardware setup.",
+            image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&auto=format&fit=crop&q=80",
+            code: "AURAPRO30",
+            badge: "HOT",
+            isFeatured: false
+          },
+          {
+            id: "tech-2",
+            store: "Chrono",
+            logo: "CS",
+            discount: "$150 OFF",
+            title: "Chrono Sync Smartwatch",
+            desc: "Track your vitals with pinpoint precision. Titanium build for extreme durability.",
+            image: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=600&auto=format&fit=crop&q=80",
+            code: "CHRONOSYNC",
+            badge: "",
+            claimed: 66,
+            isFeatured: true
+          },
+          {
+            id: "tech-3",
+            store: "Aura Elite",
+            logo: "AE",
+            discount: "45% OFF",
+            title: "Aura Elite Headphones",
+            desc: "Immersive spatial audio with adaptive active noise cancellation built in.",
+            image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80",
+            code: "ELITE45",
+            badge: "",
+            isFeatured: false
+          },
+          {
+            id: "tech-4",
+            store: "Apex",
+            logo: "AP",
+            discount: "$20 OFF",
+            title: "Apex Pro Wireless Mouse",
+            desc: "Lag-free 2.4Ghz connectivity with an ultra-lightweight ergonomic chassis.",
+            image: "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=600&auto=format&fit=crop&q=80",
+            code: "APEXMOUSE",
+            badge: "NEW",
+            isFeatured: false
+          }
+        ]
+      },
+      fashion: {
+        title: "Exclusive Fashion Offers",
+        desc: "Upgrade your wardrobe with premium fabrics and silhouettes curated for the fashion-forward.",
+        items: [
+          {
+            id: "fashion-1",
+            store: "UrbanFit",
+            logo: "UF",
+            discount: "40% OFF",
+            title: "Classic Leather Jacket",
+            desc: "Handcrafted top-grain leather jacket with a tailored contemporary fit.",
+            image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&auto=format&fit=crop&q=80",
+            code: "LEATHER40",
+            badge: "HOT",
+            isFeatured: false
+          },
+          {
+            id: "fashion-2",
+            store: "AeroFlex",
+            logo: "AF",
+            discount: "25% OFF",
+            title: "AeroFlex Runner V2",
+            desc: "Responsive energy return cushioning for ultimate comfort on long running runs.",
+            image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80",
+            code: "RUNNER25",
+            badge: "BESTSELLER",
+            claimed: 82,
+            isFeatured: true
+          },
+          {
+            id: "fashion-3",
+            store: "Nomad",
+            logo: "ND",
+            discount: "$30 OFF",
+            title: "Urban Explorer Backpack",
+            desc: "Weatherproof rolltop backpack featuring dedicated pockets for tech devices.",
+            image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop&q=80",
+            code: "NOMADBACK",
+            badge: "",
+            isFeatured: false
+          }
+        ]
+      },
+      home: {
+        title: "Modern Home Concepts",
+        desc: "Transform your living spaces with smart devices and elegant accessories designed for utility.",
+        items: [
+          {
+            id: "home-1",
+            store: "Lumina",
+            logo: "LM",
+            discount: "35% OFF",
+            title: "Smart Ambient Light",
+            desc: "Customizable RGB lighting strips that sync with music and your screens.",
+            image: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600&auto=format&fit=crop&q=80",
+            code: "LUMINA35",
+            badge: "",
+            isFeatured: false
+          },
+          {
+            id: "home-2",
+            store: "AeroPure",
+            logo: "AP",
+            discount: "$80 OFF",
+            title: "HEPA Air Purifier Pro",
+            desc: "True HEPA filtration removes 99.97% of airborne allergens and smoke particles.",
+            image: "https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=600&auto=format&fit=crop&q=80",
+            code: "PUREAIR80",
+            badge: "HEALTHY",
+            claimed: 45,
+            isFeatured: true
+          },
+          {
+            id: "home-3",
+            store: "ThermoBrew",
+            logo: "TB",
+            discount: "15% OFF",
+            title: "Espresso Maker & Grinder",
+            desc: "Professional 15-bar pressure extraction for full rich espresso flavor.",
+            image: "https://images.unsplash.com/photo-1517256064527-09c53b2d0bc6?w=600&auto=format&fit=crop&q=80",
+            code: "BREW15",
+            badge: "",
+            isFeatured: false
+          }
+        ]
+      },
+      gaming: {
+        title: "Elite Gaming Station",
+        desc: "Level up your competitiveness with high-refresh screens, VR accessories, and responsive keys.",
+        items: [
+          {
+            id: "gaming-1",
+            store: "Nexus",
+            logo: "NX",
+            discount: "$200 OFF",
+            title: "Nexus VR Headset Pro",
+            desc: "High-resolution 4K per eye display panels for realistic virtual immersion.",
+            image: "https://images.unsplash.com/photo-1593508512255-86ab42a8e620?w=600&auto=format&fit=crop&q=80",
+            code: "VRPRO200",
+            badge: "IMMERSIVE",
+            isFeatured: false
+          },
+          {
+            id: "gaming-2",
+            store: "Viper",
+            logo: "VP",
+            discount: "30% OFF",
+            title: "Viper Mechanical Keyboard",
+            desc: "Clicky blue tactile switch design with fully customizable per-key RGB backlights.",
+            image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600&auto=format&fit=crop&q=80",
+            code: "VIPERKEYS",
+            badge: "HOT",
+            claimed: 75,
+            isFeatured: true
+          },
+          {
+            id: "gaming-3",
+            store: "Titan",
+            logo: "TT",
+            discount: "$100 OFF",
+            title: "Titan Ergonomic Chair",
+            desc: "Fully adjustable 4D armrests and memory foam lumbar support pillows.",
+            image: "https://images.unsplash.com/photo-1598550476439-6847785fce6e?w=600&auto=format&fit=crop&q=80",
+            code: "TITANCHAIR",
+            badge: "",
+            isFeatured: false
+          }
+        ]
+      }
+    };
+
+    let activeCategory = 'tech';
+    let currentItemForModal = null;
+
+    // Load category cards
+    function loadCategory(catKey) {
+      const category = categoriesData[catKey];
+      
+      // Update Title & Description
+      document.getElementById('section-title').innerText = category.title;
+      document.getElementById('section-desc').innerText = category.desc;
+
+      const container = document.getElementById('cards-container');
+      container.innerHTML = '';
+
+      category.items.forEach(item => {
+        // Construct Card
+        const cardDiv = document.createElement('div');
+        
+        // Define distinct widths and styles for featured items vs standard
+        if (item.isFeatured) {
+          cardDiv.className = "w-[290px] min-w-[290px] md:w-[320px] md:min-w-[320px] snap-start glass-card glass-card-featured tilted-card-featured rounded-[22px] overflow-hidden flex flex-col relative shadow-purple-900/10 z-10 -mr-12 last:mr-0 group";
+        } else {
+          cardDiv.className = "w-[260px] min-w-[260px] md:w-[280px] md:min-w-[280px] snap-start glass-card glass-card-hover tilted-card rounded-[20px] overflow-hidden flex flex-col relative z-0 -mr-12 last:mr-0 cursor-pointer group";
+        }
+
+        // Inside layout
+        cardDiv.innerHTML = `
+          <!-- Card Image Header -->
+          <div class="h-44 bg-neutral-100 dark:bg-white m-3 rounded-2xl relative overflow-hidden flex items-center justify-center p-3 border border-white/10 group-hover:scale-[0.98] transition-transform duration-300">
+            ${item.badge ? `
+              <span class="absolute top-2.5 left-2.5 text-[9px] font-black tracking-widest text-teal-400 bg-brandDark/85 border border-teal-400/30 px-2 py-0.5 rounded shadow">
+                ${item.badge}
+              </span>
+            ` : ''}
+            <img src="${item.image}" alt="${item.title}" class="object-contain max-h-full max-w-full hover:scale-110 transition-transform duration-500">
+          </div>
+
+          <!-- Card Content Body -->
+          <div class="px-5 pb-5 pt-1 flex-1 flex flex-col justify-between">
+            <div>
+              <!-- Header Discount & Icon -->
+              <div class="flex items-center justify-between mb-3.5">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-lg ${item.isFeatured ? 'bg-purple-600/20 border border-purple-500/30 text-purple-400' : 'bg-teal-500/20 border border-teal-500/30 text-teal-400'} flex items-center justify-center">
+                    <i data-lucide="ticket" class="w-3.5 h-3.5"></i>
+                  </div>
+                  <span class="text-lg font-black tracking-tight ${item.isFeatured ? 'text-purple-400' : 'text-teal-400'}">
+                    ${item.discount}
+                  </span>
+                </div>
+                <!-- Store Tag -->
+                <span class="text-[10px] font-black text-gray-500 tracking-widest uppercase">
+                  ${item.store}
+                </span>
+              </div>
+
+              <!-- Product Title -->
+              <h3 class="text-sm md:text-base font-extrabold text-white tracking-tight line-clamp-1 mb-1.5 group-hover:text-teal-400 transition-colors">
+                ${item.title}
+              </h3>
+              <!-- Description -->
+              <p class="text-xs text-gray-400 line-clamp-2 leading-relaxed mb-4 font-medium">
+                ${item.desc}
+              </p>
+            </div>
+
+            <!-- Action Area / Progress Bar for Featured -->
+            <div>
+              ${item.isFeatured ? `
+                <div class="mb-4">
+                  <div class="flex items-center justify-between text-[10px] font-extrabold text-gray-400 mb-1.5 uppercase tracking-wide">
+                    <span>Claimed</span>
+                    <span class="text-purple-400">${item.claimed}%</span>
+                  </div>
+                  <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                    <div class="h-full bg-gradient-to-r from-purple-500 to-teal-400 rounded-full" style="width: ${item.claimed}%"></div>
+                  </div>
+                </div>
+              ` : ''}
+
+              <!-- Wavy Separator -->
+              <div class="my-3 opacity-30 ${item.isFeatured ? 'wave-divider-featured' : 'wave-divider'}"></div>
+
+              <!-- CTA Button -->
+              <button onclick="openModal('${item.id}')" class="w-full py-3 px-4 rounded-xl font-extrabold text-xs tracking-wider transition-all duration-300 uppercase shadow-md ${
+                item.isFeatured 
+                  ? 'bg-gradient-to-r from-purple-500 to-teal-400 hover:from-purple-400 hover:to-teal-300 text-brandDark hover:shadow-purple-500/10 active:scale-98 cursor-pointer' 
+                  : 'bg-white/5 hover:bg-white/10 text-white hover:text-teal-400 active:scale-98 border border-white/10 hover:border-teal-500/30 cursor-pointer'
+              }">
+                Get Code
+              </button>
+            </div>
+          </div>
+        `;
+        
+        container.appendChild(cardDiv);
+      });
+
+      // Initialize Lucide icons on newly created elements
+      lucide.createIcons();
+    }
+
+    // Tab switcher
+    function switchTab(tabKey) {
+      // Remove active styling from previous tab
+      const currentTabBtn = document.getElementById(`tab-${activeCategory}`);
+      currentTabBtn.classList.remove('bg-white/10', 'text-white', 'shadow-sm');
+      currentTabBtn.classList.add('hover:bg-white/5', 'text-gray-400');
+
+      // Add active styling to new tab
+      const newTabBtn = document.getElementById(`tab-${tabKey}`);
+      newTabBtn.classList.remove('hover:bg-white/5', 'text-gray-400');
+      newTabBtn.classList.add('bg-white/10', 'text-white', 'shadow-sm');
+
+      activeCategory = tabKey;
+      loadCategory(tabKey);
+    }
+
+    // Scroll container programmatically
+    function scrollSlider(direction) {
+      const container = document.getElementById('cards-container');
+      const cardWidth = 320; // estimate size of one card + gap
+      if (direction === 'left') {
+        container.scrollBy({ left: -cardWidth, behavior: 'smooth' });
+      } else {
+        container.scrollBy({ left: cardWidth, behavior: 'smooth' });
+      }
+    }
+
+    // Modal control
+    function openModal(itemId) {
+      const category = categoriesData[activeCategory];
+      const item = category.items.find(i => i.id === itemId);
+      if (!item) return;
+
+      currentItemForModal = item;
+
+      // Populate data
+      document.getElementById('modal-store-placeholder').innerText = item.logo;
+      document.getElementById('modal-discount').innerText = item.discount;
+      document.getElementById('modal-title').innerText = item.title;
+      document.getElementById('modal-desc').innerText = item.desc;
+      document.getElementById('modal-code').innerText = item.code;
+      document.getElementById('modal-link').href = "#"; // mockup redirect
+
+      const modal = document.getElementById('coupon-modal');
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+      }, 10);
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('coupon-modal');
+      modal.classList.add('opacity-0');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        // Reset copy button state
+        const copyIcon = document.getElementById('copy-icon');
+        copyIcon.setAttribute('data-lucide', 'copy');
+        lucide.createIcons();
+      }, 300);
+    }
+
+    // Clipboard copy action
+    function copyCode() {
+      if (!currentItemForModal) return;
+      
+      navigator.clipboard.writeText(currentItemForModal.code).then(() => {
+        // Change copy icon to check
+        const copyIcon = document.getElementById('copy-icon');
+        copyIcon.setAttribute('data-lucide', 'check');
+        lucide.createIcons();
+
+        // Show Toast
+        const toast = document.getElementById('toast');
+        toast.classList.remove('translate-y-20', 'opacity-0');
+        setTimeout(() => {
+          toast.classList.add('translate-y-20', 'opacity-0');
+        }, 2000);
+      });
+    }
+
+    // Initial load
+    window.onload = () => {
+      loadCategory('tech');
+      lucide.createIcons();
+    };
+  </script>
+</body>
+</html>
