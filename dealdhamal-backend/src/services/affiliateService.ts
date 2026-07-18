@@ -25,12 +25,7 @@ export class AffiliateService {
     console.log('[AffiliateService] Syncing vCommission coupons...');
 
     try {
-      const response = await fetch('https://api.vcommission.com/api/coupons', {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          Accept: 'application/json',
-        },
-      });
+      const response = await fetch(`https://tools.vcommission.com/api/coupons.php?apikey=${apiKey}`);
 
       if (!response.ok) {
         const errText = await response.text();
@@ -38,50 +33,47 @@ export class AffiliateService {
         return [];
       }
 
-      const data = (await response.json()) as {
-        coupons?: Array<{
-          coupon_id: string | number;
-          coupon_title: string;
-          coupon_code: string | null;
-          coupon_type: string;
-          valid_till: string | null;
-          tracking_url: string;
-          merchant_name: string;
-          merchant_logo?: string;
-          merchant_website?: string;
-          coupon_description?: string;
-        }>;
-      };
+      const rawData = await response.json();
+      const couponsList = Array.isArray(rawData) ? rawData : ((rawData as any).coupons || []);
 
-      if (!data.coupons || !Array.isArray(data.coupons)) {
+      if (!couponsList || !Array.isArray(couponsList) || couponsList.length === 0) {
         console.log('[vCommission] No coupons found in response');
         return [];
       }
 
-      console.log(`[vCommission] Received ${data.coupons.length} coupons from API`);
+      console.log(`[vCommission] Received ${couponsList.length} coupons from API`);
 
       // Accept ALL coupons — let upsertCoupons handle store creation
       const mappedCoupons: CouponData[] = [];
-      for (const item of data.coupons) {
-        if (!item.merchant_name) continue;
-        const storeSlug = this.slugify(this.normalizeAffiliateName(item.merchant_name));
+      for (const item of couponsList) {
+        const merchantName = item.merchant_name || item.offer_name || '';
+        if (!merchantName) continue;
+        const storeSlug = this.slugify(this.normalizeAffiliateName(merchantName));
         if (!storeSlug) continue;
 
+        const couponId = item.coupon_id || item.promo_id || item.id || '';
+        const title = item.coupon_title || item.title || 'Untitled Offer';
+        const description = item.coupon_description || item.description || null;
+        const code = item.coupon_code || item.code || item.promo_code || null;
+        const type = item.coupon_type || item.type || '';
+        const trackingUrl = item.tracking_url || item.url || '';
+        const validTill = item.valid_till || item.end_date || item.expiry_date || null;
+
         mappedCoupons.push({
-          title: item.coupon_title || 'Untitled Offer',
-          description: item.coupon_description || null,
-          code: item.coupon_code || null,
-          coupon_type: this.mapCouponType(item.coupon_type),
-          discount_value: item.coupon_title || '',
-          affiliate_url: item.tracking_url || '',
+          title: title,
+          description: description,
+          code: code,
+          coupon_type: this.mapCouponType(type),
+          discount_value: title,
+          affiliate_url: trackingUrl,
           source: 'vcommission' as CouponSource,
-          external_id: String(item.coupon_id),
+          external_id: String(couponId),
           store_slug: storeSlug,
-          store_name: item.merchant_name,
-          store_logo_url: item.merchant_logo || undefined,
-          store_website_url: item.merchant_website || undefined,
-          starts_at: null,
-          expires_at: item.valid_till ? new Date(item.valid_till) : null,
+          store_name: merchantName,
+          store_logo_url: item.merchant_logo || item.logo || undefined,
+          store_website_url: item.merchant_website || item.homepage || undefined,
+          starts_at: item.start_date ? new Date(item.start_date) : null,
+          expires_at: validTill ? new Date(validTill) : null,
           is_exclusive: false,
         });
       }
@@ -116,7 +108,7 @@ export class AffiliateService {
 
         const response = await fetch(url, {
           headers: {
-            'token': apiKey,
+            'Authorization': `Token token="${apiKey}"`,
             'Accept': 'application/json',
           },
         });
@@ -158,7 +150,7 @@ export class AffiliateService {
         }
 
         for (const item of offers) {
-          const rawName = item.merchant_name || item.campaign_name || '';
+          const rawName = (item as any).campaign || item.merchant_name || item.campaign_name || '';
           const merchantName = this.normalizeAffiliateName(rawName);
           const storeSlug = this.slugify(merchantName);
           if (!storeSlug) continue;
@@ -170,13 +162,15 @@ export class AffiliateService {
             title: item.title || 'Untitled Offer',
             description: item.description || null,
             code: item.coupon_code || null,
-            coupon_type: this.mapCouponType(item.offer_type || (item.coupon_code ? 'coupon' : 'deal')),
+            coupon_type: this.mapCouponType((item as any).type || item.offer_type || (item.coupon_code ? 'coupon' : 'deal')),
             discount_value: item.discount || item.title || '',
             affiliate_url: affiliateUrl,
             source: 'cuelinks' as CouponSource,
             external_id: String(item.id),
             store_slug: storeSlug,
             store_name: rawName || undefined,
+            store_logo_url: (item as any).image_url || undefined,
+            store_website_url: item.url || undefined,
             starts_at: item.start_date ? new Date(item.start_date) : null,
             expires_at: (item.end_date || item.expiry_date)
               ? new Date(item.end_date || item.expiry_date!)
@@ -258,14 +252,20 @@ export class AffiliateService {
     console.log('[AffiliateService] Syncing Admitad coupons...');
 
     try {
-      // Step 1: Get OAuth token (client_credentials scope for coupons)
+      // Step 1: Get OAuth token (credentials must be in POST body as urlencoded params)
+      const params = new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: clientId,
+        client_secret: clientSecret,
+        scope: 'coupons',
+      });
+
       const tokenResponse = await fetch('https://api.admitad.com/token/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
         },
-        body: 'grant_type=client_credentials&scope=coupons',
+        body: params.toString(),
       });
 
       if (!tokenResponse.ok) {
@@ -342,7 +342,7 @@ export class AffiliateService {
 
         for (const item of data.results) {
           const campaignName = item.campaign?.name || '';
-          const storeSlug = this.slugify(campaignName);
+          const storeSlug = this.slugify(this.normalizeAffiliateName(campaignName));
           if (!storeSlug) continue;
 
           // Prefer tracking_link (properly tagged), fall back to goto_link
