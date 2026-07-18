@@ -30,6 +30,7 @@ export interface Store {
   is_featured: boolean
   cashback_rate: string | null
   coupon_count?: number
+  deal_count?: number
   category?: Category
   created_at: string
 }

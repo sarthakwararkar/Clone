@@ -65,7 +65,7 @@ export default async function StorePage({ params }: PageProps) {
       />
 
       {/* Store Hero Header */}
-      <StoreHeader store={store} couponCount={store.coupon_count ?? 0} />
+      <StoreHeader store={store} couponCount={store.coupon_count ?? 0} dealCount={store.deal_count ?? 0} />
 
       {/* Coupons filter & list */}
       <StoreCouponsList initialCoupons={couponsResponse.data} />

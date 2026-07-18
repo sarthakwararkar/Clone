@@ -126,6 +126,7 @@ export interface StoreResponse {
   cashback_rate: string | null;
   created_at: string;
   coupon_count?: number;
+  deal_count?: number;
 }
 
 export interface StoreCreateInput {

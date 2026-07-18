@@ -131,7 +131,7 @@ export function StoreTable({ stores, total, page, limit, onPageChange }: StoreTa
                 className="text-center px-4 py-3 font-semibold text-gray-600 cursor-pointer hover:text-primary"
                 onClick={() => handleSort('coupon_count')}
               >
-                Coupons <SortIcon col="coupon_count" />
+                Coupons / Deals <SortIcon col="coupon_count" />
               </th>
               <th className="text-center px-4 py-3 font-semibold text-gray-600">Featured</th>
               <th className="text-right px-4 py-3 font-semibold text-gray-600">Actions</th>
@@ -170,7 +170,7 @@ export function StoreTable({ stores, total, page, limit, onPageChange }: StoreTa
                   )}
                 </td>
                 <td className="px-4 py-3 text-center text-gray-600">
-                  {store.coupon_count ?? 0}
+                  {store.coupon_count ?? 0} C / {store.deal_count ?? 0} D
                 </td>
                 <td className="px-4 py-3 text-center">
                   {store.is_featured ? '⭐' : '—'}

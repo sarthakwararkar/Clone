@@ -72,9 +72,14 @@ export function SearchDropdown({ query }: SearchDropdownProps) {
                       <span className="text-xs font-bold text-primary">{store.name[0]}</span>
                     )}
                   </div>
-                  <span className="text-sm font-medium text-gray-800">{store.name}</span>
+                  <span className="text-sm font-medium text-gray-800 truncate flex-1 min-w-0 pr-2">{store.name}</span>
                   {store.coupon_count !== undefined && (
-                    <span className="ml-auto text-xs text-gray-400">{store.coupon_count} coupons</span>
+                    <span className="ml-auto text-xs text-gray-400 flex-shrink-0">
+                      {store.coupon_count > 0 && `${store.coupon_count} coupon${store.coupon_count !== 1 ? 's' : ''}`}
+                      {store.coupon_count > 0 && (store.deal_count ?? 0) > 0 && ', '}
+                      {(store.deal_count ?? 0) > 0 && `${store.deal_count} deal${store.deal_count !== 1 ? 's' : ''}`}
+                      {store.coupon_count === 0 && (store.deal_count ?? 0) === 0 && '0 offers'}
+                    </span>
                   )}
                 </Link>
               ))}
@@ -84,7 +89,7 @@ export function SearchDropdown({ query }: SearchDropdownProps) {
           {coupons.length > 0 && (
             <div>
               <div className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-50">
-                Coupons
+                Coupons &amp; Deals
               </div>
               {coupons.map((coupon) => (
                 <Link

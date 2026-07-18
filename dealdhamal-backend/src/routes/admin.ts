@@ -334,6 +334,7 @@ adminRouter.post('/stores', async (c) => {
     cashback_rate: store.cashback_rate,
     created_at: store.created_at.toISOString(),
     coupon_count: 0,
+    deal_count: 0,
   };
 
   return c.json({ success: true, data: response } as ApiResponse<StoreResponse>, 201);

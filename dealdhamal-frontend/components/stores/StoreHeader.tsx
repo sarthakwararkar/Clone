@@ -8,9 +8,10 @@ import { getOutboundLink } from '@/lib/utils'
 interface StoreHeaderProps {
   store: Store
   couponCount: number
+  dealCount?: number
 }
 
-export function StoreHeader({ store, couponCount }: StoreHeaderProps) {
+export function StoreHeader({ store, couponCount, dealCount = 0 }: StoreHeaderProps) {
   const initials = store.name.slice(0, 2).toUpperCase()
 
   return (
@@ -49,10 +50,24 @@ export function StoreHeader({ store, couponCount }: StoreHeaderProps) {
               {store.cashback_rate && (
                 <StoreCashbackBadge rate={store.cashback_rate} />
               )}
-              <span className="inline-flex items-center gap-1.5 bg-white border border-gray-200 text-gray-600 text-xs font-medium px-2.5 py-1 rounded-full">
-                <Tag className="w-3.5 h-3.5" />
-                {couponCount} active coupon{couponCount !== 1 ? 's' : ''}
-              </span>
+              {couponCount > 0 && (
+                <span className="inline-flex items-center gap-1.5 bg-white border border-gray-200 text-gray-600 text-xs font-medium px-2.5 py-1 rounded-full">
+                  <Tag className="w-3.5 h-3.5" />
+                  {couponCount} active coupon{couponCount !== 1 ? 's' : ''}
+                </span>
+              )}
+              {dealCount > 0 && (
+                <span className="inline-flex items-center gap-1.5 bg-white border border-gray-200 text-gray-600 text-xs font-medium px-2.5 py-1 rounded-full">
+                  <Tag className="w-3.5 h-3.5" />
+                  {dealCount} active deal{dealCount !== 1 ? 's' : ''}
+                </span>
+              )}
+              {couponCount === 0 && dealCount === 0 && (
+                <span className="inline-flex items-center gap-1.5 bg-white border border-gray-200 text-gray-600 text-xs font-medium px-2.5 py-1 rounded-full">
+                  <Tag className="w-3.5 h-3.5" />
+                  0 active offers
+                </span>
+              )}
             </div>
           </div>
 

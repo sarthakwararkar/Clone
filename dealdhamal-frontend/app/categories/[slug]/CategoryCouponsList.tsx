@@ -47,8 +47,8 @@ export function CategoryCouponsList({ initialCoupons }: CategoryCouponsListProps
         <div className="py-8 bg-white border border-gray-100 rounded-xl">
           <EmptyState
             icon={Tag}
-            title="No Coupons Found"
-            description="There are no active coupons that match the selected filters."
+            title="No Coupons or Deals Found"
+            description="There are no active coupons or deals that match the selected filters."
           />
         </div>
       ) : (

@@ -119,14 +119,14 @@ export function SearchResults({ query }: SearchResultsProps) {
         <div>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
             <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-              Coupons <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-2 py-0.5 rounded-full">{filteredCoupons.length}</span>
+              Coupons &amp; Deals <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-2 py-0.5 rounded-full">{filteredCoupons.length}</span>
             </h2>
             <CouponFilters />
           </div>
 
           {filteredCoupons.length === 0 ? (
             <div className="text-center py-10 bg-white rounded-xl border border-gray-100 text-gray-500 text-sm">
-              No coupons match the selected filters.
+              No coupons or deals match the selected filters.
             </div>
           ) : (
             <CouponGrid coupons={filteredCoupons} />

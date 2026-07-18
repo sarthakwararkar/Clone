@@ -40,13 +40,17 @@ export function StoreCard({ store, variant = 'default' }: StoreCardProps) {
               </div>
 
               {/* Back Face: Coupon Count */}
-              <div className="absolute inset-0 w-full h-full bg-primary rounded-xl flex flex-col items-center justify-center p-3 text-white backface-hidden rotate-x-180">
-                <span className="text-xl sm:text-2xl font-bold">
-                  {store.coupon_count ?? 0}
-                </span>
-                <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider mt-0.5 opacity-90">
-                  Coupons
-                </span>
+              <div className="absolute inset-0 w-full h-full bg-primary rounded-xl flex flex-col items-center justify-center p-2 text-white backface-hidden rotate-x-180">
+                <div className="flex flex-col gap-1 sm:gap-2">
+                  <div className="flex items-center gap-1.5 justify-center">
+                    <span className="text-sm sm:text-base font-bold">{store.coupon_count ?? 0}</span>
+                    <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider opacity-95">Coupons</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 justify-center border-t border-white/20 pt-1 sm:pt-2">
+                    <span className="text-sm sm:text-base font-bold">{store.deal_count ?? 0}</span>
+                    <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider opacity-95">Deals</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -96,8 +100,11 @@ export function StoreCard({ store, variant = 'default' }: StoreCardProps) {
         )}
 
         {store.coupon_count !== undefined && (
-          <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">
-            {store.coupon_count} coupon{store.coupon_count !== 1 ? 's' : ''}
+          <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1 font-medium">
+            {store.coupon_count > 0 && `${store.coupon_count} coupon${store.coupon_count !== 1 ? 's' : ''}`}
+            {store.coupon_count > 0 && (store.deal_count ?? 0) > 0 && ' • '}
+            {(store.deal_count ?? 0) > 0 && `${store.deal_count} deal${store.deal_count !== 1 ? 's' : ''}`}
+            {store.coupon_count === 0 && (store.deal_count ?? 0) === 0 && '0 offers'}
           </p>
         )}
       </div>
