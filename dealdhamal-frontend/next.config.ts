@@ -28,6 +28,42 @@ const nextConfig: NextConfig = {
         hostname: 'logos.hunter.io',
         pathname: '/**',
       },
+      // ─── Affiliate Network CDNs ──────────────────────────────────────────
+      // Admitad
+      {
+        protocol: 'https',
+        hostname: '**.admitad.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'admitad.com',
+        pathname: '/**',
+      },
+      // vCommission
+      {
+        protocol: 'https',
+        hostname: '**.vcommission.com',
+        pathname: '/**',
+      },
+      // Cuelinks / clnk.in
+      {
+        protocol: 'https',
+        hostname: '**.cuelinks.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.clnk.in',
+        pathname: '/**',
+      },
+      // Wildcard for any other affiliate/merchant image CDN
+      // (safe — Next.js still optimises and serves through its own image endpoint)
+      {
+        protocol: 'https',
+        hostname: '**',
+        pathname: '/**',
+      },
     ],
   },
   experimental: {

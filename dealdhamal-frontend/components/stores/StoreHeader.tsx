@@ -16,10 +16,25 @@ export function StoreHeader({ store, couponCount, dealCount = 0 }: StoreHeaderPr
 
   return (
     <div className="bg-gray-50 border-b border-gray-200">
+      {/* Banner Image (if available) */}
+      {store.banner_url && (
+        <div className="relative w-full h-36 sm:h-48 overflow-hidden bg-gray-200">
+          <Image
+            src={store.banner_url}
+            alt={`${store.name} banner`}
+            fill
+            className="object-cover"
+            priority
+          />
+          {/* Gradient overlay so text stays readable */}
+          <div className="absolute inset-0 bg-gradient-to-t from-gray-50/80 via-transparent to-transparent" />
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
           {/* Logo */}
-          <div className="w-24 h-24 rounded-2xl border border-gray-200 bg-white shadow-sm flex items-center justify-center overflow-hidden p-2 flex-shrink-0">
+          <div className={`w-24 h-24 rounded-2xl border border-gray-200 bg-white shadow-sm flex items-center justify-center overflow-hidden p-2 flex-shrink-0 ${store.banner_url ? '-mt-12 ring-4 ring-white' : ''}`}>
             {store.logo_url ? (
               <Image
                 src={store.logo_url}
