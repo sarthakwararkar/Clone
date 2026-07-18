@@ -52,6 +52,10 @@ export interface CouponData {
   source: CouponSource;
   external_id: string;
   store_slug: string;
+  store_name?: string;         // Human-readable name from affiliate network
+  store_logo_url?: string;     // Logo from affiliate network (e.g. Admitad campaign logo)
+  store_banner_url?: string;   // Banner image from affiliate network
+  store_website_url?: string;  // Merchant website from affiliate network
   starts_at: Date | null;
   expires_at: Date | null;
   is_exclusive: boolean;

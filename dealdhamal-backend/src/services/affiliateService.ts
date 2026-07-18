@@ -240,14 +240,15 @@ export class AffiliateService {
   }
 
   /**
-   * Sync coupons from Admitad XML feed.
-   * Admitad provides coupon data via XML/RSS feeds.
+   * Sync coupons from Admitad API.
+   * Fetches all approved program coupons including logo, banner, and tracking links.
+   * Paginates through all results automatically.
    */
   async syncAdmitad(clientId: string, clientSecret: string): Promise<CouponData[]> {
     console.log('[AffiliateService] Syncing Admitad coupons...');
 
     try {
-      // Step 1: Get OAuth token
+      // Step 1: Get OAuth token (client_credentials scope for coupons)
       const tokenResponse = await fetch('https://api.admitad.com/token/', {
         method: 'POST',
         headers: {
@@ -258,63 +259,127 @@ export class AffiliateService {
       });
 
       if (!tokenResponse.ok) {
-        console.error(`Admitad token request returned ${tokenResponse.status}`);
+        const errText = await tokenResponse.text();
+        console.error(`[Admitad] Token request failed (${tokenResponse.status}): ${errText}`);
         return [];
       }
 
       const tokenData = (await tokenResponse.json()) as { access_token: string };
+      const token = tokenData.access_token;
 
-      // Step 2: Fetch coupons
-      const response = await fetch(
-        'https://api.admitad.com/coupons/?limit=500&language=en',
-        {
-          headers: {
-            Authorization: `Bearer ${tokenData.access_token}`,
-            Accept: 'application/json',
-          },
+      if (!token) {
+        console.error('[Admitad] No access_token in response');
+        return [];
+      }
+
+      console.log('[Admitad] OAuth token obtained, fetching coupons...');
+
+      // Step 2: Paginate through all coupons
+      const allCoupons: CouponData[] = [];
+      let offset = 0;
+      const limit = 500;
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await fetch(
+          `https://api.admitad.com/coupons/?limit=${limit}&offset=${offset}&language=en`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/json',
+            },
+          }
+        );
+
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error(`[Admitad] Coupons API failed (${response.status}): ${errText}`);
+          break;
         }
-      );
 
-      if (!response.ok) {
-        console.error(`Admitad API returned ${response.status}`);
-        return [];
+        const data = (await response.json()) as {
+          count?: number;
+          results?: Array<{
+            id: number;
+            name: string;
+            description: string;
+            promocode: string | null;
+            coupon_type: string;   // Admitad field name is actually "coupon_type" or "type"
+            type?: string;
+            discount: string;
+            goto_link: string;       // Deep link (may be untracked)
+            tracking_link?: string;  // Proper affiliate tracking link
+            image?: string;          // Banner/creative image URL
+            logo?: string;           // Campaign logo URL
+            campaign: {
+              id: number;
+              name: string;
+              description?: string;
+              homepage?: string;    // Merchant website
+              logo?: string;        // Campaign/merchant logo
+              site_url?: string;    // Merchant site URL
+            };
+            date_start: string | null;
+            date_end: string | null;
+            exclusive: boolean;
+          }>;
+        };
+
+        if (!data.results || data.results.length === 0) {
+          hasMore = false;
+          break;
+        }
+
+        for (const item of data.results) {
+          const campaignName = item.campaign?.name || '';
+          const storeSlug = this.slugify(campaignName);
+          if (!storeSlug) continue;
+
+          // Prefer tracking_link (properly tagged), fall back to goto_link
+          const affiliateUrl = item.tracking_link || item.goto_link || '';
+
+          // Collect store imagery — campaign.logo takes priority over item.logo
+          const logoUrl = item.campaign?.logo || item.logo || null;
+          const bannerUrl = item.image || null;
+          const websiteUrl = item.campaign?.homepage || item.campaign?.site_url || null;
+
+          // Determine coupon type from Admitad's type field
+          const rawType = item.type || item.coupon_type || '';
+
+          allCoupons.push({
+            title: item.name || 'Untitled Offer',
+            description: item.description || null,
+            code: item.promocode || null,
+            coupon_type: this.mapCouponType(rawType),
+            discount_value: item.discount || '',
+            affiliate_url: affiliateUrl,
+            source: 'admitad' as CouponSource,
+            external_id: String(item.id),
+            store_slug: storeSlug,
+            store_name: campaignName,
+            store_logo_url: logoUrl || undefined,
+            store_banner_url: bannerUrl || undefined,
+            store_website_url: websiteUrl || undefined,
+            starts_at: item.date_start ? new Date(item.date_start) : null,
+            expires_at: item.date_end ? new Date(item.date_end) : null,
+            is_exclusive: item.exclusive || false,
+          });
+        }
+
+        console.log(`[Admitad] Fetched page offset=${offset}, got ${data.results.length} coupons (total so far: ${allCoupons.length})`);
+
+        // Check if there are more pages
+        if (data.count && allCoupons.length >= data.count) {
+          hasMore = false;
+        } else if (data.results.length < limit) {
+          hasMore = false;
+        } else {
+          offset += limit;
+        }
       }
 
-      const data = (await response.json()) as {
-        results?: Array<{
-          id: number;
-          name: string;
-          description: string;
-          promocode: string;
-          type: string;
-          discount: string;
-          goto_link: string;
-          campaign: { name: string };
-          date_start: string;
-          date_end: string;
-          exclusive: boolean;
-        }>;
-      };
-
-      if (!data.results || !Array.isArray(data.results)) {
-        console.log('[Admitad] No coupons found in response');
-        return [];
-      }
-
-      return data.results.map((item) => ({
-        title: item.name || 'Untitled Offer',
-        description: item.description || null,
-        code: item.promocode || null,
-        coupon_type: this.mapCouponType(item.type),
-        discount_value: item.discount || '',
-        affiliate_url: item.goto_link || '',
-        source: 'admitad' as CouponSource,
-        external_id: String(item.id),
-        store_slug: this.slugify(item.campaign?.name || ''),
-        starts_at: item.date_start ? new Date(item.date_start) : null,
-        expires_at: item.date_end ? new Date(item.date_end) : null,
-        is_exclusive: item.exclusive || false,
-      }));
+      console.log(`[Admitad] Total coupons fetched: ${allCoupons.length}`);
+      return allCoupons;
     } catch (error) {
       console.error('[Admitad] Sync error:', error);
       return [];
@@ -418,16 +483,14 @@ export class AffiliateService {
       if (!store) {
         // Auto-create the store from affiliate data
         const sampleCoupon = storeCoupons[0];
-        const storeName = this.unslugify(storeSlug);
+        const storeName = sampleCoupon.store_name || this.unslugify(storeSlug);
 
-        // Try to derive website URL from affiliate URL
-        let websiteUrl: string | null = null;
-        if (sampleCoupon.affiliate_url) {
+        // Prefer store metadata from affiliate data, fall back to deriving from affiliate URL
+        let websiteUrl: string | null = sampleCoupon.store_website_url || null;
+        if (!websiteUrl && sampleCoupon.affiliate_url) {
           try {
             const urlObj = new URL(sampleCoupon.affiliate_url);
-            // If affiliate URL redirects to a merchant, try to extract domain
-            // For direct merchant URLs, use the host directly
-            if (!urlObj.hostname.includes('cuelinks') && !urlObj.hostname.includes('clnk.in')) {
+            if (!urlObj.hostname.includes('cuelinks') && !urlObj.hostname.includes('clnk.in') && !urlObj.hostname.includes('admitad.com')) {
               websiteUrl = `https://${urlObj.hostname}`;
             }
           } catch { /* ignore invalid URLs */ }
@@ -439,9 +502,11 @@ export class AffiliateService {
             .values({
               name: storeName,
               slug: storeSlug,
+              logo_url: sampleCoupon.store_logo_url || null,
+              banner_url: sampleCoupon.store_banner_url || null,
               website_url: websiteUrl,
               affiliate_url: sampleCoupon.affiliate_url || null,
-              affiliate_network: sampleCoupon.source || 'cuelinks',
+              affiliate_network: sampleCoupon.source || 'admitad',
               description: `Coupons and deals for ${storeName}`,
             })
             .onConflictDoNothing()
@@ -468,6 +533,35 @@ export class AffiliateService {
         } catch (error) {
           console.error(`[AffiliateService] Error creating store ${storeSlug}:`, error);
           continue;
+        }
+      } else {
+        // Store already exists — update logo/banner/website if they are currently null
+        // (only fill in gaps, never overwrite manually-set data)
+        const sampleCoupon = storeCoupons[0];
+        const [existingStoreData] = await this.db
+          .select({ id: stores.id, logo_url: stores.logo_url, banner_url: stores.banner_url, website_url: stores.website_url })
+          .from(stores)
+          .where(eq(stores.slug, storeSlug))
+          .limit(1);
+
+        if (existingStoreData) {
+          const updates: Record<string, string | null> = {};
+          if (!existingStoreData.logo_url && sampleCoupon.store_logo_url) {
+            updates['logo_url'] = sampleCoupon.store_logo_url;
+          }
+          if (!existingStoreData.banner_url && sampleCoupon.store_banner_url) {
+            updates['banner_url'] = sampleCoupon.store_banner_url;
+          }
+          if (!existingStoreData.website_url && sampleCoupon.store_website_url) {
+            updates['website_url'] = sampleCoupon.store_website_url;
+          }
+          if (Object.keys(updates).length > 0) {
+            await this.db
+              .update(stores)
+              .set({ ...updates, updated_at: sql`NOW()` })
+              .where(eq(stores.slug, storeSlug));
+            console.log(`[AffiliateService] 🖼️  Updated store imagery for: ${storeSlug}`, Object.keys(updates));
+          }
         }
       }
 
