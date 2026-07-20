@@ -22,7 +22,7 @@ const listCouponsSchema = z.object({
     .string()
     .optional()
     .transform((v) => (v === 'true' ? true : v === 'false' ? false : undefined)),
-  sort: z.enum(['featured', 'latest', 'popular']).optional(),
+  sort: z.enum(['featured', 'latest', 'popular', 'smart']).optional(),
   diverse: z
     .string()
     .optional()

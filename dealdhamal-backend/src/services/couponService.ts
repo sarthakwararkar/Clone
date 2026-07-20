@@ -58,6 +58,19 @@ export class CouponService {
     } else if (sort === 'featured') {
       orderBy = sql`c.is_featured DESC, c.created_at DESC`;
       outerOrderBy = sql`is_featured DESC, created_at DESC`;
+    } else if (sort === 'smart') {
+      orderBy = sql`(
+        (c.used_count * 3) + 
+        (c.success_rate * 2) + 
+        (CASE WHEN c.code IS NOT NULL AND c.code != '' THEN 20 ELSE 0 END) +
+        (CASE WHEN c.is_verified = true THEN 15 ELSE 0 END) +
+        (CASE 
+          WHEN c.expires_at IS NULL THEN 5
+          WHEN c.expires_at > NOW() + INTERVAL '30 days' THEN 10
+          ELSE 2 
+        END)
+      ) DESC, c.created_at DESC`;
+      outerOrderBy = sql`smart_score DESC, created_at DESC`;
     }
 
     // Build select fields
@@ -68,7 +81,18 @@ export class CouponService {
         c.is_featured, c.expires_at, c.starts_at, c.success_rate, c.used_count,
         c.created_at,
         s.name AS store_name, s.slug AS store_slug, s.logo_url AS store_logo_url,
-        s.banner_url AS store_banner_url
+        s.banner_url AS store_banner_url,
+        (
+          (c.used_count * 3) + 
+          (c.success_rate * 2) + 
+          (CASE WHEN c.code IS NOT NULL AND c.code != '' THEN 20 ELSE 0 END) +
+          (CASE WHEN c.is_verified = true THEN 15 ELSE 0 END) +
+          (CASE 
+            WHEN c.expires_at IS NULL THEN 5
+            WHEN c.expires_at > NOW() + INTERVAL '30 days' THEN 10
+            ELSE 2 
+          END)
+        ) AS smart_score
     `;
 
     if (diverse) {

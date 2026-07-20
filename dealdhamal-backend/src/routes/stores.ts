@@ -16,6 +16,7 @@ const listStoresSchema = z.object({
     .string()
     .optional()
     .transform((v) => (v === 'true' ? true : v === 'false' ? false : undefined)),
+  sort: z.enum(['featured', 'most_deals']).optional(),
   page: z
     .string()
     .optional()
@@ -32,7 +33,7 @@ storesRouter.get('/', async (c) => {
   const query = listStoresSchema.parse(c.req.query());
   const cache = createCacheService(c.env.UPSTASH_REDIS_URL, c.env.UPSTASH_REDIS_TOKEN);
 
-  const cacheKey = `stores:page:${query.page}:${query.limit}:${query.category || ''}:${query.featured ?? ''}`;
+  const cacheKey = `stores:page:${query.page}:${query.limit}:${query.category || ''}:${query.featured ?? ''}:${query.sort || ''}`;
   const cached = await cache.get<PaginatedResponse<StoreResponse>>(cacheKey);
   if (cached) {
     return c.json({ success: true, ...cached });
@@ -75,15 +76,21 @@ storesRouter.get('/', async (c) => {
     whereParts.push(sql`s.is_featured = ${query.featured}`);
   }
 
+  // Dynamic sort / order by
+  let orderByClause = sql`s.is_featured DESC, s.name ASC`;
+  if (query.sort === 'most_deals') {
+    orderByClause = sql`((SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND (c.expires_at > NOW() OR c.expires_at IS NULL)))::int DESC, s.is_featured DESC, s.name ASC`;
+  }
+
   let finalDataQuery;
   let finalCountQuery;
 
   if (whereParts.length > 0) {
     const whereClause = sql.join(whereParts, sql` AND `);
-    finalDataQuery = sql`${dataQuery} WHERE ${whereClause} ORDER BY s.is_featured DESC, s.name ASC LIMIT ${query.limit} OFFSET ${offset}`;
+    finalDataQuery = sql`${dataQuery} WHERE ${whereClause} ORDER BY ${orderByClause} LIMIT ${query.limit} OFFSET ${offset}`;
     finalCountQuery = sql`${countQuery} WHERE ${whereClause}`;
   } else {
-    finalDataQuery = sql`${dataQuery} ORDER BY s.is_featured DESC, s.name ASC LIMIT ${query.limit} OFFSET ${offset}`;
+    finalDataQuery = sql`${dataQuery} ORDER BY ${orderByClause} LIMIT ${query.limit} OFFSET ${offset}`;
     finalCountQuery = countQuery;
   }
 

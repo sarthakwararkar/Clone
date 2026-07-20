@@ -34,9 +34,9 @@ export default async function Homepage() {
     exclusiveDealsResponse,
   ] = await Promise.all([
     api.getCategories().catch(() => []),
-    api.getStores({ featured: true, limit: 12 }).catch(() => ({ data: [], total: 0 })),
-    api.getCoupons({ type: 'code', featured: true, diverse: true, limit: 12 }).catch(() => ({ data: [], total: 0 })),
-    api.getCoupons({ type: 'deal', sort: 'latest', diverse: true, limit: 40 }).catch(() => ({ data: [], total: 0 })),
+    api.getStores({ sort: 'most_deals', limit: 12 }).catch(() => ({ data: [], total: 0 })),
+    api.getCoupons({ type: 'code', sort: 'smart', diverse: true, limit: 12 }).catch(() => ({ data: [], total: 0 })),
+    api.getCoupons({ type: 'deal', sort: 'smart', diverse: true, limit: 40 }).catch(() => ({ data: [], total: 0 })),
     api.getStores({ category: 'ai-tools', limit: 100 }).catch(() => ({ data: [] })),
     api.getCoupons({ category: 'ai-tools', type: 'deal', limit: 12 }).catch(() => ({ data: [] })),
     api.getExclusiveDeals(16).catch(() => ({ data: [] })),

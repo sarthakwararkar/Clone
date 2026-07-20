@@ -160,6 +160,7 @@ class ApiClient {
   async getStores(params: {
     category?: string
     featured?: boolean
+    sort?: string
     page?: number
     limit?: number
   } = {}): Promise<PaginatedResponse<Store>> {

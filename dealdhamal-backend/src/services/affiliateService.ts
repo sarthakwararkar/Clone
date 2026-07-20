@@ -1,4 +1,4 @@
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, or, gt, isNull, notInArray } from 'drizzle-orm';
 import type { Database } from '../db';
 import { coupons, stores } from '../db/schema';
 import type { CouponData, CouponSource } from '../types';
@@ -619,6 +619,8 @@ export class AffiliateService {
         }
 
         try {
+          const isFeatured = couponData.coupon_type === 'code' && couponData.code && couponData.title.trim().length >= 15;
+
           const result = await this.db
             .insert(coupons)
             .values({
@@ -633,6 +635,7 @@ export class AffiliateService {
               external_id: couponData.external_id,
               // Mark as exclusive if the coupon itself is marked OR if this store was just auto-created
               is_exclusive: couponData.is_exclusive || isNewlyCreatedStore,
+              is_featured: isFeatured,
               starts_at: couponData.starts_at,
               expires_at: couponData.expires_at,
             })
@@ -646,6 +649,7 @@ export class AffiliateService {
                 discount_value: sql`EXCLUDED.discount_value`,
                 affiliate_url: sql`EXCLUDED.affiliate_url`,
                 is_exclusive: sql`EXCLUDED.is_exclusive`,
+                is_featured: sql`EXCLUDED.is_featured`,
                 starts_at: sql`EXCLUDED.starts_at`,
                 expires_at: sql`EXCLUDED.expires_at`,
                 updated_at: sql`NOW()`,
@@ -664,6 +668,36 @@ export class AffiliateService {
           }
         } catch (error) {
           console.error(`[AffiliateService] Error upserting coupon: ${couponData.external_id}`, error);
+        }
+      }
+    }
+
+    // Deactivate/expire active coupons from synced sources that are not in the current sync payload
+    const syncedSources = Array.from(new Set(couponDataList.map((c) => c.source).filter(Boolean)));
+    for (const source of syncedSources) {
+      const incomingIds = couponDataList
+        .filter((c) => c.source === source)
+        .map((c) => c.external_id)
+        .filter(Boolean) as string[];
+
+      if (incomingIds.length > 0) {
+        try {
+          const expiredResult = await this.db
+            .update(coupons)
+            .set({
+              expires_at: new Date(Date.now() - 1000), // set to past to expire
+              updated_at: sql`NOW()`,
+            })
+            .where(
+              and(
+                eq(coupons.source, source),
+                notInArray(coupons.external_id, incomingIds),
+                or(gt(coupons.expires_at, new Date()), isNull(coupons.expires_at))
+              )
+            );
+          console.log(`[AffiliateService] Expired ${expiredResult.rowCount ?? 0} stale coupons for source: ${source}`);
+        } catch (err) {
+          console.error(`[AffiliateService] Failed to expire stale coupons for source: ${source}`, err);
         }
       }
     }
