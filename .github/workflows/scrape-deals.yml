@@ -1,8 +1,11 @@
-name: Scrape Public Deals
+name: Scrape Public Deals (DISABLED)
 
 on:
-  schedule:
-    - cron: '0 * * * *' # Every hour
+  # Scraping disabled — data now comes entirely from affiliate networks
+  # (vCommission, Admitad, Cuelinks, CJ) via sync-affiliates.yml
+  # Re-enable the line below to resume scraping:
+  # schedule:
+  #   - cron: '0 * * * *'
   workflow_dispatch:
 
 jobs:
