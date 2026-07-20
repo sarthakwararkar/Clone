@@ -63,7 +63,7 @@ export class AffiliateService {
           title: title,
           description: description,
           code: code,
-          coupon_type: this.mapCouponType(type),
+          coupon_type: this.resolveType(this.mapCouponType(type), code),
           discount_value: title,
           affiliate_url: trackingUrl,
           source: 'vcommission' as CouponSource,
@@ -360,7 +360,7 @@ export class AffiliateService {
             title: item.name || 'Untitled Offer',
             description: item.description || null,
             code: item.promocode || null,
-            coupon_type: this.mapCouponType(rawType),
+            coupon_type: this.resolveType(this.mapCouponType(rawType), item.promocode ?? null),
             discount_value: item.discount || '',
             affiliate_url: affiliateUrl,
             source: 'admitad' as CouponSource,
@@ -688,6 +688,18 @@ export class AffiliateService {
       .replace(/\b(IN|WW|US|UK|AU|GLOBAL|CPS|CPA|CPL)\b/gi, '') // Strip country/model codes
       .replace(/\s+/g, ' ')             // Collapse whitespace
       .trim();
+  }
+
+  private resolveType(
+    mapped: 'code' | 'deal' | 'cashback',
+    code: string | null | undefined
+  ): 'code' | 'deal' | 'cashback' {
+    // Cashback is never overridden by code presence
+    if (mapped === 'cashback') return 'cashback';
+    // A non-empty code string → classify as a coupon code
+    if (code && code.trim().length > 0) return 'code';
+    // No code → it's a deal
+    return 'deal';
   }
 
   private mapCouponType(type: string): 'code' | 'deal' | 'cashback' {
