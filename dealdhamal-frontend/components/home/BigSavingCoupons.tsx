@@ -83,6 +83,7 @@ interface BigSavingCouponCardProps {
 
 function BigSavingCouponCard({ coupon, onSelect }: BigSavingCouponCardProps) {
   const [imageError, setImageError] = useState(false)
+  const [logoError, setLogoError] = useState(false)
   const isFeatured = coupon.is_featured
 
   const discountText = coupon.discount_value 
@@ -123,30 +124,28 @@ function BigSavingCouponCard({ coupon, onSelect }: BigSavingCouponCardProps) {
               onError={() => setImageError(true)}
             />
             {/* Floating Store Logo Overlay in Top Right - made larger (w-20 h-10) for premium feel */}
-            <div className="absolute top-3 right-3 w-20 h-10 bg-white border border-gray-150 rounded-xl flex items-center justify-center p-1.5 shadow-md z-10">
-              {logoUrl ? (
+            {logoUrl && !logoError && (
+              <div className="absolute top-3 right-3 w-20 h-10 bg-white border border-gray-150 rounded-xl flex items-center justify-center p-1.5 shadow-md z-10">
                 <img
                   src={logoUrl}
                   alt={coupon.store.name}
                   className="object-contain max-h-full max-w-full"
                   loading="lazy"
+                  onError={() => setLogoError(true)}
                 />
-              ) : (
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tight truncate max-w-full">
-                  {coupon.store.name.slice(0, 3)}
-                </span>
-              )}
-            </div>
+              </div>
+            )}
           </>
         ) : (
           /* Fallback: Centered Store Logo as main image for accuracy */
           <div className="w-full h-full flex flex-col items-center justify-center p-4">
-            {logoUrl ? (
+            {logoUrl && !logoError ? (
               <img
                 src={logoUrl}
                 alt={coupon.store.name}
                 className="object-contain max-h-[75%] max-w-[85%] hover:scale-105 transition-transform duration-500"
                 loading="lazy"
+                onError={() => setLogoError(true)}
               />
             ) : (
               <span className="text-gray-400 font-black text-2xl tracking-tighter uppercase select-none">
@@ -172,12 +171,13 @@ function BigSavingCouponCard({ coupon, onSelect }: BigSavingCouponCardProps) {
             </div>
             {/* Store Logo Tag Inline - made larger pill layout for clear visibility */}
             <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-2.5 py-1">
-              {logoUrl && (
+              {logoUrl && !logoError && (
                 <div className="w-9 h-5.5 bg-white rounded flex items-center justify-center p-0.5 overflow-hidden">
                   <img
                     src={logoUrl}
                     alt={coupon.store.name}
                     className="object-contain w-full h-full"
+                    onError={() => setLogoError(true)}
                   />
                 </div>
               )}

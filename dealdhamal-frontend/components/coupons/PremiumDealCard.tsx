@@ -20,6 +20,7 @@ interface PremiumDealCardProps {
 export function PremiumDealCard({ coupon, isAi }: PremiumDealCardProps) {
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [loginPromptOpen, setLoginPromptOpen] = useState(false)
+  const [affiliateImgError, setAffiliateImgError] = useState(false)
   const { user } = useAuthStore()
   const { isSaved, save, unsave } = useSavedCoupons()
   const router = useRouter()
@@ -29,6 +30,12 @@ export function PremiumDealCard({ coupon, isAi }: PremiumDealCardProps) {
   
   // Get dynamic visual theme from regex match of titles/categories
   const theme = getDealTheme(coupon.title, coupon.store.name, coupon.store.category?.name, isAi)
+
+  // Prefer affiliate-supplied images; fall back to theme Unsplash image
+  const affiliateDealImage = !affiliateImgError
+    ? (coupon.store.banner_url || coupon.store.logo_url || null)
+    : null
+  const dealImage = affiliateDealImage ?? theme.imageUrl
 
   const handleSaveToggle = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -140,12 +147,13 @@ export function PremiumDealCard({ coupon, isAi }: PremiumDealCardProps) {
         <div className="absolute right-4 top-1/2 -translate-y-1/2 w-24 h-24 sm:w-28 sm:h-28 z-10 pointer-events-none">
           <div className="w-full h-full relative rounded-2xl overflow-hidden border-2 border-white/20 shadow-xl bg-black/10 rotate-6 group-hover:rotate-3 group-hover:scale-105 transition-all duration-300">
             <Image
-              src={theme.imageUrl}
+              src={dealImage}
               alt="deal product"
               fill
-              className="object-cover"
+              className={affiliateDealImage ? 'object-contain p-1' : 'object-cover'}
               priority={false}
               sizes="(max-width: 640px) 96px, 112px"
+              onError={() => setAffiliateImgError(true)}
             />
             {/* Bottom gradient shadow overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
