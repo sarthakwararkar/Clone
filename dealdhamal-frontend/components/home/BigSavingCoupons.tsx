@@ -17,73 +17,14 @@ function sanitizeLogoUrl(url: string | null | undefined): string | null {
   return url
 }
 
-// Client-side helper to resolve accurate product images from titles/keywords. Returns null if none match.
-function getProductImage(title: string, storeName: string): string | null {
-  const t = title.toLowerCase()
-  const s = storeName.toLowerCase()
-  
-  // Tech category keywords
-  if (t.includes('watch') || t.includes('wearable') || t.includes('chrono') || t.includes('fitbit') || t.includes('smartwatch')) {
-    return 'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=600&auto=format&fit=crop&q=80'
-  }
-  if (t.includes('phone') || t.includes('mobile') || t.includes('iphone') || t.includes('samsung') || t.includes('oneplus') || t.includes('pixel') || t.includes('smartphone')) {
-    return 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&auto=format&fit=crop&q=80'
-  }
-  if (t.includes('headphone') || t.includes('earphone') || t.includes('earbuds') || t.includes('airpods') || t.includes('audio') || t.includes('soundbar') || t.includes('speaker')) {
-    return 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80'
-  }
-  if (t.includes('mouse') || t.includes('keyboard') || t.includes('gaming') || t.includes('controller') || t.includes('joystick') || t.includes('razer')) {
-    return 'https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=600&auto=format&fit=crop&q=80'
-  }
-  if (t.includes('laptop') || t.includes('macbook') || t.includes('notebook') || t.includes('computer') || t.includes('pc')) {
-    return 'https://images.unsplash.com/photo-1496181130204-7552cc14ac1b?w=600&auto=format&fit=crop&q=80'
-  }
-  if (t.includes('camera') || t.includes('dslr') || t.includes('lens') || t.includes('gopro')) {
-    return 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&fit=crop&q=80'
-  }
-  
-  // Fashion keywords
-  if (t.includes('shoe') || t.includes('runner') || t.includes('sneaker') || t.includes('boots') || t.includes('footwear') || s.includes('nike') || s.includes('adidas') || s.includes('puma') || s.includes('bata')) {
-    return 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80'
-  }
-  if (t.includes('jacket') || t.includes('coat') || t.includes('leather') || t.includes('denim')) {
-    return 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&auto=format&fit=crop&q=80'
-  }
-  if (t.includes('bag') || t.includes('backpack') || t.includes('luggage') || t.includes('wallet') || t.includes('handbag')) {
-    return 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop&q=80'
-  }
-  if (t.includes('shirt') || t.includes('t-shirt') || t.includes('tee') || t.includes('apparel') || t.includes('clothing') || t.includes('dress') || t.includes('jeans')) {
-    return 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&auto=format&fit=crop&q=80'
-  }
-
-  // Home keywords
-  if (t.includes('light') || t.includes('lamp') || t.includes('ambient') || t.includes('led') || t.includes('bulb')) {
-    return 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600&auto=format&fit=crop&q=80'
-  }
-  if (t.includes('purifier') || t.includes('humidifier') || t.includes('filter') || t.includes('ac')) {
-    return 'https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=600&auto=format&fit=crop&q=80'
-  }
-  if (t.includes('coffee') || t.includes('brew') || t.includes('espresso') || t.includes('maker') || t.includes('grinder') || t.includes('teapot')) {
-    return 'https://images.unsplash.com/photo-1517256064527-09c53b2d0bc6?w=600&auto=format&fit=crop&q=80'
-  }
-  
-  // Gaming
-  if (t.includes('vr') || t.includes('headset') || t.includes('oculus') || t.includes('quest') || t.includes('virtual')) {
-    return 'https://images.unsplash.com/photo-1593508512255-86ab42a8e620?w=600&auto=format&fit=crop&q=80'
-  }
-  
-  // No strong product match -> fallback to store logo centering
-  return null
-}
-
 interface BigSavingCouponCardProps {
   coupon: Coupon
   onSelect: (coupon: Coupon) => void
 }
 
 function BigSavingCouponCard({ coupon, onSelect }: BigSavingCouponCardProps) {
-  const [imageError, setImageError] = useState(false)
   const [logoError, setLogoError] = useState(false)
+  const [bannerError, setBannerError] = useState(false)
   const isFeatured = coupon.is_featured
 
   const discountText = coupon.discount_value 
@@ -92,8 +33,13 @@ function BigSavingCouponCard({ coupon, onSelect }: BigSavingCouponCardProps) {
         : `${coupon.discount_value} OFF`)
     : 'Special Offer'
 
-  const productImage = getProductImage(coupon.title, coupon.store.name)
+  // Use real affiliate images only — banner_url (from Admitad/vCommission creative) takes priority,
+  // then logo_url (store brand logo from affiliate network). No generic stock photos.
   const logoUrl = sanitizeLogoUrl(coupon.store.logo_url)
+  const bannerUrl = coupon.store.banner_url
+  const initials = coupon.store.name.slice(0, 2).toUpperCase()
+  const hasRealBanner = !!bannerUrl && !bannerError
+  const hasRealLogo = !!logoUrl && !logoError
 
   // Bigger card sizes and slightly reduced negative margin overlap to show larger details clearly
   const cardClass = isFeatured
@@ -105,29 +51,29 @@ function BigSavingCouponCard({ coupon, onSelect }: BigSavingCouponCardProps) {
       className={cardClass}
       onClick={() => onSelect(coupon)}
     >
-      {/* Card Image Header */}
+      {/* Card Image Header — real affiliate banner or store logo, no stock photos */}
       <div className="h-48 bg-neutral-100 dark:bg-white m-3 rounded-2xl relative overflow-hidden flex items-center justify-center p-3 border border-white/10 group-hover:scale-[0.98] transition-transform duration-300">
         {coupon.is_exclusive && (
           <span className="absolute top-3 left-3 text-[9px] font-black tracking-widest text-teal-400 bg-brandDark/85 border border-teal-400/30 px-2 py-0.5 rounded shadow z-10">
             EXCLUSIVE
           </span>
         )}
-        
-        {productImage && !imageError ? (
+
+        {hasRealBanner ? (
+          /* Real affiliate banner creative (e.g. from Admitad) */
           <>
-            {/* Render matching product image */}
             <img
-              src={productImage}
-              alt={coupon.title}
-              className="object-contain max-h-full max-w-full hover:scale-110 transition-transform duration-500"
+              src={bannerUrl!}
+              alt={coupon.store.name}
+              className="object-contain max-h-full max-w-full hover:scale-105 transition-transform duration-500"
               loading="lazy"
-              onError={() => setImageError(true)}
+              onError={() => setBannerError(true)}
             />
-            {/* Floating Store Logo Overlay in Top Right - made larger (w-20 h-10) for premium feel */}
-            {logoUrl && !logoError && (
-              <div className="absolute top-3 right-3 w-20 h-10 bg-white border border-gray-150 rounded-xl flex items-center justify-center p-1.5 shadow-md z-10">
+            {/* Store logo overlay in top-right corner */}
+            {hasRealLogo && (
+              <div className="absolute top-3 right-3 w-20 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center p-1.5 shadow-md z-10">
                 <img
-                  src={logoUrl}
+                  src={logoUrl!}
                   alt={coupon.store.name}
                   className="object-contain max-h-full max-w-full"
                   loading="lazy"
@@ -136,22 +82,21 @@ function BigSavingCouponCard({ coupon, onSelect }: BigSavingCouponCardProps) {
               </div>
             )}
           </>
+        ) : hasRealLogo ? (
+          /* Real affiliate store logo (from vCommission / Cuelinks / Admitad) */
+          <img
+            src={logoUrl!}
+            alt={coupon.store.name}
+            className="object-contain max-h-[75%] max-w-[85%] hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+            onError={() => setLogoError(true)}
+          />
         ) : (
-          /* Fallback: Centered Store Logo as main image for accuracy */
-          <div className="w-full h-full flex flex-col items-center justify-center p-4">
-            {logoUrl && !logoError ? (
-              <img
-                src={logoUrl}
-                alt={coupon.store.name}
-                className="object-contain max-h-[75%] max-w-[85%] hover:scale-105 transition-transform duration-500"
-                loading="lazy"
-                onError={() => setLogoError(true)}
-              />
-            ) : (
-              <span className="text-gray-400 font-black text-2xl tracking-tighter uppercase select-none">
-                {coupon.store.name}
-              </span>
-            )}
+          /* Branded initials fallback — honest, no misleading stock photos */
+          <div className="w-full h-full flex items-center justify-center">
+            <span className={`text-5xl font-black tracking-tighter uppercase select-none ${isFeatured ? 'text-purple-400/60' : 'text-teal-400/60'}`}>
+              {initials}
+            </span>
           </div>
         )}
       </div>

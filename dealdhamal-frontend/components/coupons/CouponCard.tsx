@@ -73,11 +73,15 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
   if (variant === 'premium') {
     const theme = getDealTheme(coupon.title, coupon.store.name, coupon.store.category?.name)
 
-    // Prefer affiliate-supplied images; fall back to theme Unsplash image
-    const affiliateDealImage = !affiliateImgError
-      ? (coupon.store.banner_url || coupon.store.logo_url || null)
-      : null
-    const dealImage = affiliateDealImage ?? theme.imageUrl
+    // Use real affiliate images only (banner or logo from affiliate network)
+    // No Unsplash stock photo fallbacks — show initials if no real image exists
+    const hasAffiliateBanner = !affiliateImgError && !!coupon.store.banner_url
+    const hasAffiliateLogo = !affiliateImgError && !!coupon.store.logo_url
+    const affiliateDealImage = hasAffiliateBanner
+      ? coupon.store.banner_url!
+      : hasAffiliateLogo
+        ? coupon.store.logo_url!
+        : null
     
     return (
       <>
@@ -187,15 +191,22 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
           {/* Styled image on the right (Tilted Polaroid frame) */}
           <div className="absolute right-4 top-1/2 -translate-y-1/2 w-24 h-24 sm:w-28 sm:h-28 z-10 pointer-events-none">
             <div className="w-full h-full relative rounded-2xl overflow-hidden border-2 border-white/20 shadow-xl bg-black/10 rotate-6 group-hover:rotate-3 group-hover:scale-105 transition-all duration-300">
-              <Image
-                src={dealImage}
-                alt="deal product"
-                fill
-                className={affiliateDealImage ? 'object-contain p-1' : 'object-cover'}
-                priority={false}
-                sizes="(max-width: 640px) 96px, 112px"
-                onError={() => setAffiliateImgError(true)}
-              />
+              {affiliateDealImage ? (
+                <Image
+                  src={affiliateDealImage}
+                  alt={coupon.store.name}
+                  fill
+                  className={hasAffiliateBanner ? 'object-cover' : 'object-contain p-1'}
+                  priority={false}
+                  sizes="(max-width: 640px) 96px, 112px"
+                  onError={() => setAffiliateImgError(true)}
+                />
+              ) : (
+                /* Branded initials — no fake stock photos */
+                <div className="w-full h-full flex items-center justify-center bg-white/10">
+                  <span className="text-white/70 font-black text-xl tracking-tighter uppercase select-none">{initials}</span>
+                </div>
+              )}
               {/* Bottom gradient shadow overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
             </div>

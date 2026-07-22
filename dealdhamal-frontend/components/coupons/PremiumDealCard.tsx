@@ -5,8 +5,8 @@ import { useState } from 'react'
 import { Bookmark, Share2, ExternalLink } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { Coupon } from '@/types'
-import { getDealTheme } from '@/lib/dealImages'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { getDealTheme } from '@/lib/dealImages'
 import { useSavedCoupons } from '@/hooks/useSavedCoupons'
 import { cn } from '@/lib/utils'
 import { LoginPromptModal } from '@/components/auth/LoginPromptModal'
@@ -26,16 +26,22 @@ export function PremiumDealCard({ coupon, isAi }: PremiumDealCardProps) {
   const router = useRouter()
   
   const saved = isSaved(coupon.id)
+  
+  // Use real affiliate images only:
+  // 1. store.banner_url — real affiliate creative from Admitad/vCommission
+  // 2. store.logo_url — real store brand logo from affiliate network
+  // If neither exists, we show styled initials (no fake Unsplash stock photos)
+  const hasAffiliateBanner = !affiliateImgError && !!coupon.store.banner_url
+  const hasAffiliateLogo = !affiliateImgError && !!coupon.store.logo_url
+  const affiliateDealImage = hasAffiliateBanner
+    ? coupon.store.banner_url!
+    : hasAffiliateLogo
+      ? coupon.store.logo_url!
+      : null
   const initials = coupon.store.name.slice(0, 2).toUpperCase()
   
-  // Get dynamic visual theme from regex match of titles/categories
+  // Gradient/button color theme only — imageUrl from getDealTheme is intentionally unused
   const theme = getDealTheme(coupon.title, coupon.store.name, coupon.store.category?.name, isAi)
-
-  // Prefer affiliate-supplied images; fall back to theme Unsplash image
-  const affiliateDealImage = !affiliateImgError
-    ? (coupon.store.banner_url || coupon.store.logo_url || null)
-    : null
-  const dealImage = affiliateDealImage ?? theme.imageUrl
 
   const handleSaveToggle = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -146,15 +152,22 @@ export function PremiumDealCard({ coupon, isAi }: PremiumDealCardProps) {
         {/* Styled image on the right (Tilted Polaroid frame) */}
         <div className="absolute right-4 top-1/2 -translate-y-1/2 w-24 h-24 sm:w-28 sm:h-28 z-10 pointer-events-none">
           <div className="w-full h-full relative rounded-2xl overflow-hidden border-2 border-white/20 shadow-xl bg-black/10 rotate-6 group-hover:rotate-3 group-hover:scale-105 transition-all duration-300">
-            <Image
-              src={dealImage}
-              alt="deal product"
-              fill
-              className={affiliateDealImage ? 'object-contain p-1' : 'object-cover'}
-              priority={false}
-              sizes="(max-width: 640px) 96px, 112px"
-              onError={() => setAffiliateImgError(true)}
-            />
+            {affiliateDealImage ? (
+              <Image
+                src={affiliateDealImage}
+                alt={coupon.store.name}
+                fill
+                className={hasAffiliateBanner ? 'object-cover' : 'object-contain p-1'}
+                priority={false}
+                sizes="(max-width: 640px) 96px, 112px"
+                onError={() => setAffiliateImgError(true)}
+              />
+            ) : (
+              /* Branded initials — no fake stock photos */
+              <div className="w-full h-full flex items-center justify-center bg-white/10">
+                <span className="text-white/70 font-black text-xl tracking-tighter uppercase select-none">{initials}</span>
+              </div>
+            )}
             {/* Bottom gradient shadow overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
           </div>
