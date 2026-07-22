@@ -30,14 +30,15 @@ export function CategoryCouponsList({ initialCoupons }: CategoryCouponsListProps
     })
   }, [initialCoupons, sortBy])
 
-  // Segment into codes vs deals (cashback treated as deal for display)
-  const codes = useMemo(() => sorted.filter((c) => c.coupon_type === 'code'), [sorted])
-  const deals = useMemo(() => sorted.filter((c) => c.coupon_type !== 'code'), [sorted])
+  // Segment into codes vs deals based on actual promo code presence
+  const codes = useMemo(() => sorted.filter((c) => Boolean(c.code && c.code.trim())), [sorted])
+  const deals = useMemo(() => sorted.filter((c) => !c.code || !c.code.trim()), [sorted])
 
   // When a type pill is selected, show only that filtered subset
   const filteredSingle = useMemo(() => {
     if (type === 'all') return null
-    return sorted.filter((c) => c.coupon_type === type)
+    if (type === 'code') return sorted.filter((c) => Boolean(c.code && c.code.trim()))
+    return sorted.filter((c) => !c.code || !c.code.trim())
   }, [sorted, type])
 
   const isEmpty = type === 'all' ? codes.length === 0 && deals.length === 0 : filteredSingle!.length === 0

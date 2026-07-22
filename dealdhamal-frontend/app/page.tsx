@@ -23,66 +23,62 @@ export const metadata: Metadata = {
 }
 
 export default async function Homepage() {
-  // Fetch homepage data in parallel
-  // - featuredCodesResponse: only coupon codes for BigSavingCoupons section
-  // - dealsResponse: only deals for TrendingCoupons section
-  // - heroResponse: featured items of any type for the hero banner (fallback if no codes)
+  // Fetch homepage data in parallel with robust fallbacks
   const [
     categories,
     storesResponse,
-    featuredCodesResponse,
-    dealsResponse,
-    heroFeaturedResponse,
+    allCouponsResponse,
     aiStoresResponse,
     aiDealsResponse,
     exclusiveDealsResponse,
   ] = await Promise.all([
     api.getCategories().catch(() => []),
     api.getStores({ sort: 'most_deals', limit: 12 }).catch(() => ({ data: [], total: 0 })),
-    // BigSavingCoupons: coupon codes only
-    api.getCoupons({ type: 'code', sort: 'smart', diverse: true, limit: 12 }).catch(() => ({ data: [], total: 0 })),
-    // TrendingCoupons: deals only (no codes mixed in)
-    api.getCoupons({ type: 'deal', sort: 'smart', diverse: true, limit: 40 }).catch(() => ({ data: [], total: 0 })),
-    // Hero banner: any featured item (codes or deals) — ensures it never goes empty
-    api.getCoupons({ featured: true, sort: 'smart', diverse: true, limit: 5 }).catch(() => ({ data: [], total: 0 })),
+    // Fetch active coupons with smart sorting to populate HeroBanner, BigSavingCoupons, and TrendingCoupons
+    api.getCoupons({ limit: 60, sort: 'smart' }).catch(() => ({ data: [], total: 0 })),
     api.getStores({ category: 'ai-tools', limit: 100 }).catch(() => ({ data: [] })),
     api.getCoupons({ category: 'ai-tools', type: 'deal', limit: 12 }).catch(() => ({ data: [] })),
     api.getExclusiveDeals(16).catch(() => ({ data: [] })),
   ])
 
-  const featuredStores = storesResponse.data
-  const featuredCoupons = featuredCodesResponse.data   // coupon codes for BigSavingCoupons
-  const bestDeals = dealsResponse.data                 // deals for TrendingCoupons
-  const heroItems = heroFeaturedResponse.data          // any featured item for HeroBanner
-  const aiStores = aiStoresResponse.data
-  const aiDeals = aiDealsResponse.data
-  const exclusiveDeals = exclusiveDealsResponse.data
+  const featuredStores = storesResponse.data || []
+  const allCoupons = allCouponsResponse.data || []
+  const aiStores = aiStoresResponse.data || []
+  const aiDeals = aiDealsResponse.data || []
+  const exclusiveDeals = exclusiveDealsResponse.data || []
 
+  // 1. Hero Banner items: items marked featured first, or top 5 coupons/deals
+  const featuredItems = allCoupons.filter((c) => c.is_featured)
+  const heroBannerItems = featuredItems.length >= 3 ? featuredItems : allCoupons.slice(0, 6)
+
+  // 2. Segregate Coupon Codes vs Deals
+  const promoCodesOnly = allCoupons.filter((c) => Boolean(c.code && c.code.trim()))
+  const dealsOnly = allCoupons.filter((c) => !c.code || !c.code.trim())
+
+  // BigSavingCoupons section: prioritized promo codes, guaranteed non-empty fallback
+  const bigSavingItems = promoCodesOnly.length > 0 ? promoCodesOnly : allCoupons.slice(0, 12)
+
+  // Filter AI deals out of Trending Deals section
   const aiStoreSlugs = new Set(aiStores.map((s: any) => s.slug))
-  const nonAiDeals = bestDeals
-    .filter((coupon) => !aiStoreSlugs.has(coupon.store.slug))
+  const nonAiDealsSource = dealsOnly.length > 0 ? dealsOnly : allCoupons
+  const nonAiDeals = nonAiDealsSource
+    .filter((coupon) => coupon.store?.slug && !aiStoreSlugs.has(coupon.store.slug))
     .slice(0, 12)
-
-  // Hero banner: use any featured items; if none, fall back to codes, then deals
-  const heroBannerItems = heroItems.length > 0
-    ? heroItems
-    : featuredCoupons.length > 0
-      ? featuredCoupons
-      : nonAiDeals
 
   return (
     <IntroSplash>
       <ClientButterflyOverlay />
       <div className="space-y-12 relative z-10">
         <HomePageSchema featuredStores={featuredStores} />
-        {/* Hero banner carousel — shows any featured coupons or deals */}
+
+        {/* Top Scrollable Billboard / Hero Banner — ALWAYS VISIBLE */}
         {heroBannerItems.length > 0 && (
           <HeroBanner coupons={heroBannerItems.slice(0, 5)} />
         )}
 
-        {/* Big Saving Coupon Codes — coupon codes only, clearly segregated */}
-        {featuredCoupons.length > 0 && (
-          <BigSavingCoupons coupons={featuredCoupons} />
+        {/* Big Saving Coupon Codes Section — ALWAYS VISIBLE */}
+        {bigSavingItems.length > 0 && (
+          <BigSavingCoupons coupons={bigSavingItems.slice(0, 12)} />
         )}
 
         {/* Top Stores */}
@@ -90,7 +86,7 @@ export default async function Homepage() {
           <FeaturedStores stores={featuredStores} />
         )}
 
-        {/* Today's Best Deals — deals & offers only, no coupon codes mixed in */}
+        {/* Today's Best Deals & Offers — STRICTLY DEALS */}
         {nonAiDeals.length > 0 && (
           <TrendingCoupons coupons={nonAiDeals} />
         )}
@@ -111,3 +107,4 @@ export default async function Homepage() {
     </IntroSplash>
   )
 }
+

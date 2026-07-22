@@ -52,10 +52,13 @@ export default async function StorePage({ params }: PageProps) {
   ])
 
   const store = storeDetail.store
+  const coupons = couponsResponse.data || []
+  const codeCount = coupons.filter((c) => Boolean(c.code && c.code.trim())).length
+  const dealCount = coupons.length - codeCount
 
   return (
     <div className="space-y-8">
-      <StorePageSchema store={store} coupons={couponsResponse.data} />
+      <StorePageSchema store={store} coupons={coupons} />
       <Breadcrumb
         items={[
           { label: 'Home', href: '/' },
@@ -64,11 +67,11 @@ export default async function StorePage({ params }: PageProps) {
         ]}
       />
 
-      {/* Store Hero Header */}
-      <StoreHeader store={store} couponCount={store.coupon_count ?? 0} dealCount={store.deal_count ?? 0} />
+      {/* Store Hero Header — uses real accurate counts */}
+      <StoreHeader store={store} couponCount={codeCount} dealCount={dealCount} />
 
       {/* Coupons filter & list */}
-      <StoreCouponsList initialCoupons={couponsResponse.data} />
+      <StoreCouponsList initialCoupons={coupons} />
     </div>
   )
 }

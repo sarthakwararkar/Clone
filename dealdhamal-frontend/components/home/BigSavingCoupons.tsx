@@ -53,9 +53,17 @@ function BigSavingCouponCard({ coupon, onSelect }: BigSavingCouponCardProps) {
     >
       {/* Card Image Header — real affiliate banner or store logo, no stock photos */}
       <div className="h-48 bg-neutral-100 dark:bg-white m-3 rounded-2xl relative overflow-hidden flex items-center justify-center p-3 border border-white/10 group-hover:scale-[0.98] transition-transform duration-300">
-        {coupon.is_exclusive && (
+        {coupon.is_exclusive ? (
           <span className="absolute top-3 left-3 text-[9px] font-black tracking-widest text-teal-400 bg-brandDark/85 border border-teal-400/30 px-2 py-0.5 rounded shadow z-10">
             EXCLUSIVE
+          </span>
+        ) : (
+          <span className={`absolute top-3 left-3 text-[9px] font-black tracking-widest px-2.5 py-0.5 rounded shadow z-10 ${
+            coupon.code && coupon.code.trim()
+              ? 'text-cyan-300 bg-slate-900/90 border border-cyan-400/30'
+              : 'text-emerald-300 bg-slate-900/90 border border-emerald-400/30'
+          }`}>
+            {coupon.code && coupon.code.trim() ? 'COUPON CODE' : 'DEAL OFFER'}
           </span>
         )}
 
