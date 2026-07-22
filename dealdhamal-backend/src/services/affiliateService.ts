@@ -619,7 +619,7 @@ export class AffiliateService {
         }
 
         try {
-          const isFeatured = couponData.coupon_type === 'code' && couponData.code && couponData.title.trim().length >= 15;
+          const isFeatured = Boolean(couponData.coupon_type === 'code' && couponData.code && couponData.title.trim().length >= 15);
 
           const result = await this.db
             .insert(coupons)

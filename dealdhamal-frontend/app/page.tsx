@@ -11,7 +11,7 @@ import { HomePageSchema } from '@/components/seo/HomePageSchema'
 import IntroSplash from '@/components/ui/IntroSplash'
 import ClientButterflyOverlay from '@/components/home/ClientButterflyOverlay'
 
-export const revalidate = 3600 // ISR hourly
+export const revalidate = 60 // Revalidate every minute so live data is always fresh
 
 export const metadata: Metadata = {
   title: 'Best Coupons & Deals in India | Save More Today',

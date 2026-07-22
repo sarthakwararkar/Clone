@@ -48,8 +48,8 @@ storesRouter.get('/', async (c) => {
       s.id, s.name, s.slug, s.logo_url, s.banner_url, s.website_url, s.affiliate_url,
       s.affiliate_network, s.description, s.category_id, s.is_featured,
       s.cashback_rate, s.created_at,
-      (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND c.coupon_type = 'code' AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS coupon_count,
-      (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND c.coupon_type IN ('deal', 'cashback') AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS deal_count
+      (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND (c.code IS NOT NULL AND TRIM(c.code) != '') AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS coupon_count,
+      (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND (c.code IS NULL OR TRIM(c.code) = '') AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS deal_count
     FROM stores s
   `;
 
@@ -63,8 +63,8 @@ storesRouter.get('/', async (c) => {
         s.id, s.name, s.slug, s.logo_url, s.banner_url, s.website_url, s.affiliate_url,
         s.affiliate_network, s.description, s.category_id, s.is_featured,
         s.cashback_rate, s.created_at,
-        (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND c.coupon_type = 'code' AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS coupon_count,
-        (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND c.coupon_type IN ('deal', 'cashback') AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS deal_count
+        (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND (c.code IS NOT NULL AND TRIM(c.code) != '') AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS coupon_count,
+        (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND (c.code IS NULL OR TRIM(c.code) = '') AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS deal_count
       FROM stores s
       JOIN categories cat ON cat.id = s.category_id
     `;
@@ -157,8 +157,8 @@ storesRouter.get('/:slug', async (c) => {
       s.id, s.name, s.slug, s.logo_url, s.banner_url, s.website_url, s.affiliate_url,
       s.affiliate_network, s.description, s.category_id, s.is_featured,
       s.cashback_rate, s.created_at,
-      (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND c.coupon_type = 'code' AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS coupon_count,
-      (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND c.coupon_type IN ('deal', 'cashback') AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS deal_count
+      (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND (c.code IS NOT NULL AND TRIM(c.code) != '') AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS coupon_count,
+      (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND (c.code IS NULL OR TRIM(c.code) = '') AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS deal_count
     FROM stores s
     WHERE s.slug = ${slug}
     LIMIT 1

@@ -26,7 +26,9 @@ class ApiClient {
   private baseUrl: string
 
   constructor() {
-    let url = process.env.NEXT_PUBLIC_API_URL ?? ''
+    let url = (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.trim())
+      ? process.env.NEXT_PUBLIC_API_URL
+      : 'https://coupondunia-backend.sarthakwararkar2.workers.dev'
     if (url.endsWith('/')) {
       url = url.slice(0, -1)
     }

@@ -109,8 +109,8 @@ export class SearchService {
         s.is_featured,
         s.cashback_rate,
         s.created_at,
-        (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND c.coupon_type = 'code' AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS coupon_count,
-        (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND c.coupon_type IN ('deal', 'cashback') AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS deal_count
+        (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND (c.code IS NOT NULL AND TRIM(c.code) != '') AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS coupon_count,
+        (SELECT COUNT(*) FROM coupons c WHERE c.store_id = s.id AND (c.code IS NULL OR TRIM(c.code) = '') AND (c.expires_at > NOW() OR c.expires_at IS NULL))::int AS deal_count
       FROM stores s
       WHERE (
         s.name ILIKE ${queryPattern}

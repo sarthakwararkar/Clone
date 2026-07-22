@@ -25,7 +25,7 @@ export class CouponService {
     type?: 'code' | 'deal' | 'cashback';
     featured?: boolean;
     exclusive?: boolean;
-    sort?: 'featured' | 'latest' | 'popular';
+    sort?: 'featured' | 'latest' | 'popular' | 'smart';
     diverse?: boolean;
     pagination: PaginationParams;
   }): Promise<PaginatedResponse<CouponResponse>> {
