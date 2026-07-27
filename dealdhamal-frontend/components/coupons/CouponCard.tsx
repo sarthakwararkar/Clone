@@ -49,19 +49,11 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
   const handleReveal = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    if (!user) {
-      setLoginPromptOpen(true)
-    } else {
-      setModalOpen(true)
-    }
+    setModalOpen(true)
   }
 
   const handleCardClick = () => {
-    if (!user) {
-      setLoginPromptOpen(true)
-    } else {
-      router.push(`/coupons/${coupon.id}`)
-    }
+    router.push(`/coupons/${coupon.id}`)
   }
 
   const handleShareClick = (e: React.MouseEvent) => {

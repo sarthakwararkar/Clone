@@ -1,5 +1,6 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Bookmark, Clock, CheckCircle, ArrowLeft, Share2 } from 'lucide-react'
@@ -68,76 +69,14 @@ export function CouponDetailClient({ coupon, moreCoupons }: CouponDetailClientPr
     { label: truncate(coupon.title, 40) }
   ]
 
-  if (!user) {
-    return (
-      <div className="space-y-8">
-        <Breadcrumb items={breadcrumbItems} />
+  const searchParams = useSearchParams()
 
-        {/* Lock Screen detail card */}
-        <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden p-6 md:p-10 flex flex-col items-center justify-center text-center min-h-[350px]">
-          {/* Blurred background preview elements */}
-          <div className="absolute inset-0 opacity-15 filter blur-[6px] pointer-events-none select-none flex flex-col md:flex-row gap-6 p-8 items-start">
-            <div className="w-24 h-24 rounded-2xl bg-gray-200 flex-shrink-0" />
-            <div className="flex-1 space-y-4 text-left w-full">
-              <div className="h-4 bg-gray-400 rounded w-1/4" />
-              <div className="h-8 bg-gray-400 rounded w-3/4" />
-              <div className="h-4 bg-gray-400 rounded w-1/2" />
-            </div>
-          </div>
+  useEffect(() => {
+    if (searchParams?.get('redirect') === 'true' || searchParams?.get('autoOpen') === 'true') {
+      setModalOpen(true)
+    }
+  }, [searchParams])
 
-          {/* Central Unlock Card */}
-          <div className="relative z-10 max-w-md mx-auto space-y-6">
-            <div className="mx-auto w-16 h-16 bg-primary/10 rounded-3xl flex items-center justify-center border border-primary/20 relative">
-              <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-              </span>
-              {/* Lock Icon */}
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8 text-primary animate-bounce">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-              </svg>
-            </div>
-
-            <div className="space-y-2">
-              <h1 className="text-2xl font-black text-gray-900 tracking-tight">Unlock This Coupon</h1>
-              <p className="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
-                Unlock verified promo codes, cashback details, and exclusive store rewards for <span className="font-semibold text-primary">{coupon.store.name}</span>.
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2 w-full">
-              <Link
-                href={`/login?next=/coupons/${coupon.id}`}
-                className="flex-1 inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-primary text-white hover:bg-primary-dark focus:ring-primary shadow-lg shadow-primary/20 px-4 py-2 text-sm w-full font-bold text-center"
-              >
-                Login to Reveal
-              </Link>
-              <Link
-                href={`/signup?next=/coupons/${coupon.id}`}
-                className="flex-1 inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white text-primary border-2 border-primary hover:bg-primary-light focus:ring-primary px-4 py-2 text-sm w-full font-semibold text-center"
-              >
-                Sign Up Free
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* More Offers Section (Blurred / Locked) */}
-        {moreCoupons.length > 0 && (
-          <div className="space-y-4 opacity-50 pointer-events-none select-none">
-            <h2 className="text-lg font-bold text-gray-400">
-              More Offers from {coupon.store.name}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {moreCoupons.map((c) => (
-                <CouponCard key={c.id} coupon={c} view="list" variant="premium" />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-8">

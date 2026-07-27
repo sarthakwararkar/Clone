@@ -58,11 +58,7 @@ export function PremiumDealCard({ coupon, isAi }: PremiumDealCardProps) {
   }
 
   const handleCardClick = () => {
-    if (!user) {
-      setLoginPromptOpen(true)
-    } else {
-      router.push(`/coupons/${coupon.id}`)
-    }
+    router.push(`/coupons/${coupon.id}`)
   }
 
   const handleShareClick = (e: React.MouseEvent) => {
@@ -74,11 +70,7 @@ export function PremiumDealCard({ coupon, isAi }: PremiumDealCardProps) {
   const handleGrabDeal = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    if (!user) {
-      setLoginPromptOpen(true)
-    } else {
-      router.push(`/coupons/${coupon.id}?redirect=true`)
-    }
+    router.push(`/coupons/${coupon.id}?redirect=true`)
   }
 
   return (
