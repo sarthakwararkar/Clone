@@ -170,40 +170,130 @@ export function formatExpiryInfo(dateStr?: string | null): ExpiryInfo {
   }
 }
 
-export function filterValidCoupons<T extends { title?: string; expires_at?: string | null }>(
-  coupons: T[]
-): T[] {
+export function sanitizeTitleText(title: string | null | undefined): string {
+  if (!title) return ''
+  return title
+    .replace(/[\uFFFD\uFFFE\uFFFF\u00EF\u00BF\u00BD]/g, '')
+    .replace(/\?\?/g, '')
+    .replace(/^\?+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+export function sanitizeCouponData<T extends { 
+  title?: string
+  code?: string | null
+  expires_at?: string | null
+  affiliate_url?: string | null
+  store?: any
+}>(coupon: T): T {
+  if (!coupon || typeof coupon !== 'object') return coupon
+
+  // Clean title encoding artifacts
+  if (coupon.title) {
+    coupon.title = sanitizeTitleText(coupon.title)
+  }
+
+  // Handle fake placeholder codes
+  if (coupon.code) {
+    const codeUpper = coupon.code.trim().toUpperCase()
+    const fakeCodeWords = [
+      'BEST OFFER', 'BEST-OFFER', 'NO-CODE', 'NOCODE', 'DEAL', 'OFFER',
+      'GETDEAL', 'GET DEAL', 'CLICK', 'LINK', 'NONE', 'N/A', 'APPLY',
+      'SHOW CODE', 'SHOWCODE', 'SPECIAL', 'COUPON'
+    ]
+    if (fakeCodeWords.includes(codeUpper)) {
+      coupon.code = null
+    }
+  }
+
+  // Clean affiliate URL if it's a scraper template or placeholder
+  if (coupon.affiliate_url) {
+    const lowerUrl = coupon.affiliate_url.toLowerCase().trim()
+    if (
+      lowerUrl.includes('cuelinks_affiliate_url') ||
+      lowerUrl.includes('vcommission_') ||
+      lowerUrl.includes('grabon.in') ||
+      lowerUrl.includes('coupondunia.in') ||
+      lowerUrl.includes('desidime.com') ||
+      lowerUrl.includes('_affiliate_url') ||
+      lowerUrl.includes('your_affiliate_link') ||
+      lowerUrl.includes('example.com') ||
+      !lowerUrl.startsWith('http')
+    ) {
+      // Fallback to store website or store affiliate URL if available
+      coupon.affiliate_url = getOutboundLink(null, coupon.store?.website_url || coupon.store?.affiliate_url, coupon.store?.slug)
+    }
+  }
+
+  return coupon
+}
+
+export function filterValidCoupons<T extends { 
+  title?: string
+  code?: string | null
+  expires_at?: string | null
+  affiliate_url?: string | null
+  store?: { name?: string; slug?: string } | null 
+}>(coupons: T[]): T[] {
   if (!Array.isArray(coupons)) return []
   const now = Date.now()
 
-  return coupons.filter((coupon) => {
-    if (!coupon || typeof coupon !== 'object') return false
-    const title = coupon.title?.trim()
-    if (!title || title.length < 3) return false
+  // Major brand codes to prevent store mismatch bugs (e.g. CAMPUS10 or MEESHO30 on Nykaa)
+  const brandKeywords = [
+    'campus', 'meesho', 'ajio', 'myntra', 'swiggy', 'zomato', 
+    'amazon', 'flipkart', 'nykaa', 'blinkit', 'zepto', 'croma', 
+    'boat', 'puma', 'nike', 'adidas'
+  ]
 
-    // Filter out obvious test/fake coupons
-    const lowerTitle = title.toLowerCase()
-    if (
-      lowerTitle === 'test' ||
-      lowerTitle === 'asdf' ||
-      lowerTitle === 'fake coupon' ||
-      lowerTitle === 'sample coupon' ||
-      lowerTitle === 'dummy deal' ||
-      lowerTitle === 'test coupon'
-    ) {
-      return false
-    }
+  return coupons
+    .map((c) => sanitizeCouponData(c))
+    .filter((coupon) => {
+      if (!coupon || typeof coupon !== 'object') return false
 
-    // Strict expiry check: filter out expired deals
-    if (coupon.expires_at) {
-      const expTime = new Date(coupon.expires_at).getTime()
-      if (!isNaN(expTime) && expTime < now) {
+      const title = coupon.title?.trim()
+      if (!title || title.length < 5) return false
+
+      const lowerTitle = title.toLowerCase()
+      if (
+        lowerTitle === 'test' ||
+        lowerTitle === 'asdf' ||
+        lowerTitle === 'fake coupon' ||
+        lowerTitle === 'sample coupon' ||
+        lowerTitle === 'dummy deal' ||
+        lowerTitle === 'test coupon' ||
+        lowerTitle.includes('dummy')
+      ) {
         return false
       }
-    }
 
-    return true
-  })
+      // Strict Expiry check: filter out expired deals
+      if (coupon.expires_at) {
+        const expTime = new Date(coupon.expires_at).getTime()
+        if (!isNaN(expTime) && expTime < now) {
+          return false
+        }
+      }
+
+      // Code & Store Mismatch Check
+      if (coupon.code) {
+        const codeUpper = coupon.code.trim().toUpperCase()
+        const storeNameLower = (coupon.store?.name || '').toLowerCase()
+        const storeSlugLower = (coupon.store?.slug || '').toLowerCase()
+        const codeLower = codeUpper.toLowerCase()
+
+        for (const brand of brandKeywords) {
+          if (codeLower.includes(brand)) {
+            // Must match the store name/slug for that brand
+            if (!storeNameLower.includes(brand) && !storeSlugLower.includes(brand)) {
+              return false // Mismatched fake/scraped coupon!
+            }
+          }
+        }
+      }
+
+      return true
+    })
 }
 
 

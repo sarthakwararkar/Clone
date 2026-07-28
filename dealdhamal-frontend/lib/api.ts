@@ -12,7 +12,7 @@ import type {
   YoutubeCommentator,
   YoutubeCommentatorFormData,
 } from '@/types'
-import { filterValidCoupons } from '@/lib/utils'
+import { filterValidCoupons, sanitizeCouponData } from '@/lib/utils'
 
 class ApiError extends Error {
   status: number
@@ -246,11 +246,16 @@ class ApiClient {
   }
 
   async getCoupon(id: string): Promise<Coupon> {
-    return this.request<Coupon>(`/api/coupons/${id}`)
+    const res = await this.request<Coupon>(`/api/coupons/${id}`)
+    return sanitizeCouponData(res)
   }
 
   async search(query: string): Promise<SearchResults> {
-    return this.request<SearchResults>(`/api/search${this.buildQuery({ q: query })}`)
+    const res = await this.request<SearchResults>(`/api/search${this.buildQuery({ q: query })}`)
+    if (res && Array.isArray(res.coupons)) {
+      res.coupons = filterValidCoupons(res.coupons)
+    }
+    return res
   }
 
   async clickCoupon(id: string): Promise<{ redirect_url: string }> {
