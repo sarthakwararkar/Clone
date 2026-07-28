@@ -131,9 +131,10 @@ class ApiClient {
     }
 
     const body = await res.json() as any
+    const sanitized = this.sanitizeImageUrls(body.data)
     if (body.pagination) {
       return {
-        data: body.data,
+        data: sanitized,
         total: body.pagination.total ?? 0,
         page: body.pagination.page ?? 1,
         limit: body.pagination.limit ?? 20,
@@ -141,7 +142,44 @@ class ApiClient {
         pagination: body.pagination,
       } as unknown as T
     }
-    return body.data
+    return sanitized
+  }
+
+  /**
+   * Recursively sanitize image URL fields in API responses.
+   * The backend sometimes returns relative paths like '/photos/medium/missing.png'
+   * for stores without real logos — these resolve to 404s on the frontend domain.
+   * This converts them to null so components fall back to initials.
+   */
+  private sanitizeImageUrls(data: any): any {
+    if (!data) return data
+    if (Array.isArray(data)) return data.map((item) => this.sanitizeImageUrls(item))
+    if (typeof data === 'object') {
+      const imageFields = ['logo_url', 'banner_url', 'icon_url', 'avatar_url']
+      const result = { ...data }
+      for (const field of imageFields) {
+        if (field in result && typeof result[field] === 'string') {
+          const url = result[field] as string
+          // Reject relative paths, placeholder patterns, and obviously broken URLs
+          if (
+            !url.startsWith('http') ||
+            url.includes('missing.png') ||
+            url.includes('placeholder') ||
+            url.includes('default-logo')
+          ) {
+            result[field] = null
+          }
+        }
+      }
+      // Recurse into nested objects (e.g. coupon.store)
+      for (const key of Object.keys(result)) {
+        if (typeof result[key] === 'object' && result[key] !== null && !imageFields.includes(key)) {
+          result[key] = this.sanitizeImageUrls(result[key])
+        }
+      }
+      return result
+    }
+    return data
   }
 
   private buildQuery(params: Record<string, string | number | boolean | undefined>): string {

@@ -34,8 +34,8 @@ export default async function Homepage() {
   ] = await Promise.all([
     api.getCategories().catch(() => []),
     api.getStores({ sort: 'most_deals', limit: 12 }).catch(() => ({ data: [], total: 0 })),
-    // Fetch active coupons with smart sorting to populate HeroBanner, BigSavingCoupons, and TrendingCoupons
-    api.getCoupons({ limit: 60, sort: 'smart' }).catch(() => ({ data: [], total: 0 })),
+    // Fetch active coupons to populate HeroBanner, BigSavingCoupons, and TrendingCoupons
+    api.getCoupons({ limit: 60, sort: 'popular' }).catch(() => ({ data: [], total: 0 })),
     api.getStores({ category: 'ai-tools', limit: 100 }).catch(() => ({ data: [] })),
     api.getCoupons({ category: 'ai-tools', type: 'deal', limit: 12 }).catch(() => ({ data: [] })),
     api.getExclusiveDeals(16).catch(() => ({ data: [] })),
