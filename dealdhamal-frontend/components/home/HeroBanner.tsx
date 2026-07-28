@@ -13,6 +13,7 @@ interface HeroBannerProps {
 export function HeroBanner({ coupons }: HeroBannerProps) {
   const [current, setCurrent] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
+  const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({})
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const slides = coupons.slice(0, 5)
 
@@ -20,6 +21,10 @@ export function HeroBanner({ coupons }: HeroBannerProps) {
   const touchEndX = useRef<number | null>(null)
 
   const go = (idx: number) => setCurrent((idx + slides.length) % slides.length)
+
+  const markError = (key: string) => {
+    setImgErrors((prev) => ({ ...prev, [key]: true }))
+  }
 
   useEffect(() => {
     if (!isHovered) {
@@ -66,65 +71,76 @@ export function HeroBanner({ coupons }: HeroBannerProps) {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {slides.map((s, idx) => (
-        <div
-          key={s.id}
-          className="absolute inset-0 transition-opacity duration-400"
-          style={{ opacity: idx === current ? 1 : 0, zIndex: idx === current ? 1 : 0 }}
-        >
-          {s.store?.banner_url ? (
-            <div className="absolute inset-0">
-              <Image
-                src={s.store.banner_url}
-                alt={s.store.name}
-                fill
-                className="object-cover"
-                priority={idx === 0}
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-transparent" />
-            </div>
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-red-500 to-orange-500" />
-          )}
-          <div className="relative z-10 h-full flex items-center justify-between px-4 sm:px-8 md:px-12">
-            {/* Left: content */}
-            <div className="flex-1 max-w-lg">
-              <span className="inline-block bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full mb-3">
-                {s.store?.name}
-              </span>
-              <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight line-clamp-2">
-                {s.title}
-              </h2>
-              <div className="mt-3 mb-5">
-                <span className="inline-block bg-white text-primary font-bold text-lg px-4 py-1.5 rounded-lg">
-                  {formatDiscount(s.discount_value)}
-                </span>
-              </div>
-              <Link href={`/coupons/${s.id}`}>
-                <button className="bg-white text-primary font-semibold px-6 py-2.5 rounded-lg hover:bg-primary-light transition-colors shadow-md">
-                  Get Deal →
-                </button>
-              </Link>
-            </div>
+      {slides.map((s, idx) => {
+        const bannerKey = `banner-${s.id}`
+        const logoKey = `logo-${s.id}`
+        const bannerOk = !!s.store?.banner_url && !imgErrors[bannerKey]
+        const logoOk = !!s.store?.logo_url && !imgErrors[logoKey]
 
-            {/* Right: store logo */}
-            {s.store?.logo_url && (
-              <div className="hidden md:flex flex-shrink-0 ml-6">
-                <div className="w-28 h-28 bg-white rounded-2xl shadow-lg flex items-center justify-center overflow-hidden p-3">
-                  <Image
-                    src={s.store.logo_url}
-                    alt={s.store.name}
-                    width={112}
-                    height={112}
-                    className="object-contain w-full h-full"
-                    priority={idx === 0}
-                  />
-                </div>
+        return (
+          <div
+            key={s.id}
+            className="absolute inset-0 transition-opacity duration-400"
+            style={{ opacity: idx === current ? 1 : 0, zIndex: idx === current ? 1 : 0 }}
+          >
+            {bannerOk ? (
+              <div className="absolute inset-0">
+                <Image
+                  src={s.store.banner_url!}
+                  alt={s.store.name}
+                  fill
+                  className="object-cover"
+                  priority={idx === 0}
+                  unoptimized
+                  onError={() => markError(bannerKey)}
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-transparent" />
               </div>
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-red-500 to-orange-500" />
             )}
+            <div className="relative z-10 h-full flex items-center justify-between px-4 sm:px-8 md:px-12">
+              {/* Left: content */}
+              <div className="flex-1 max-w-lg">
+                <span className="inline-block bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full mb-3">
+                  {s.store?.name}
+                </span>
+                <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight line-clamp-2">
+                  {s.title}
+                </h2>
+                <div className="mt-3 mb-5">
+                  <span className="inline-block bg-white text-primary font-bold text-lg px-4 py-1.5 rounded-lg">
+                    {formatDiscount(s.discount_value)}
+                  </span>
+                </div>
+                <Link href={`/coupons/${s.id}`}>
+                  <button className="bg-white text-primary font-semibold px-6 py-2.5 rounded-lg hover:bg-primary-light transition-colors shadow-md">
+                    Get Deal →
+                  </button>
+                </Link>
+              </div>
+
+              {/* Right: store logo */}
+              {logoOk && (
+                <div className="hidden md:flex flex-shrink-0 ml-6">
+                  <div className="w-28 h-28 bg-white rounded-2xl shadow-lg flex items-center justify-center overflow-hidden p-3">
+                    <Image
+                      src={s.store.logo_url!}
+                      alt={s.store.name}
+                      width={112}
+                      height={112}
+                      className="object-contain w-full h-full"
+                      priority={idx === 0}
+                      unoptimized
+                      onError={() => markError(logoKey)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
 
       {/* Prev/Next arrows */}
       <button
@@ -156,3 +172,4 @@ export function HeroBanner({ coupons }: HeroBannerProps) {
     </div>
   )
 }
+

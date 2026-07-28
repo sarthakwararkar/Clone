@@ -24,6 +24,7 @@ interface CouponDetailClientProps {
 export function CouponDetailClient({ coupon, moreCoupons }: CouponDetailClientProps) {
   const [modalOpen, setModalOpen] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
+  const [logoError, setLogoError] = useState(false)
   const { user, isLoading } = useAuth()
   const { isSaved, save, unsave } = useSavedCoupons()
   const initials = coupon.store.name.substring(0, 2).toUpperCase()
@@ -104,13 +105,15 @@ export function CouponDetailClient({ coupon, moreCoupons }: CouponDetailClientPr
 
         {/* Store Logo Column */}
         <div className="w-24 h-24 rounded-2xl border border-gray-100 p-2 flex items-center justify-center bg-white shadow-sm flex-shrink-0">
-          {coupon.store.logo_url ? (
+          {coupon.store.logo_url && !logoError ? (
             <Image
               src={coupon.store.logo_url}
               alt={coupon.store.name}
               width={80}
               height={80}
               className="object-contain"
+              unoptimized
+              onError={() => setLogoError(true)}
             />
           ) : (
             <div className="w-full h-full bg-primary-light flex items-center justify-center">

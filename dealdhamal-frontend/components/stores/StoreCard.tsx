@@ -1,5 +1,7 @@
+'use client'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useState } from 'react'
 import type { Store } from '@/types'
 import { StoreCashbackBadge } from './StoreCashbackBadge'
 import { ExternalLink } from 'lucide-react'
@@ -10,7 +12,9 @@ interface StoreCardProps {
 }
 
 export function StoreCard({ store, variant = 'default' }: StoreCardProps) {
+  const [logoError, setLogoError] = useState(false)
   const initials = store.name.slice(0, 2).toUpperCase()
+  const showLogo = !!store.logo_url && !logoError
 
   if (variant === 'flip') {
     return (
@@ -24,13 +28,15 @@ export function StoreCard({ store, variant = 'default' }: StoreCardProps) {
             <div className="w-full h-full absolute transition-transform duration-500 preserve-3d group-hover:rotate-x-180">
               {/* Front Face: Logo */}
               <div className="absolute inset-0 w-full h-full bg-white rounded-xl border border-gray-100 flex items-center justify-center p-3 sm:p-4 shadow-sm backface-hidden">
-                {store.logo_url ? (
+                {showLogo ? (
                   <Image
-                    src={store.logo_url}
+                    src={store.logo_url!}
                     alt={store.name}
                     width={100}
                     height={100}
                     className="object-contain w-full h-full"
+                    unoptimized
+                    onError={() => setLogoError(true)}
                   />
                 ) : (
                   <div className="w-full h-full rounded-lg bg-primary-light flex items-center justify-center">
@@ -74,13 +80,15 @@ export function StoreCard({ store, variant = 'default' }: StoreCardProps) {
     >
       <div className="flex flex-col items-center text-center">
         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl border border-gray-100 bg-white flex items-center justify-center overflow-hidden p-1.5 sm:p-2 group-hover:shadow-sm transition-shadow">
-          {store.logo_url ? (
+          {showLogo ? (
             <Image
-              src={store.logo_url}
+              src={store.logo_url!}
               alt={store.name}
               width={80}
               height={80}
               className="object-contain w-full h-full"
+              unoptimized
+              onError={() => setLogoError(true)}
             />
           ) : (
             <div className="w-full h-full rounded-lg bg-primary-light flex items-center justify-center">
@@ -111,3 +119,4 @@ export function StoreCard({ store, variant = 'default' }: StoreCardProps) {
     </Link>
   )
 }
+

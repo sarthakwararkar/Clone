@@ -56,14 +56,15 @@ export default async function Homepage() {
   const dealsOnly = allCoupons.filter((c) => !c.code || !c.code.trim())
 
   // BigSavingCoupons section: prioritized promo codes, guaranteed non-empty fallback
-  const bigSavingItems = promoCodesOnly.length > 0 ? promoCodesOnly : allCoupons.slice(0, 12)
+  const bigSavingItems = promoCodesOnly.length >= 3 ? promoCodesOnly : allCoupons.slice(0, 12)
 
-  // Filter AI deals out of Trending Deals section
+  // Filter AI deals out of Trending Deals section — but only if enough remain
   const aiStoreSlugs = new Set(aiStores.map((s: any) => s.slug))
   const nonAiDealsSource = dealsOnly.length > 0 ? dealsOnly : allCoupons
-  const nonAiDeals = nonAiDealsSource
+  const filteredNonAi = nonAiDealsSource
     .filter((coupon) => coupon.store?.slug && !aiStoreSlugs.has(coupon.store.slug))
-    .slice(0, 12)
+  // If the AI filter would empty the list, skip filtering entirely
+  const nonAiDeals = (filteredNonAi.length >= 3 ? filteredNonAi : nonAiDealsSource).slice(0, 12)
 
   return (
     <IntroSplash>

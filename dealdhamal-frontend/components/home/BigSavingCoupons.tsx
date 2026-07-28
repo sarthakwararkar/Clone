@@ -258,7 +258,7 @@ export function BigSavingCoupons({ coupons }: BigSavingCouponsProps) {
       {/* Horizontal Scroll Area with 3D perspective. Removed scroll snapping to allow smooth mouse wheel scroll */}
       <div
         ref={scrollContainerRef}
-        className="flex gap-0 overflow-x-auto py-14 px-12 -mx-12 scrollbar-none perspective-container"
+        className="flex gap-0 overflow-x-auto py-14 px-12 -mx-12 scrollbar-none perspective-container min-h-[420px]"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {coupons.map((coupon) => (

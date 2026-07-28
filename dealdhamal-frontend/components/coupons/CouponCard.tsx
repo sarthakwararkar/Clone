@@ -27,7 +27,8 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
   const [modalOpen, setModalOpen] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [loginPromptOpen, setLoginPromptOpen] = useState(false)
-  const [affiliateImgError, setAffiliateImgError] = useState(false)
+  const [bannerError, setBannerError] = useState(false)
+  const [logoError, setLogoError] = useState(false)
   const { user } = useAuthStore()
   const { isSaved, save, unsave } = useSavedCoupons()
   const router = useRouter()
@@ -67,8 +68,8 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
 
     // Use real affiliate images only (banner or logo from affiliate network)
     // No Unsplash stock photo fallbacks — show initials if no real image exists
-    const hasAffiliateBanner = !affiliateImgError && !!coupon.store.banner_url
-    const hasAffiliateLogo = !affiliateImgError && !!coupon.store.logo_url
+    const hasAffiliateBanner = !bannerError && !!coupon.store.banner_url
+    const hasAffiliateLogo = !logoError && !!coupon.store.logo_url
     const affiliateDealImage = hasAffiliateBanner
       ? coupon.store.banner_url!
       : hasAffiliateLogo
@@ -90,13 +91,15 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
           {/* Top Header: Store Logo and Action Bar */}
           <div className="flex justify-between items-start z-10">
             <div className="w-11 h-11 rounded-2xl bg-white p-2 flex items-center justify-center shadow-md overflow-hidden flex-shrink-0 border border-white/5">
-              {coupon.store.logo_url ? (
+              {coupon.store.logo_url && !logoError ? (
                 <Image
                   src={coupon.store.logo_url}
                   alt={coupon.store.name}
                   width={44}
                   height={44}
                   className="object-contain"
+                  unoptimized
+                  onError={() => setLogoError(true)}
                 />
               ) : (
                 <span className="text-gray-800 font-extrabold text-sm">{initials}</span>
@@ -191,7 +194,8 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
                   className={hasAffiliateBanner ? 'object-cover' : 'object-contain p-1'}
                   priority={false}
                   sizes="(max-width: 640px) 96px, 112px"
-                  onError={() => setAffiliateImgError(true)}
+                  unoptimized
+                  onError={() => hasAffiliateBanner ? setBannerError(true) : setLogoError(true)}
                 />
               ) : (
                 /* Branded initials — no fake stock photos */
@@ -279,7 +283,7 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
 
           <div className="w-16 h-16 rounded-xl border border-gray-100 bg-white flex items-center justify-center overflow-hidden">
             {coupon.store.logo_url ? (
-              <Image src={coupon.store.logo_url} alt={coupon.store.name} width={64} height={64} className="object-contain" />
+              <Image src={coupon.store.logo_url} alt={coupon.store.name} width={64} height={64} className="object-contain" unoptimized onError={() => setLogoError(true)} />
             ) : (
               <div className="w-full h-full bg-primary-light flex items-center justify-center">
                 <span className="text-primary font-bold text-lg">{initials}</span>
@@ -323,7 +327,7 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
         {/* Logo */}
         <div className="w-12 h-12 rounded-lg border border-gray-100 bg-white flex items-center justify-center overflow-hidden flex-shrink-0">
           {coupon.store.logo_url ? (
-            <Image src={coupon.store.logo_url} alt={coupon.store.name} width={48} height={48} className="object-contain" />
+            <Image src={coupon.store.logo_url} alt={coupon.store.name} width={48} height={48} className="object-contain" unoptimized onError={() => setLogoError(true)} />
           ) : (
             <div className="w-full h-full bg-primary-light flex items-center justify-center">
               <span className="text-primary font-bold">{initials}</span>
@@ -427,7 +431,7 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-lg border border-gray-100 bg-white flex items-center justify-center overflow-hidden flex-shrink-0 p-1">
               {coupon.store.logo_url ? (
-                <Image src={coupon.store.logo_url} alt={coupon.store.name} width={40} height={40} className="object-contain" />
+                <Image src={coupon.store.logo_url} alt={coupon.store.name} width={40} height={40} className="object-contain" unoptimized onError={() => setLogoError(true)} />
               ) : (
                 <div className="w-full h-full bg-primary-light flex items-center justify-center">
                   <span className="text-primary font-bold text-sm">{initials}</span>

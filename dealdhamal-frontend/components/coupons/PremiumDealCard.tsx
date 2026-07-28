@@ -20,7 +20,8 @@ interface PremiumDealCardProps {
 export function PremiumDealCard({ coupon, isAi }: PremiumDealCardProps) {
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [loginPromptOpen, setLoginPromptOpen] = useState(false)
-  const [affiliateImgError, setAffiliateImgError] = useState(false)
+  const [bannerError, setBannerError] = useState(false)
+  const [logoError, setLogoError] = useState(false)
   const { user } = useAuthStore()
   const { isSaved, save, unsave } = useSavedCoupons()
   const router = useRouter()
@@ -31,8 +32,8 @@ export function PremiumDealCard({ coupon, isAi }: PremiumDealCardProps) {
   // 1. store.banner_url — real affiliate creative from Admitad/vCommission
   // 2. store.logo_url — real store brand logo from affiliate network
   // If neither exists, we show styled initials (no fake Unsplash stock photos)
-  const hasAffiliateBanner = !affiliateImgError && !!coupon.store.banner_url
-  const hasAffiliateLogo = !affiliateImgError && !!coupon.store.logo_url
+  const hasAffiliateBanner = !bannerError && !!coupon.store.banner_url
+  const hasAffiliateLogo = !logoError && !!coupon.store.logo_url
   const affiliateDealImage = hasAffiliateBanner
     ? coupon.store.banner_url!
     : hasAffiliateLogo
@@ -95,6 +96,8 @@ export function PremiumDealCard({ coupon, isAi }: PremiumDealCardProps) {
                 width={44}
                 height={44}
                 className="object-contain"
+                unoptimized
+                onError={() => setLogoError(true)}
               />
             ) : (
               <span className="text-gray-800 font-extrabold text-sm">{initials}</span>
@@ -152,7 +155,8 @@ export function PremiumDealCard({ coupon, isAi }: PremiumDealCardProps) {
                 className={hasAffiliateBanner ? 'object-cover' : 'object-contain p-1'}
                 priority={false}
                 sizes="(max-width: 640px) 96px, 112px"
-                onError={() => setAffiliateImgError(true)}
+                unoptimized
+                onError={() => hasAffiliateBanner ? setBannerError(true) : setLogoError(true)}
               />
             ) : (
               /* Branded initials — no fake stock photos */
