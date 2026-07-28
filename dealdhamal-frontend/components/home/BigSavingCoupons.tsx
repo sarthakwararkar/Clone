@@ -1,8 +1,9 @@
 'use client'
 import { useRef, useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Ticket } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Ticket, Calendar, Clock } from 'lucide-react'
 import type { Coupon } from '@/types'
 import { CouponModal } from '@/components/coupons/CouponModal'
+import { formatAddedDate, formatExpiryInfo } from '@/lib/utils'
 
 interface BigSavingCouponsProps {
   coupons: Coupon[]
@@ -26,6 +27,9 @@ function BigSavingCouponCard({ coupon, onSelect }: BigSavingCouponCardProps) {
   const [logoError, setLogoError] = useState(false)
   const [bannerError, setBannerError] = useState(false)
   const isFeatured = coupon.is_featured
+
+  const addedDateStr = formatAddedDate(coupon.created_at)
+  const expiryInfo = formatExpiryInfo(coupon.expires_at)
 
   const discountText = coupon.discount_value 
     ? (coupon.discount_value.includes('%') || coupon.discount_value.includes('$') || coupon.discount_value.includes('₹')
@@ -145,14 +149,26 @@ function BigSavingCouponCard({ coupon, onSelect }: BigSavingCouponCardProps) {
             {coupon.title}
           </h3>
           {/* Description */}
-          <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed mb-4 font-medium">
+          <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed mb-3 font-medium">
             {coupon.description || 'Verified promo code for extra savings at checkout.'}
           </p>
         </div>
 
-        {/* Action Area / Real Claims Data */}
+        {/* Action Area / Dates & Claims Data */}
         <div>
-          <div className="mb-4 flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider">
+          {/* Added & Expiry Dates Bar */}
+          <div className="mb-2 flex items-center justify-between text-[11px] font-medium text-gray-300 bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/10">
+            <span className="flex items-center gap-1 text-gray-300">
+              <Calendar className="w-3 h-3 text-teal-400" />
+              {addedDateStr}
+            </span>
+            <span className={`flex items-center gap-1 ${expiryInfo.isUrgent ? 'text-amber-300 font-bold' : 'text-cyan-300'}`}>
+              <Clock className="w-3 h-3 text-cyan-400" />
+              {expiryInfo.text}
+            </span>
+          </div>
+
+          <div className="mb-3 flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider">
             <span className="text-gray-400 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               VERIFIED

@@ -106,3 +106,104 @@ export function getOutboundLink(
   return '#'
 }
 
+export interface ExpiryInfo {
+  text: string
+  isExpired: boolean
+  isUrgent: boolean
+}
+
+export function formatAddedDate(dateStr?: string | null): string {
+  if (!dateStr) return 'Added Recently'
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return 'Added Recently'
+  
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  if (diffMs < 0) return 'Added Today'
+  
+  const diffSecs = Math.floor(diffMs / 1000)
+  const diffMins = Math.floor(diffSecs / 60)
+  const diffHours = Math.floor(diffMins / 60)
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffMins < 60) return `Added ${Math.max(1, diffMins)}m ago`
+  if (diffHours < 24) return `Added ${diffHours}h ago`
+  if (diffDays === 1) return 'Added Yesterday'
+  if (diffDays < 30) return `Added ${diffDays}d ago`
+  
+  return `Added ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+}
+
+export function formatExpiryInfo(dateStr?: string | null): ExpiryInfo {
+  if (!dateStr) {
+    return { text: 'Ongoing Offer', isExpired: false, isUrgent: false }
+  }
+
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) {
+    return { text: 'Ongoing Offer', isExpired: false, isUrgent: false }
+  }
+
+  const now = new Date()
+  const diffMs = date.getTime() - now.getTime()
+
+  if (diffMs <= 0) {
+    return { text: 'Expired', isExpired: true, isUrgent: false }
+  }
+
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffHours < 24) {
+    const hrs = Math.max(1, diffHours)
+    return { text: `Expires in ${hrs}h`, isExpired: false, isUrgent: true }
+  }
+
+  if (diffDays < 30) {
+    return { text: `Expires in ${diffDays}d`, isExpired: false, isUrgent: diffDays <= 3 }
+  }
+
+  return {
+    text: `Expires ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+    isExpired: false,
+    isUrgent: false,
+  }
+}
+
+export function filterValidCoupons<T extends { title?: string; expires_at?: string | null }>(
+  coupons: T[]
+): T[] {
+  if (!Array.isArray(coupons)) return []
+  const now = Date.now()
+
+  return coupons.filter((coupon) => {
+    if (!coupon || typeof coupon !== 'object') return false
+    const title = coupon.title?.trim()
+    if (!title || title.length < 3) return false
+
+    // Filter out obvious test/fake coupons
+    const lowerTitle = title.toLowerCase()
+    if (
+      lowerTitle === 'test' ||
+      lowerTitle === 'asdf' ||
+      lowerTitle === 'fake coupon' ||
+      lowerTitle === 'sample coupon' ||
+      lowerTitle === 'dummy deal' ||
+      lowerTitle === 'test coupon'
+    ) {
+      return false
+    }
+
+    // Strict expiry check: filter out expired deals
+    if (coupon.expires_at) {
+      const expTime = new Date(coupon.expires_at).getTime()
+      if (!isNaN(expTime) && expTime < now) {
+        return false
+      }
+    }
+
+    return true
+  })
+}
+
+

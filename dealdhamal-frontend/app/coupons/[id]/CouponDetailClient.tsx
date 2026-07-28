@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Bookmark, Clock, CheckCircle, ArrowLeft, Share2 } from 'lucide-react'
+import { Bookmark, Clock, CheckCircle, ArrowLeft, Share2, Calendar } from 'lucide-react'
 import type { Coupon } from '@/types'
 import { CouponCard } from '@/components/coupons/CouponCard'
 import { CouponModal } from '@/components/coupons/CouponModal'
@@ -11,7 +11,7 @@ import { ShareModal } from '@/components/coupons/ShareModal'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
-import { timeAgo, formatDiscount, truncate } from '@/lib/utils'
+import { timeAgo, formatDiscount, truncate, formatAddedDate, formatExpiryInfo } from '@/lib/utils'
 import { useSavedCoupons } from '@/hooks/useSavedCoupons'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
@@ -145,10 +145,15 @@ export function CouponDetailClient({ coupon, moreCoupons }: CouponDetailClientPr
           </div>
 
           {/* Details Row */}
-          <div className="flex flex-wrap gap-4 text-xs text-gray-500 pt-1">
-            <span className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" />
-              {coupon.expires_at ? `Expires ${timeAgo(coupon.expires_at)}` : 'No Expiry'}
+          <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 pt-1">
+            <span className="flex items-center gap-1 font-medium text-gray-700">
+              <Calendar className="w-3.5 h-3.5 text-gray-400" />
+              {formatAddedDate(coupon.created_at)}
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1 font-medium text-gray-700">
+              <Clock className="w-3.5 h-3.5 text-gray-400" />
+              {formatExpiryInfo(coupon.expires_at).text}
             </span>
             {coupon.used_count > 0 && (
               <>

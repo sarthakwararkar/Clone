@@ -12,6 +12,7 @@ import type {
   YoutubeCommentator,
   YoutubeCommentatorFormData,
 } from '@/types'
+import { filterValidCoupons } from '@/lib/utils'
 
 class ApiError extends Error {
   status: number
@@ -209,7 +210,11 @@ class ApiClient {
   }
 
   async getStore(slug: string): Promise<{ store: Store; coupons: Coupon[] }> {
-    return this.request<{ store: Store; coupons: Coupon[] }>(`/api/stores/${slug}`)
+    const res = await this.request<{ store: Store; coupons: Coupon[] }>(`/api/stores/${slug}`)
+    if (res && Array.isArray(res.coupons)) {
+      res.coupons = filterValidCoupons(res.coupons)
+    }
+    return res
   }
 
   async getCoupons(params: {
@@ -224,12 +229,20 @@ class ApiClient {
     limit?: number
   } = {}): Promise<PaginatedResponse<Coupon>> {
     const q = this.buildQuery(params as Record<string, string | number | boolean | undefined>)
-    return this.request<PaginatedResponse<Coupon>>(`/api/coupons${q}`)
+    const res = await this.request<PaginatedResponse<Coupon>>(`/api/coupons${q}`)
+    if (res && Array.isArray(res.data)) {
+      res.data = filterValidCoupons(res.data)
+    }
+    return res
   }
 
   async getExclusiveDeals(limit = 16): Promise<PaginatedResponse<Coupon>> {
     const q = this.buildQuery({ exclusive: true, sort: 'latest', diverse: true, limit })
-    return this.request<PaginatedResponse<Coupon>>(`/api/coupons${q}`)
+    const res = await this.request<PaginatedResponse<Coupon>>(`/api/coupons${q}`)
+    if (res && Array.isArray(res.data)) {
+      res.data = filterValidCoupons(res.data)
+    }
+    return res
   }
 
   async getCoupon(id: string): Promise<Coupon> {

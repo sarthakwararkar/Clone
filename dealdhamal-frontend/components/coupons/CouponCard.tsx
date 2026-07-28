@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
-import { Bookmark, Clock, CheckCircle, Share2, ExternalLink } from 'lucide-react'
+import { Bookmark, Clock, CheckCircle, Share2, ExternalLink, Calendar } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import type { Coupon } from '@/types'
@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/Button'
 import { CouponModal } from './CouponModal'
 import { ShareModal } from './ShareModal'
 import { LoginPromptModal } from '@/components/auth/LoginPromptModal'
-import { maskCode, timeAgo, formatNumber } from '@/lib/utils'
+import { maskCode, timeAgo, formatNumber, formatAddedDate, formatExpiryInfo } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useSavedCoupons } from '@/hooks/useSavedCoupons'
 import { cn } from '@/lib/utils'
@@ -35,6 +35,8 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
   const saved = isSaved(coupon.id)
 
   const initials = coupon.store.name.slice(0, 2).toUpperCase()
+  const addedDateStr = formatAddedDate(coupon.created_at)
+  const expiryInfo = formatExpiryInfo(coupon.expires_at)
 
   const handleSaveToggle = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -168,11 +170,16 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
               )}
             </div>
 
-            {/* Expiry & Used count */}
-            <div className="flex items-center gap-2 text-[10px] text-white/70 mt-2">
+            {/* Dates & Used count */}
+            <div className="flex items-center gap-2 text-[10px] text-white/80 mt-2 flex-wrap">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3 h-3 text-white/60" />
+                {addedDateStr}
+              </span>
+              <span>•</span>
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3 text-white/60" />
-                {coupon.expires_at ? `Expires ${timeAgo(coupon.expires_at)}` : 'No Expiry'}
+                {expiryInfo.text}
               </span>
               {coupon.used_count > 0 && (
                 <>
@@ -293,7 +300,21 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
 
           <p className="text-sm text-gray-500 mt-2 hover:text-primary">{coupon.store.name}</p>
           <p className="text-sm font-semibold text-gray-900 line-clamp-2 mt-1">{coupon.title}</p>
-          <div className="mt-1">
+
+          {/* Dates metadata for Grid */}
+          <div className="flex items-center justify-center gap-1.5 text-[11px] text-gray-500 mt-2 flex-wrap">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3 text-gray-400" />
+              {addedDateStr}
+            </span>
+            <span>•</span>
+            <span className={cn("flex items-center gap-1", expiryInfo.isUrgent ? "text-amber-600 font-semibold" : "text-gray-500")}>
+              <Clock className="w-3 h-3 text-gray-400" />
+              {expiryInfo.text}
+            </span>
+          </div>
+
+          <div className="mt-2">
             <Badge variant={coupon.coupon_type} />
           </div>
 
@@ -352,18 +373,16 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
             {coupon.is_verified && <Badge variant="verified" />}
           </div>
 
-          <div className="flex items-center gap-1 mt-1">
-            {coupon.expires_at ? (
-              <>
-                <Clock className="w-3 h-3 text-gray-400" />
-                <span className="text-xs text-gray-400">Expires {timeAgo(coupon.expires_at)}</span>
-              </>
-            ) : (
-              <>
-                <CheckCircle className="w-3 h-3 text-green-500" />
-                <span className="text-xs text-green-500">No Expiry</span>
-              </>
-            )}
+          <div className="flex items-center gap-2.5 mt-1.5 text-xs text-gray-500 flex-wrap">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 text-gray-400" />
+              {addedDateStr}
+            </span>
+            <span>•</span>
+            <span className={cn("flex items-center gap-1", expiryInfo.isUrgent ? "text-amber-600 font-semibold" : "text-gray-500")}>
+              <Clock className="w-3.5 h-3.5 text-gray-400" />
+              {expiryInfo.text}
+            </span>
           </div>
 
           {coupon.success_rate > 0 && (
@@ -488,33 +507,31 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
         </div>
 
         {/* Expiry & Success Rate info */}
-        {(coupon.expires_at || coupon.success_rate > 0) && (
-          <div className="flex items-center justify-between gap-4 pt-2.5 border-t border-gray-50 text-[11px]">
-            {coupon.expires_at ? (
-              <div className="flex items-center gap-1 text-gray-400">
-                <Clock className="w-3.5 h-3.5" />
-                <span>Expires {timeAgo(coupon.expires_at)}</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 text-green-600">
-                <CheckCircle className="w-3.5 h-3.5" />
-                <span className="font-semibold">No Expiry</span>
-              </div>
-            )}
-
-            {coupon.success_rate > 0 && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-gray-400">{coupon.success_rate}% success</span>
-                <div className="w-12 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-green-500"
-                    style={{ width: `${coupon.success_rate}%` }}
-                  />
-                </div>
-              </div>
-            )}
+        <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-gray-50 text-[11px] flex-wrap">
+          <div className="flex items-center gap-2 text-gray-500">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 text-gray-400" />
+              <span>{addedDateStr}</span>
+            </span>
+            <span>•</span>
+            <span className={cn("flex items-center gap-1", expiryInfo.isUrgent ? "text-amber-600 font-semibold" : "text-gray-500")}>
+              <Clock className="w-3.5 h-3.5 text-gray-400" />
+              <span>{expiryInfo.text}</span>
+            </span>
           </div>
-        )}
+
+          {coupon.success_rate > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400">{coupon.success_rate}% success</span>
+              <div className="w-12 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-green-500"
+                  style={{ width: `${coupon.success_rate}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* CTA Button at Bottom */}
         <div className="w-full pt-1" onClick={(e) => e.stopPropagation()}>

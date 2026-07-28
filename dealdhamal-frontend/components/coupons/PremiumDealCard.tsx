@@ -2,13 +2,13 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
-import { Bookmark, Share2, ExternalLink } from 'lucide-react'
+import { Bookmark, Share2, ExternalLink, Calendar, Clock } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { Coupon } from '@/types'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { getDealTheme } from '@/lib/dealImages'
 import { useSavedCoupons } from '@/hooks/useSavedCoupons'
-import { cn } from '@/lib/utils'
+import { cn, formatAddedDate, formatExpiryInfo } from '@/lib/utils'
 import { LoginPromptModal } from '@/components/auth/LoginPromptModal'
 import { ShareModal } from './ShareModal'
 
@@ -27,6 +27,9 @@ export function PremiumDealCard({ coupon, isAi }: PremiumDealCardProps) {
   const router = useRouter()
   
   const saved = isSaved(coupon.id)
+  
+  const addedDateStr = formatAddedDate(coupon.created_at)
+  const expiryInfo = formatExpiryInfo(coupon.expires_at)
   
   // Use real affiliate images only:
   // 1. store.banner_url — real affiliate creative from Admitad/vCommission
@@ -125,23 +128,38 @@ export function PremiumDealCard({ coupon, isAi }: PremiumDealCardProps) {
         </div>
 
         {/* Center: Offer & Cashback Rate */}
-        <div className="flex-1 flex flex-col justify-end pr-28 sm:pr-32 z-10 mt-2">
+        <div className="flex-1 flex flex-col justify-end pr-28 sm:pr-32 z-10 mt-1">
           <h3 className="text-lg sm:text-xl font-black tracking-tight text-white leading-tight drop-shadow-sm line-clamp-1">
             {coupon.discount_value || "HOT DEAL"}
           </h3>
-          <p className="text-xs sm:text-sm text-white/90 font-medium line-clamp-2 mt-1 mb-3 drop-shadow-sm leading-snug">
+          <p className="text-xs sm:text-sm text-white/90 font-medium line-clamp-2 mt-0.5 mb-1.5 drop-shadow-sm leading-snug">
             {coupon.title}
           </p>
 
-          {coupon.store.cashback_rate && (
-            <div className={cn(
-              "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold tracking-wide w-fit uppercase border border-white/15",
-              theme.badgeBg
+          {/* Dates & Badges */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold bg-black/30 text-white/90 border border-white/10">
+              <Calendar className="w-2.5 h-2.5 text-white/70" />
+              {addedDateStr}
+            </span>
+            <span className={cn(
+              "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold border border-white/10",
+              expiryInfo.isUrgent ? 'bg-amber-500/40 text-amber-200 font-bold' : 'bg-black/30 text-white/90'
             )}>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse" />
-              {coupon.store.cashback_rate}
-            </div>
-          )}
+              <Clock className="w-2.5 h-2.5 text-white/70" />
+              {expiryInfo.text}
+            </span>
+
+            {coupon.store.cashback_rate && (
+              <div className={cn(
+                "inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wide w-fit uppercase border border-white/15",
+                theme.badgeBg
+              )}>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1 animate-pulse" />
+                {coupon.store.cashback_rate}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Styled image on the right (Tilted Polaroid frame) */}

@@ -3,8 +3,8 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Coupon } from '@/types'
-import { formatDiscount } from '@/lib/utils'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { formatDiscount, formatAddedDate, formatExpiryInfo } from '@/lib/utils'
+import { ChevronLeft, ChevronRight, Calendar, Clock } from 'lucide-react'
 
 interface HeroBannerProps {
   coupons: Coupon[]
@@ -102,9 +102,19 @@ export function HeroBanner({ coupons }: HeroBannerProps) {
             <div className="relative z-10 h-full flex items-center justify-between px-4 sm:px-8 md:px-12">
               {/* Left: content */}
               <div className="flex-1 max-w-lg">
-                <span className="inline-block bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full mb-3">
-                  {s.store?.name}
-                </span>
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  <span className="inline-block bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                    {s.store?.name}
+                  </span>
+                  <span className="inline-flex items-center gap-1 bg-black/40 text-white/90 text-xs px-2.5 py-0.5 rounded-full border border-white/10">
+                    <Calendar className="w-3 h-3 text-white/70" />
+                    {formatAddedDate(s.created_at)}
+                  </span>
+                  <span className="inline-flex items-center gap-1 bg-black/40 text-white/90 text-xs px-2.5 py-0.5 rounded-full border border-white/10">
+                    <Clock className="w-3 h-3 text-white/70" />
+                    {formatExpiryInfo(s.expires_at).text}
+                  </span>
+                </div>
                 <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight line-clamp-2">
                   {s.title}
                 </h2>
