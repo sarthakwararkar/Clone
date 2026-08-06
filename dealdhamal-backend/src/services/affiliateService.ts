@@ -586,18 +586,26 @@ export class AffiliateService {
       const isNewlyCreatedStore = (store as any).isNew === true;
 
       for (const couponData of storeCoupons) {
-        // Content Quality Validation (Issue 5)
+        // ═══════════════════════════════════════════════════════════════════
+        // Content Quality Validation — STRICT: reject any garbage before DB
+        // ═══════════════════════════════════════════════════════════════════
         const lowerTitle = (couponData.title || '').toLowerCase().trim();
         const lowerDesc = (couponData.description || '').toLowerCase().trim();
 
         // 1. Reject if headline is generic CTA text
-        const ctaPatterns = ['get deal', 'get code', 'grab deal', 'click here', 'shop now', 'show code', 'reveal code', 'reveal', 'grab offer'];
+        const ctaPatterns = [
+          'get deal', 'get code', 'grab deal', 'click here', 'shop now',
+          'show code', 'reveal code', 'reveal', 'grab offer', 'view deal',
+          'see deal', 'activate offer', 'claim now', 'avail offer',
+          'buy now', 'sign up', 'signup', 'register now', 'join now',
+          'untitled offer', 'untitled',
+        ];
         if (ctaPatterns.includes(lowerTitle)) {
           continue;
         }
 
-        // 2. Reject if title is too short (less than 10 characters)
-        if (lowerTitle.length < 10) {
+        // 2. Reject if title is too short (less than 10 characters) or too long (scraped page content)
+        if (lowerTitle.length < 10 || lowerTitle.length > 200) {
           continue;
         }
 
@@ -607,6 +615,8 @@ export class AffiliateService {
           'visit the page to get this deal',
           'visit the page for details',
           'best features',
+          'lorem ipsum',
+          'placeholder',
         ];
         const isFillerDesc = fillerPatterns.some(pat => lowerDesc.includes(pat));
         if (isFillerDesc) {
@@ -615,6 +625,81 @@ export class AffiliateService {
 
         // 4. Reject if description is too short (less than 10 chars) unless it's identical to title and title is good
         if (lowerDesc.length < 10 && lowerDesc !== lowerTitle) {
+          continue;
+        }
+
+        // 5. Reject discount-only titles (e.g., "10% OFF", "Flat 50% Discount")
+        const discountOnlyRe = /^(flat\s+)?(up\s*to\s+)?(get\s+)?\d+%?\s*(off|discount|cashback|savings?|deal|offer)?\.?$/i;
+        if (discountOnlyRe.test(couponData.title.trim()) && couponData.title.trim().length < 25) {
+          continue;
+        }
+
+        // 6. Reject titles with encoding garbage
+        const encodingGarbageRe = /[\uFFFD]{2,}|ï¿½|\?{3,}|â€|Ã|&#\d{3,};/;
+        if (encodingGarbageRe.test(couponData.title)) {
+          continue;
+        }
+
+        // 7. Reject titles mentioning competitor coupon sites (scraped metadata)
+        const competitorSites = [
+          'coupondunia', 'grabon', 'cashkaro', 'desidime', 'couponraja',
+          'promocodeclub', 'couponzeta', 'freekaamaal', 'dealsshutter',
+          'couponmachine', 'pennyful',
+        ];
+        if (competitorSites.some(site => lowerTitle.includes(site))) {
+          continue;
+        }
+
+        // 8. Reject titles that are just the store name
+        const storeNameLower = (couponData.store_name || storeSlug).toLowerCase();
+        if (
+          lowerTitle === storeNameLower ||
+          lowerTitle === `${storeNameLower} offer` ||
+          lowerTitle === `${storeNameLower} deal` ||
+          lowerTitle === `${storeNameLower} coupon`
+        ) {
+          continue;
+        }
+
+        // 9. Reject coupons with broken/placeholder affiliate URLs
+        const affiliateUrlLower = (couponData.affiliate_url || '').toLowerCase().trim();
+        if (
+          !affiliateUrlLower.startsWith('http') ||
+          affiliateUrlLower.includes('example.com') ||
+          affiliateUrlLower.includes('_affiliate_url') ||
+          affiliateUrlLower.includes('your_affiliate') ||
+          affiliateUrlLower.includes('placeholder')
+        ) {
+          continue;
+        }
+
+        // 10. Sanitize fake coupon codes — set to null so they become "deal" type
+        if (couponData.code) {
+          const codeUpper = couponData.code.trim().toUpperCase();
+          const fakeCodes = [
+            'BEST OFFER', 'BEST-OFFER', 'NO-CODE', 'NOCODE', 'DEAL', 'OFFER',
+            'GETDEAL', 'GET DEAL', 'CLICK', 'LINK', 'NONE', 'N/A', 'APPLY',
+            'SHOW CODE', 'SHOWCODE', 'SPECIAL', 'COUPON', 'GETCODE', 'GET CODE',
+            'ACTIVATE', 'REDEEM', 'SAVE', 'DISCOUNT', 'BUY NOW', 'ORDER',
+            'CHECKOUT', 'GRAB', 'HURRY', 'LIMITED', 'EXCLUSIVE', 'VIEW DEAL',
+            'UNLOCK', 'REVEAL', 'SHOP NOW', 'CLAIM', 'AVAIL', 'PROMO', 'CODE',
+            'NOT REQUIRED', 'NOT NEEDED', 'AUTO APPLIED', 'ACTIVATED', 'SEE DEAL',
+          ];
+          if (fakeCodes.includes(codeUpper) || codeUpper.length < 3 || codeUpper.length > 30) {
+            couponData.code = null;
+            couponData.coupon_type = 'deal';
+          }
+        }
+
+        // 11. Reject test/dummy titles
+        if (
+          lowerTitle === 'test' ||
+          lowerTitle === 'asdf' ||
+          lowerTitle.includes('dummy') ||
+          lowerTitle.includes('fake coupon') ||
+          lowerTitle.includes('sample coupon') ||
+          lowerTitle.includes('test coupon')
+        ) {
           continue;
         }
 

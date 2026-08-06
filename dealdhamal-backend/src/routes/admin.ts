@@ -898,4 +898,161 @@ adminRouter.delete('/commentators/:id', async (c) => {
   return c.json({ success: true, message: 'Commentator deleted successfully' });
 });
 
+// ─── POST /api/admin/cleanup ────────────────────────────────────────────────
+// One-time (or periodic) database cleanup: soft-expire all fake/garbage coupons
+
+adminRouter.post('/cleanup', async (c) => {
+  const db = createDb(c.env.DATABASE_URL);
+  const cache = createCacheService(c.env.UPSTASH_REDIS_URL, c.env.UPSTASH_REDIS_TOKEN);
+
+  const pastDate = new Date(Date.now() - 1000); // 1 second in the past
+  const results: Record<string, number> = {};
+
+  // Helper: run an UPDATE and return affected row count
+  const expireMatching = async (label: string, whereClause: ReturnType<typeof sql>) => {
+    try {
+      const result = await db.execute(sql`
+        UPDATE coupons
+        SET expires_at = ${pastDate}, updated_at = NOW()
+        WHERE (expires_at > NOW() OR expires_at IS NULL)
+        AND ${whereClause}
+      `);
+      const count = result.rowCount ?? 0;
+      results[label] = count;
+      return count;
+    } catch (err) {
+      console.error(`[Cleanup] Error in "${label}":`, err);
+      results[label] = -1; // error marker
+      return 0;
+    }
+  };
+
+  // 1. Fake coupon codes (generic CTA text stored as "code")
+  await expireMatching('fake_codes', sql`
+    code IS NOT NULL AND UPPER(TRIM(code)) IN (
+      'DEAL', 'OFFER', 'GETDEAL', 'GET DEAL', 'CLICK', 'LINK', 'NONE', 'N/A',
+      'APPLY', 'SHOW CODE', 'SHOWCODE', 'SPECIAL', 'COUPON', 'BEST OFFER',
+      'NOCODE', 'NO-CODE', 'GETCODE', 'GET CODE', 'ACTIVATE', 'REDEEM', 'SAVE',
+      'DISCOUNT', 'BUY NOW', 'ORDER', 'CHECKOUT', 'GRAB', 'HURRY', 'LIMITED',
+      'EXCLUSIVE', 'VIEW DEAL', 'UNLOCK', 'REVEAL', 'SHOP NOW', 'CLAIM',
+      'AVAIL', 'PROMO', 'CODE', 'NOT REQUIRED', 'NOT NEEDED', 'AUTO APPLIED',
+      'ACTIVATED', 'SEE DEAL', 'GRAB DEAL', 'GRAB OFFER', 'REVEAL CODE',
+      'CLAIM NOW', 'AVAIL NOW', 'BUY-NOW', 'SHOP-NOW', 'VIEW OFFER',
+      'ACTIVATE OFFER', 'CLAIM DEAL', 'CLAIM OFFER', 'AVAIL OFFER',
+      'USE CODE', 'NO CODE NEEDED', 'NO COUPON', 'AUTO-APPLIED', 'BEST-OFFER'
+    )
+  `);
+
+  // 2. Garbage/placeholder titles
+  await expireMatching('garbage_titles', sql`
+    LOWER(TRIM(title)) IN (
+      'test', 'asdf', 'fake coupon', 'sample coupon', 'dummy deal',
+      'test coupon', 'untitled offer', 'untitled', 'get deal', 'get code',
+      'grab deal', 'click here', 'shop now', 'show code', 'reveal code',
+      'grab offer', 'view deal', 'see deal', 'activate offer', 'claim now',
+      'avail offer', 'buy now', 'sign up', 'signup', 'register now', 'join now'
+    )
+  `);
+
+  // 3. Titles too short (< 10 chars)
+  await expireMatching('short_titles', sql`LENGTH(TRIM(title)) < 10`);
+
+  // 4. Titles containing test/dummy/placeholder text
+  await expireMatching('dummy_titles', sql`
+    LOWER(title) LIKE '%dummy%'
+    OR LOWER(title) LIKE '%lorem ipsum%'
+    OR LOWER(title) LIKE '%placeholder%'
+    OR LOWER(title) LIKE '%fake coupon%'
+    OR LOWER(title) LIKE '%sample coupon%'
+    OR LOWER(title) LIKE '%test coupon%'
+  `);
+
+  // 5. Titles mentioning competitor sites (scraped metadata)
+  await expireMatching('competitor_mentions', sql`
+    LOWER(title) LIKE '%coupondunia%'
+    OR LOWER(title) LIKE '%grabon%'
+    OR LOWER(title) LIKE '%cashkaro%'
+    OR LOWER(title) LIKE '%desidime%'
+    OR LOWER(title) LIKE '%couponraja%'
+    OR LOWER(title) LIKE '%promocodeclub%'
+    OR LOWER(title) LIKE '%freekaamaal%'
+    OR LOWER(title) LIKE '%dealsshutter%'
+  `);
+
+  // 6. Broken/placeholder affiliate URLs
+  await expireMatching('broken_affiliate_urls', sql`
+    affiliate_url NOT LIKE 'http%'
+    OR affiliate_url LIKE '%example.com%'
+    OR affiliate_url LIKE '%_affiliate_url%'
+    OR affiliate_url LIKE '%your_affiliate%'
+    OR affiliate_url LIKE '%placeholder%'
+    OR affiliate_url LIKE '%coupondunia.in%'
+    OR affiliate_url LIKE '%grabon.in%'
+    OR affiliate_url LIKE '%desidime.com%'
+    OR affiliate_url LIKE '%couponraja%'
+  `);
+
+  // 7. Discount-only titles (e.g. "10% OFF", "Flat 50% Discount" — less than 20 chars)
+  await expireMatching('discount_only_titles', sql`
+    LENGTH(TRIM(title)) < 20
+    AND title ~ '^(Flat\s+)?(Up\s*to\s+)?(Get\s+)?[0-9]+%?\s*(OFF|Discount|Cashback|Savings?|Deal|Offer)?\.?$'
+  `);
+
+  // 8. Titles with encoding garbage
+  await expireMatching('encoding_garbage', sql`
+    title LIKE '%ï¿½%'
+    OR title LIKE '%???%'
+    OR title LIKE '%â€%'
+    OR title ~ '[\uFFFD]{2,}'
+  `);
+
+  // 9. Excessively long titles (> 200 chars — likely scraped page content)
+  await expireMatching('excessively_long_titles', sql`LENGTH(TRIM(title)) > 200`);
+
+  // Also: just NULL out the fake codes (don't expire the coupon, just clean the code field)
+  try {
+    const codeCleanResult = await db.execute(sql`
+      UPDATE coupons
+      SET code = NULL, coupon_type = 'deal', updated_at = NOW()
+      WHERE code IS NOT NULL
+      AND UPPER(TRIM(code)) IN (
+        'DEAL', 'OFFER', 'GETDEAL', 'GET DEAL', 'CLICK', 'LINK', 'NONE', 'N/A',
+        'APPLY', 'SHOW CODE', 'SHOWCODE', 'SPECIAL', 'COUPON', 'BEST OFFER',
+        'NOCODE', 'NO-CODE', 'GETCODE', 'GET CODE', 'ACTIVATE', 'REDEEM', 'SAVE',
+        'DISCOUNT', 'BUY NOW', 'ORDER', 'CHECKOUT', 'GRAB', 'HURRY', 'LIMITED',
+        'EXCLUSIVE', 'VIEW DEAL', 'UNLOCK', 'REVEAL', 'SHOP NOW', 'CLAIM',
+        'AVAIL', 'PROMO', 'CODE', 'NOT REQUIRED', 'NOT NEEDED', 'AUTO APPLIED',
+        'ACTIVATED', 'SEE DEAL'
+      )
+      AND (expires_at > NOW() OR expires_at IS NULL)
+    `);
+    results['codes_cleaned_to_null'] = codeCleanResult.rowCount ?? 0;
+  } catch (err) {
+    console.error('[Cleanup] Error cleaning fake codes:', err);
+    results['codes_cleaned_to_null'] = -1;
+  }
+
+  // Calculate total affected
+  const totalExpired = Object.values(results).filter(v => v > 0).reduce((sum, v) => sum + v, 0);
+
+  // Invalidate all caches after cleanup
+  await Promise.all([
+    cache.delPattern('coupons:'),
+    cache.delPattern('stores:'),
+    cache.delPattern('store:'),
+    cache.delPattern('coupon:'),
+    cache.delPattern('search:'),
+  ]);
+
+  console.log(`[Cleanup] Complete. Total rows affected: ${totalExpired}`, results);
+
+  return c.json({
+    success: true,
+    data: {
+      total_affected: totalExpired,
+      breakdown: results,
+    },
+  });
+});
+
 export { adminRouter };

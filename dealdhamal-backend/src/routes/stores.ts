@@ -187,7 +187,7 @@ storesRouter.get('/:slug', async (c) => {
     deal_count: storeRow.deal_count as number,
   };
 
-  // Get top 10 active coupons for this store
+  // Get top 10 active coupons for this store (with content quality filters)
   const couponsResult = await db.execute(sql`
     SELECT
       id, store_id, title, description, code, coupon_type,
@@ -196,6 +196,14 @@ storesRouter.get('/:slug', async (c) => {
     FROM coupons
     WHERE store_id = ${store.id}
       AND (expires_at > NOW() OR expires_at IS NULL)
+      AND LENGTH(TRIM(title)) >= 10
+      AND affiliate_url LIKE 'http%'
+      AND LOWER(title) NOT IN ('test', 'asdf', 'untitled offer', 'untitled', 'get deal', 'grab deal', 'shop now', 'buy now', 'click here')
+      AND LOWER(title) NOT LIKE '%dummy%'
+      AND LOWER(title) NOT LIKE '%placeholder%'
+      AND LOWER(title) NOT LIKE '%coupondunia%'
+      AND LOWER(title) NOT LIKE '%grabon%'
+      AND LOWER(title) NOT LIKE '%cashkaro%'
     ORDER BY is_featured DESC, used_count DESC
     LIMIT 10
   `);

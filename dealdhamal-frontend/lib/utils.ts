@@ -194,15 +194,23 @@ export function sanitizeCouponData<T extends {
     coupon.title = sanitizeTitleText(coupon.title)
   }
 
-  // Handle fake placeholder codes
+  // Handle fake placeholder codes — comprehensive list
   if (coupon.code) {
     const codeUpper = coupon.code.trim().toUpperCase()
     const fakeCodeWords = [
       'BEST OFFER', 'BEST-OFFER', 'NO-CODE', 'NOCODE', 'DEAL', 'OFFER',
       'GETDEAL', 'GET DEAL', 'CLICK', 'LINK', 'NONE', 'N/A', 'APPLY',
-      'SHOW CODE', 'SHOWCODE', 'SPECIAL', 'COUPON'
+      'SHOW CODE', 'SHOWCODE', 'SPECIAL', 'COUPON', 'GETCODE', 'GET CODE',
+      'ACTIVATE', 'REDEEM', 'SAVE', 'DISCOUNT', 'BUY NOW', 'BUY-NOW',
+      'ORDER', 'CHECKOUT', 'GRAB', 'HURRY', 'LIMITED', 'EXCLUSIVE',
+      'ACTIVATE OFFER', 'VIEW DEAL', 'UNLOCK', 'REVEAL', 'REVEAL CODE',
+      'GRAB DEAL', 'GRAB OFFER', 'SHOP NOW', 'SHOP-NOW', 'VIEW OFFER',
+      'CLAIM', 'CLAIM NOW', 'CLAIM DEAL', 'CLAIM OFFER', 'AVAIL',
+      'AVAIL NOW', 'AVAIL OFFER', 'USE CODE', 'PROMO', 'CODE',
+      'NOT REQUIRED', 'NOT NEEDED', 'NO CODE NEEDED', 'NO COUPON',
+      'AUTO APPLIED', 'AUTO-APPLIED', 'ACTIVATED', 'SEE DEAL',
     ]
-    if (fakeCodeWords.includes(codeUpper)) {
+    if (fakeCodeWords.includes(codeUpper) || codeUpper.length < 3 || codeUpper.length > 30) {
       coupon.code = null
     }
   }
@@ -219,6 +227,9 @@ export function sanitizeCouponData<T extends {
       lowerUrl.includes('_affiliate_url') ||
       lowerUrl.includes('your_affiliate_link') ||
       lowerUrl.includes('example.com') ||
+      lowerUrl.includes('placeholder') ||
+      lowerUrl.includes('couponraja') ||
+      lowerUrl.includes('promocodeclub') ||
       !lowerUrl.startsWith('http')
     ) {
       // Fallback to store website or store affiliate URL if available
@@ -229,8 +240,18 @@ export function sanitizeCouponData<T extends {
   return coupon
 }
 
+// Regex patterns for fake coupon detection
+const DISCOUNT_ONLY_TITLE_RE = /^(flat\s+)?(up\s*to\s+)?(get\s+)?\d+%?\s*(off|discount|cashback|savings?|deal|offer)?\.?$/i
+const ENCODING_GARBAGE_RE = /[\uFFFD]{2,}|ï¿½|\?{3,}|â€|Ã|&#\d{3,};/
+const COMPETITOR_SITES = [
+  'coupondunia', 'grabon', 'cashkaro', 'desidime', 'couponraja',
+  'promocodeclub', 'couponzeta', 'freekaamaal', 'dealsshutter',
+  'couponmachine', 'pennyful', 'ndtv gadgets', 'offers.com',
+]
+
 export function filterValidCoupons<T extends {
   title?: string
+  description?: string | null
   code?: string | null
   expires_at?: string | null
   affiliate_url?: string | null
@@ -243,7 +264,10 @@ export function filterValidCoupons<T extends {
   const brandKeywords = [
     'campus', 'meesho', 'ajio', 'myntra', 'swiggy', 'zomato',
     'amazon', 'flipkart', 'nykaa', 'blinkit', 'zepto', 'croma',
-    'boat', 'puma', 'nike', 'adidas'
+    'boat', 'puma', 'nike', 'adidas', 'mamaearth', 'lenskart',
+    'tata', 'jio', 'paytm', 'phonepe', 'bigbasket', 'dunzo',
+    'uber', 'ola', 'makemytrip', 'goibibo', 'yatra', 'cleartrip',
+    'bewakoof', 'souled', 'snitch', 'clovia', 'nnnow', 'h&m',
   ]
 
   return coupons
@@ -255,6 +279,8 @@ export function filterValidCoupons<T extends {
       if (!title || title.length < 5) return false
 
       const lowerTitle = title.toLowerCase()
+
+      // 1. Reject known test/fake/placeholder titles
       if (
         lowerTitle === 'test' ||
         lowerTitle === 'asdf' ||
@@ -262,12 +288,48 @@ export function filterValidCoupons<T extends {
         lowerTitle === 'sample coupon' ||
         lowerTitle === 'dummy deal' ||
         lowerTitle === 'test coupon' ||
-        lowerTitle.includes('dummy')
+        lowerTitle === 'untitled offer' ||
+        lowerTitle === 'untitled' ||
+        lowerTitle.includes('dummy') ||
+        lowerTitle.includes('lorem ipsum') ||
+        lowerTitle.includes('placeholder')
       ) {
         return false
       }
 
-      // Strict Expiry check: filter out expired deals
+      // 2. Reject discount-only titles (e.g. "10% OFF", "Flat 50% Discount")
+      if (DISCOUNT_ONLY_TITLE_RE.test(title) && title.length < 25) {
+        return false
+      }
+
+      // 3. Reject titles with encoding garbage
+      if (ENCODING_GARBAGE_RE.test(title)) {
+        return false
+      }
+
+      // 4. Reject titles mentioning competitor coupon sites (scraped metadata)
+      if (COMPETITOR_SITES.some((site) => lowerTitle.includes(site))) {
+        return false
+      }
+
+      // 5. Reject generic CTA-only titles
+      const ctaTitles = [
+        'get deal', 'get code', 'grab deal', 'click here', 'shop now',
+        'show code', 'reveal code', 'grab offer', 'view deal', 'see deal',
+        'activate offer', 'claim now', 'avail offer', 'buy now',
+        'sign up', 'signup', 'register now', 'join now',
+      ]
+      if (ctaTitles.includes(lowerTitle)) {
+        return false
+      }
+
+      // 6. Reject titles that are just a store name repeated
+      const storeName = (coupon.store?.name || '').toLowerCase().trim()
+      if (storeName && (lowerTitle === storeName || lowerTitle === `${storeName} offer` || lowerTitle === `${storeName} deal`)) {
+        return false
+      }
+
+      // 7. Strict Expiry check: filter out expired deals
       if (coupon.expires_at) {
         const expTime = new Date(coupon.expires_at).getTime()
         if (!isNaN(expTime) && expTime < now) {
@@ -275,10 +337,18 @@ export function filterValidCoupons<T extends {
         }
       }
 
-      // Code & Store Mismatch Check
+      // 8. Reject coupons with broken/missing affiliate URLs
+      if (coupon.affiliate_url) {
+        const url = coupon.affiliate_url.trim().toLowerCase()
+        if (url === '#' || url === '' || (!url.startsWith('http://') && !url.startsWith('https://'))) {
+          return false
+        }
+      }
+
+      // 9. Code & Store Mismatch Check (expanded brand list)
       if (coupon.code) {
         const codeUpper = coupon.code.trim().toUpperCase()
-        const storeNameLower = (coupon.store?.name || '').toLowerCase()
+        const storeNameLower = storeName
         const storeSlugLower = (coupon.store?.slug || '').toLowerCase()
         const codeLower = codeUpper.toLowerCase()
 
@@ -290,6 +360,11 @@ export function filterValidCoupons<T extends {
             }
           }
         }
+      }
+
+      // 10. Reject excessively long titles (likely scraped page content)
+      if (title.length > 200) {
+        return false
       }
 
       return true

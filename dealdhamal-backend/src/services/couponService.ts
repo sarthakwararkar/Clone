@@ -117,6 +117,17 @@ export class CouponService {
     // Build where conditions
     const whereParts: ReturnType<typeof sql>[] = [
       sql`(c.expires_at > NOW() OR c.expires_at IS NULL)`,
+      // Content quality filters — reject garbage at SQL level
+      sql`LENGTH(TRIM(c.title)) >= 10`,
+      sql`c.affiliate_url LIKE 'http%'`,
+      sql`LOWER(c.title) NOT IN ('test', 'asdf', 'untitled offer', 'untitled', 'get deal', 'grab deal', 'shop now', 'buy now', 'click here')`,
+      sql`LOWER(c.title) NOT LIKE '%dummy%'`,
+      sql`LOWER(c.title) NOT LIKE '%lorem ipsum%'`,
+      sql`LOWER(c.title) NOT LIKE '%placeholder%'`,
+      sql`LOWER(c.title) NOT LIKE '%coupondunia%'`,
+      sql`LOWER(c.title) NOT LIKE '%grabon%'`,
+      sql`LOWER(c.title) NOT LIKE '%cashkaro%'`,
+      sql`LOWER(c.title) NOT LIKE '%desidime%'`,
     ];
 
     if (storeSlug) {
