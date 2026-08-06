@@ -3,6 +3,7 @@ import { api } from '@/lib/api'
 import { HeroBanner } from '@/components/home/HeroBanner'
 import { BigSavingCoupons } from '@/components/home/BigSavingCoupons'
 import { FeaturedStores } from '@/components/home/FeaturedStores'
+import { PopularCategories } from '@/components/home/PopularCategories'
 import { TrendingCoupons } from '@/components/home/TrendingCoupons'
 import { AiDealsSection } from '@/components/home/AiDealsSection'
 import { ExclusiveDealsSection } from '@/components/home/ExclusiveDealsSection'
@@ -75,6 +76,11 @@ export default async function Homepage() {
         {/* Top Scrollable Billboard / Hero Banner — ALWAYS VISIBLE */}
         {heroBannerItems.length > 0 && (
           <HeroBanner coupons={heroBannerItems.slice(0, 5)} />
+        )}
+
+        {/* Popular Categories — quick browsing entry point */}
+        {categories.length > 0 && (
+          <PopularCategories categories={categories} />
         )}
 
         {/* Big Saving Coupon Codes Section — ALWAYS VISIBLE */}
