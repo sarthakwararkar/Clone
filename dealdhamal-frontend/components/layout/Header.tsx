@@ -3,22 +3,22 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { 
-  Menu, 
-  X, 
-  User, 
-  LogOut, 
-  ShieldCheck, 
-  Bookmark, 
-  Bell, 
+import {
+  Menu,
+  X,
+  User,
+  LogOut,
+  ShieldCheck,
+  Bookmark,
+  Bell,
   ChevronDown,
-  Shirt, 
-  Laptop, 
-  Utensils, 
-  Sparkles, 
-  Plane, 
-  ShoppingBasket, 
-  HeartPulse, 
+  Shirt,
+  Laptop,
+  Utensils,
+  Sparkles,
+  Plane,
+  ShoppingBasket,
+  HeartPulse,
   Home as HomeIcon
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -57,9 +57,9 @@ export function Header() {
   const [bestCoupons, setBestCoupons] = useState<Coupon[]>([])
 
   useEffect(() => {
-    api.getCategories().then(setCategories).catch(() => {})
-    api.getStores({ limit: 12 }).then(res => setStores(res.data)).catch(() => {})
-    api.getCoupons({ featured: true, limit: 3 }).then(res => setBestCoupons(res.data)).catch(() => {})
+    api.getCategories().then(setCategories).catch(() => { })
+    api.getStores({ limit: 12 }).then(res => setStores(res.data)).catch(() => { })
+    api.getCoupons({ featured: true, limit: 3 }).then(res => setBestCoupons(res.data)).catch(() => { })
   }, [])
 
   return (
@@ -197,9 +197,8 @@ export function Header() {
             >
               <Link
                 href="/categories"
-                className={`flex items-center gap-1 h-full px-4 text-sm font-semibold hover:bg-neutral-800 transition-colors border-b-2 ${
-                  activeDropdown === 'categories' ? 'border-primary text-white bg-neutral-800' : 'border-transparent text-gray-300'
-                }`}
+                className={`flex items-center gap-1 h-full px-4 text-sm font-semibold hover:bg-neutral-800 transition-colors border-b-2 ${activeDropdown === 'categories' ? 'border-primary text-white bg-neutral-800' : 'border-transparent text-gray-300'
+                  }`}
               >
                 Categories
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeDropdown === 'categories' ? 'rotate-180' : ''}`} />
@@ -233,7 +232,7 @@ export function Header() {
                       )
                     })}
                   </div>
-                  
+
                   <div className="mt-3 pt-3 border-t border-gray-100 flex justify-end">
                     <Link
                       href="/categories"
@@ -255,9 +254,8 @@ export function Header() {
             >
               <Link
                 href="/stores"
-                className={`flex items-center gap-1 h-full px-4 text-sm font-semibold hover:bg-neutral-800 transition-colors border-b-2 ${
-                  activeDropdown === 'stores' ? 'border-primary text-white bg-neutral-800' : 'border-transparent text-gray-300'
-                }`}
+                className={`flex items-center gap-1 h-full px-4 text-sm font-semibold hover:bg-neutral-800 transition-colors border-b-2 ${activeDropdown === 'stores' ? 'border-primary text-white bg-neutral-800' : 'border-transparent text-gray-300'
+                  }`}
               >
                 Top Stores
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeDropdown === 'stores' ? 'rotate-180' : ''}`} />
@@ -294,7 +292,7 @@ export function Header() {
                             </span>
                           )}
                         </div>
-                        
+
                         <div className="min-w-0 flex-1">
                           <h4 className="text-xs font-bold text-gray-900 truncate group-hover:text-primary transition-colors">
                             {store.name}
@@ -309,7 +307,7 @@ export function Header() {
                       </Link>
                     ))}
                   </div>
-                  
+
                   <div className="mt-3 pt-3 border-t border-gray-100 flex justify-end">
                     <Link
                       href="/stores"
@@ -331,9 +329,8 @@ export function Header() {
             >
               <Link
                 href="/best-offers"
-                className={`flex items-center gap-1 h-full px-4 text-sm font-semibold hover:bg-neutral-800 transition-colors border-b-2 ${
-                  activeDropdown === 'offers' ? 'border-primary text-white bg-neutral-800' : 'border-transparent text-gray-300'
-                }`}
+                className={`flex items-center gap-1 h-full px-4 text-sm font-semibold hover:bg-neutral-800 transition-colors border-b-2 ${activeDropdown === 'offers' ? 'border-primary text-white bg-neutral-800' : 'border-transparent text-gray-300'
+                  }`}
               >
                 Best Offers
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeDropdown === 'offers' ? 'rotate-180' : ''}`} />
@@ -370,7 +367,7 @@ export function Header() {
                             </span>
                           )}
                         </div>
-                        
+
                         <div className="min-w-0 flex-1">
                           <h5 className="text-[10px] text-gray-400 font-bold truncate">
                             {coupon.store?.name}
@@ -385,7 +382,7 @@ export function Header() {
                       </Link>
                     ))}
                   </div>
-                  
+
                   <div className="mt-3 pt-3 border-t border-gray-100 flex justify-end">
                     <Link
                       href="/best-offers"

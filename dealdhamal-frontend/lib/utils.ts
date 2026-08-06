@@ -116,11 +116,11 @@ export function formatAddedDate(dateStr?: string | null): string {
   if (!dateStr) return 'Added Recently'
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return 'Added Recently'
-  
+
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
   if (diffMs < 0) return 'Added Today'
-  
+
   const diffSecs = Math.floor(diffMs / 1000)
   const diffMins = Math.floor(diffSecs / 60)
   const diffHours = Math.floor(diffMins / 60)
@@ -130,7 +130,7 @@ export function formatAddedDate(dateStr?: string | null): string {
   if (diffHours < 24) return `Added ${diffHours}h ago`
   if (diffDays === 1) return 'Added Yesterday'
   if (diffDays < 30) return `Added ${diffDays}d ago`
-  
+
   return `Added ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
 }
 
@@ -180,7 +180,7 @@ export function sanitizeTitleText(title: string | null | undefined): string {
     .trim()
 }
 
-export function sanitizeCouponData<T extends { 
+export function sanitizeCouponData<T extends {
   title?: string
   code?: string | null
   expires_at?: string | null
@@ -229,20 +229,20 @@ export function sanitizeCouponData<T extends {
   return coupon
 }
 
-export function filterValidCoupons<T extends { 
+export function filterValidCoupons<T extends {
   title?: string
   code?: string | null
   expires_at?: string | null
   affiliate_url?: string | null
-  store?: { name?: string; slug?: string } | null 
+  store?: { name?: string; slug?: string } | null
 }>(coupons: T[]): T[] {
   if (!Array.isArray(coupons)) return []
   const now = Date.now()
 
   // Major brand codes to prevent store mismatch bugs (e.g. CAMPUS10 or MEESHO30 on Nykaa)
   const brandKeywords = [
-    'campus', 'meesho', 'ajio', 'myntra', 'swiggy', 'zomato', 
-    'amazon', 'flipkart', 'nykaa', 'blinkit', 'zepto', 'croma', 
+    'campus', 'meesho', 'ajio', 'myntra', 'swiggy', 'zomato',
+    'amazon', 'flipkart', 'nykaa', 'blinkit', 'zepto', 'croma',
     'boat', 'puma', 'nike', 'adidas'
   ]
 

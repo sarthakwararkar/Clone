@@ -77,7 +77,7 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
       : hasAffiliateLogo
         ? coupon.store.logo_url!
         : null
-    
+
     return (
       <>
         <div
@@ -156,7 +156,7 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
                   {coupon.store.cashback_rate}
                 </div>
               )}
-              
+
               {coupon.is_verified && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold tracking-wide uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/20">
                   Verified
