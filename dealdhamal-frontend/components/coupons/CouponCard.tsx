@@ -50,9 +50,32 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
     else save(coupon.id, coupon.store.name)
   }
 
-  const handleReveal = (e: React.MouseEvent) => {
+  const handleReveal = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    
+    // 1. Copy code immediately
+    if (coupon.coupon_type === 'code' && coupon.code) {
+      navigator.clipboard.writeText(coupon.code)
+      toast.success('Code copied to clipboard!')
+      setCopied(true)
+      setTimeout(() => setCopied(false), 3000)
+    }
+    
+    // 2. Open popup synchronously to bypass popup blocker
+    const newWindow = window.open('about:blank', '_blank')
+    
+    // 3. Track click and get final redirect URL
+    try {
+      const { api } = await import('@/lib/api')
+      const res = await api.clickCoupon(coupon.id)
+      const redirectUrl = res.redirect_url || coupon.affiliate_url || `/stores/${coupon.store.slug}`
+      if (newWindow) newWindow.location.href = redirectUrl
+      else window.location.href = redirectUrl
+    } catch (err) {
+      if (newWindow) newWindow.location.href = coupon.affiliate_url || `/stores/${coupon.store.slug}`
+    }
+    
     setModalOpen(true)
   }
 
@@ -175,6 +198,11 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
                   Exclusive
                 </span>
               )}
+              {expiryInfo.isUrgent && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold tracking-wide uppercase bg-red-500/90 text-white shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse">
+                  ⏱️ Ends Soon
+                </span>
+              )}
             </div>
 
             {/* Dates & Used count */}
@@ -227,11 +255,14 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
             {coupon.coupon_type === 'code' ? (
               <button
                 onClick={handleReveal}
-                className="border border-dashed border-white/40 hover:border-white/60 bg-white/10 hover:bg-white/20 text-white rounded-full px-3.5 py-1.5 sm:px-4 sm:py-2 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 text-xs font-bold font-mono tracking-wider backdrop-blur-sm shadow-md"
+                className={cn(
+                  "border-2 border-dashed rounded-full px-3.5 py-1.5 sm:px-4 sm:py-2 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 text-xs font-bold font-mono tracking-wider backdrop-blur-sm shadow-md",
+                  copied ? "border-green-400 bg-green-500/20 text-green-100" : "border-white/40 hover:border-white/60 bg-white/10 hover:bg-white/20 text-white"
+                )}
               >
-                {coupon.code ? maskCode(coupon.code) : '••••••'}
-                <span className="ml-1.5 text-[10px] text-white/80 bg-white/10 px-1.5 py-0.5 rounded-md font-sans font-bold">
-                  REVEAL
+                {copied ? 'COPIED!' : (coupon.code ? maskCode(coupon.code) : '••••••')}
+                <span className="ml-1.5 text-[10px] text-white/80 bg-white/10 px-1.5 py-0.5 rounded-md font-sans font-bold flex items-center">
+                  {copied ? <Check className="w-3 h-3" /> : 'COPY'}
                 </span>
               </button>
             ) : (
@@ -321,19 +352,38 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
             </span>
           </div>
 
-          <div className="mt-2">
+          <div className="mt-2 flex flex-wrap gap-1.5 items-center">
             <Badge variant={coupon.coupon_type} />
+            {expiryInfo.isUrgent && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide uppercase bg-red-50 text-red-600 border border-red-200 shadow-sm animate-pulse">
+                ⏱️ Ends Soon
+              </span>
+            )}
           </div>
 
           <div className="w-full mt-3" onClick={(e) => e.stopPropagation()}>
-            <Button
-              variant={coupon.coupon_type === 'code' ? 'secondary' : 'primary'}
-              size="sm"
-              className="w-full"
-              onClick={handleReveal}
-            >
-              {coupon.coupon_type === 'code' ? 'Reveal Code' : 'Get Deal'}
-            </Button>
+            {coupon.coupon_type === 'code' ? (
+              <div
+                className={cn(
+                  "border-2 border-dashed rounded-lg px-3 py-1.5 cursor-pointer transition-colors text-center w-full",
+                  copied ? "border-green-500 bg-green-50" : "border-primary hover:bg-primary-light"
+                )}
+                onClick={handleReveal}
+              >
+                <p className={cn("font-mono text-sm font-semibold", copied ? "text-green-600" : "text-primary")}>
+                  {copied ? 'COPIED!' : 'Show Code & Copy'}
+                </p>
+              </div>
+            ) : (
+              <Button
+                variant="primary"
+                size="sm"
+                className="w-full"
+                onClick={handleReveal}
+              >
+                Get Deal <ExternalLink className="w-3 h-3 ml-1.5 inline-block" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -418,13 +468,18 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
 
           {coupon.coupon_type === 'code' ? (
             <div
-              className="border-2 border-dashed border-primary rounded-lg px-3 py-2 cursor-pointer hover:bg-primary-light transition-colors text-center"
+              className={cn(
+                "border-2 border-dashed rounded-lg px-3 py-2 cursor-pointer transition-colors text-center w-full",
+                copied ? "border-green-500 bg-green-50" : "border-primary hover:bg-primary-light"
+              )}
               onClick={handleReveal}
             >
-              <p className="font-mono text-sm font-semibold text-primary">
-                {coupon.code ? maskCode(coupon.code) : '••••••'}
+              <p className={cn("font-mono text-sm font-semibold", copied ? "text-green-600" : "text-primary")}>
+                {copied ? 'COPIED!' : (coupon.code ? maskCode(coupon.code) : '••••••')}
               </p>
-              <p className="text-xs text-gray-400">Tap to reveal</p>
+              <p className={cn("text-xs flex items-center justify-center gap-1 mt-0.5", copied ? "text-green-500" : "text-gray-400")}>
+                {copied ? <><Check className="w-3 h-3"/> Copied</> : 'Show Code & Copy'}
+              </p>
             </div>
           ) : (
             <Button variant="primary" size="sm" onClick={handleReveal}>
