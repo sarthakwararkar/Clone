@@ -148,6 +148,9 @@ alertsRouter.get('/', async (c) => {
 
 alertsRouter.delete('/:id', async (c) => {
   const alertId = c.req.param('id');
+  if (!z.string().uuid().safeParse(alertId).success) {
+    return c.json({ success: false, error: 'Invalid ID format' } as ApiResponse, 400);
+  }
   const authUser = c.get('user')!;
   const db = createDb(c.env.DATABASE_URL);
 

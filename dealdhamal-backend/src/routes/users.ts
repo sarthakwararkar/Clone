@@ -319,6 +319,9 @@ usersRouter.get('/saved', async (c) => {
 usersRouter.post('/saved/:couponId', async (c) => {
   const authUser = c.get('user')!;
   const couponId = c.req.param('couponId');
+  if (!z.string().uuid().safeParse(couponId).success) {
+    return c.json({ success: false, error: 'Invalid ID format' } as ApiResponse, 400);
+  }
   const db = createDb(c.env.DATABASE_URL);
 
   // Get user's internal ID
@@ -357,6 +360,9 @@ usersRouter.post('/saved/:couponId', async (c) => {
 usersRouter.delete('/saved/:couponId', async (c) => {
   const authUser = c.get('user')!;
   const couponId = c.req.param('couponId');
+  if (!z.string().uuid().safeParse(couponId).success) {
+    return c.json({ success: false, error: 'Invalid ID format' } as ApiResponse, 400);
+  }
   const db = createDb(c.env.DATABASE_URL);
 
   // Get user's internal ID

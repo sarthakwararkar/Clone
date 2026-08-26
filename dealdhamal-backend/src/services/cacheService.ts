@@ -83,7 +83,7 @@ export class CacheService {
         // Delete in batches of 100
         for (let i = 0; i < keysToDelete.length; i += 100) {
           const batch = keysToDelete.slice(i, i + 100);
-          await Promise.all(batch.map((key) => this.redis!.del(key)));
+          await this.redis.del(...batch);
         }
       }
     } catch (error) {

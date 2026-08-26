@@ -179,6 +179,9 @@ adminRouter.post('/coupons', async (c) => {
 
 adminRouter.patch('/coupons/:id', async (c) => {
   const id = c.req.param('id');
+  if (!z.string().uuid().safeParse(id).success) {
+    return c.json({ success: false, error: 'Invalid ID format' } as ApiResponse, 400);
+  }
   const body = await c.req.json();
   const parsed = updateCouponSchema.safeParse(body);
 
@@ -215,6 +218,9 @@ adminRouter.patch('/coupons/:id', async (c) => {
 
 adminRouter.delete('/coupons/:id', async (c) => {
   const id = c.req.param('id');
+  if (!z.string().uuid().safeParse(id).success) {
+    return c.json({ success: false, error: 'Invalid ID format' } as ApiResponse, 400);
+  }
   const db = createDb(c.env.DATABASE_URL);
   const couponService = createCouponService(db);
   const cache = createCacheService(c.env.UPSTASH_REDIS_URL, c.env.UPSTASH_REDIS_TOKEN);
@@ -346,6 +352,9 @@ adminRouter.post('/stores', async (c) => {
 
 adminRouter.patch('/stores/:id', async (c) => {
   const id = c.req.param('id');
+  if (!z.string().uuid().safeParse(id).success) {
+    return c.json({ success: false, error: 'Invalid ID format' } as ApiResponse, 400);
+  }
   const contentType = c.req.header('content-type') || '';
   const db = createDb(c.env.DATABASE_URL);
   const cache = createCacheService(c.env.UPSTASH_REDIS_URL, c.env.UPSTASH_REDIS_TOKEN);
@@ -846,6 +855,9 @@ adminRouter.post('/commentators', async (c) => {
 
 adminRouter.patch('/commentators/:id', async (c) => {
   const id = c.req.param('id');
+  if (!z.string().uuid().safeParse(id).success) {
+    return c.json({ success: false, error: 'Invalid ID format' } as ApiResponse, 400);
+  }
   const body = await c.req.json();
   const parsed = updateCommentatorSchema.safeParse(body);
 
@@ -882,6 +894,9 @@ adminRouter.patch('/commentators/:id', async (c) => {
 
 adminRouter.delete('/commentators/:id', async (c) => {
   const id = c.req.param('id');
+  if (!z.string().uuid().safeParse(id).success) {
+    return c.json({ success: false, error: 'Invalid ID format' } as ApiResponse, 400);
+  }
   const db = createDb(c.env.DATABASE_URL);
   const cache = createCacheService(c.env.UPSTASH_REDIS_URL, c.env.UPSTASH_REDIS_TOKEN);
 

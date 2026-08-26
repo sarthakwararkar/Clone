@@ -76,6 +76,9 @@ couponsRouter.get('/', async (c) => {
 
 couponsRouter.get('/:id', async (c) => {
   const id = c.req.param('id');
+  if (!z.string().uuid().safeParse(id).success) {
+    return c.json({ success: false, error: 'Invalid ID format' } as ApiResponse, 400);
+  }
   const cache = createCacheService(c.env.UPSTASH_REDIS_URL, c.env.UPSTASH_REDIS_TOKEN);
 
   const cacheKey = `coupon:${id}`;
@@ -101,6 +104,9 @@ couponsRouter.get('/:id', async (c) => {
 
 couponsRouter.post('/:id/click', optionalAuthMiddleware, async (c) => {
   const couponId = c.req.param('id');
+  if (!z.string().uuid().safeParse(couponId).success) {
+    return c.json({ success: false, error: 'Invalid ID format' } as ApiResponse, 400);
+  }
   const user = c.get('user');
 
   // Hash the IP for anonymous tracking
@@ -167,6 +173,9 @@ couponsRouter.post('/:id/click', optionalAuthMiddleware, async (c) => {
 
 couponsRouter.post('/:id/report', optionalAuthMiddleware, async (c) => {
   const couponId = c.req.param('id');
+  if (!z.string().uuid().safeParse(couponId).success) {
+    return c.json({ success: false, error: 'Invalid ID format' } as ApiResponse, 400);
+  }
   const user = c.get('user');
 
   const body = await c.req.json();
