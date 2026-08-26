@@ -11,6 +11,7 @@ import { NewsletterBanner } from '@/components/home/NewsletterBanner'
 import { HomePageSchema } from '@/components/seo/HomePageSchema'
 import IntroSplash from '@/components/ui/IntroSplash'
 import ClientButterflyOverlay from '@/components/home/ClientButterflyOverlay'
+import { StickyNav } from '@/components/layout/StickyNav'
 
 export const revalidate = 60 // Revalidate every minute so live data is always fresh
 
@@ -73,41 +74,56 @@ export default async function Homepage() {
       <div className="space-y-12 relative z-10">
         <HomePageSchema featuredStores={featuredStores} />
 
+        <StickyNav />
         {/* Top Scrollable Billboard / Hero Banner — ALWAYS VISIBLE */}
+        <div id="hero-banner" className="scroll-mt-32">
         {heroBannerItems.length > 0 && (
           <HeroBanner coupons={heroBannerItems.slice(0, 5)} />
         )}
 
+        </div>
         {/* Popular Categories — quick browsing entry point */}
+        <div id="categories" className="scroll-mt-32">
         {categories.length > 0 && (
           <PopularCategories categories={categories} />
         )}
 
+        </div>
         {/* Big Saving Coupon Codes Section — ALWAYS VISIBLE */}
+        <div id="coupons" className="scroll-mt-32">
         {bigSavingItems.length > 0 && (
           <BigSavingCoupons coupons={bigSavingItems.slice(0, 12)} />
         )}
 
+        </div>
         {/* Top Stores */}
+        <div id="stores" className="scroll-mt-32">
         {featuredStores.length > 0 && (
           <FeaturedStores stores={featuredStores} />
         )}
 
+        </div>
         {/* Today's Best Deals & Offers — STRICTLY DEALS */}
+        <div id="deals" className="scroll-mt-32">
         {nonAiDeals.length > 0 && (
           <TrendingCoupons coupons={nonAiDeals} />
         )}
 
+        </div>
         {/* Exclusive Affiliate Deals */}
+        <div id="exclusive-deals" className="scroll-mt-32">
         {exclusiveDeals.length > 0 && (
           <ExclusiveDealsSection coupons={exclusiveDeals} />
         )}
 
+        </div>
         {/* Hot AI SaaS Deals */}
+        <div id="ai-deals" className="scroll-mt-32">
         {aiDeals.length > 0 && (
           <AiDealsSection coupons={aiDeals} />
         )}
 
+        </div>
         {/* Newsletter signup */}
         <NewsletterBanner />
       </div>

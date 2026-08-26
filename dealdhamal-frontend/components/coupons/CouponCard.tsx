@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
-import { Bookmark, Clock, CheckCircle, Share2, ExternalLink, Calendar } from 'lucide-react'
+import { Bookmark, Clock, CheckCircle, Share2, ExternalLink, Calendar, Check } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import type { Coupon } from '@/types'
@@ -29,6 +29,7 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
   const [loginPromptOpen, setLoginPromptOpen] = useState(false)
   const [bannerError, setBannerError] = useState(false)
   const [logoError, setLogoError] = useState(false)
+  const [copied, setCopied] = useState(false)
   const { user } = useAuthStore()
   const { isSaved, save, unsave } = useSavedCoupons()
   const router = useRouter()
@@ -160,6 +161,12 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
               {coupon.is_verified && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold tracking-wide uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/20">
                   Verified
+                </span>
+              )}
+
+              {expiryInfo.isUrgent && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold tracking-wide uppercase bg-red-500/90 text-white shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse">
+                  ⏱️ Ends Soon
                 </span>
               )}
 
@@ -371,6 +378,11 @@ export function CouponCard({ coupon, view = 'list', variant = 'default' }: Coupo
             <Badge variant={coupon.coupon_type} />
             {coupon.is_exclusive && <Badge variant="exclusive" />}
             {coupon.is_verified && <Badge variant="verified" />}
+            {expiryInfo.isUrgent && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide uppercase bg-red-50 text-red-600 border border-red-200 shadow-sm animate-pulse">
+                ⏱️ Ends Soon
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2.5 mt-1.5 text-xs text-gray-500 flex-wrap">
