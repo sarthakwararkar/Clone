@@ -24,7 +24,28 @@ const app = new Hono<AppBindings>();
 // ─── Global Middleware ──────────────────────────────────────────────────────
 
 app.use('*', cors({
-  origin: '*',
+  origin: (origin) => {
+    const allowed = [
+      'https://dealdhamal.vercel.app',
+      'https://www.dealdhamal.com',
+    ];
+    // Allow Vercel preview deployments (e.g., dealdhamal-*.vercel.app)
+    if (origin && /^https:\/\/dealdhamal-[a-z0-9-]+\.vercel\.app$/.test(origin)) {
+      return origin;
+    }
+    // Allow localhost in development
+    if (origin && (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'))) {
+      return origin;
+    }
+    // Allow known production domains
+    if (origin && allowed.includes(origin)) {
+      return origin;
+    }
+    // Allow requests with no origin (server-to-server, SSR, mobile apps)
+    if (!origin) return allowed[0];
+    // Block unknown origins
+    return null;
+  },
   allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
   exposeHeaders: ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],

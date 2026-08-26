@@ -158,8 +158,8 @@ export const couponClicks = pgTable('coupon_clicks', {
   id: serial('id').primaryKey(),
   coupon_id: uuid('coupon_id')
     .notNull()
-    .references(() => coupons.id),
-  user_id: uuid('user_id').references(() => users.id),
+    .references(() => coupons.id, { onDelete: 'cascade' }),
+  user_id: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
   ip_hash: text('ip_hash'),
   clicked_at: timestamp('clicked_at', { withTimezone: true }).defaultNow().notNull(),
 });
@@ -170,8 +170,8 @@ export const couponReports = pgTable('coupon_reports', {
   id: serial('id').primaryKey(),
   coupon_id: uuid('coupon_id')
     .notNull()
-    .references(() => coupons.id),
-  user_id: uuid('user_id').references(() => users.id),
+    .references(() => coupons.id, { onDelete: 'cascade' }),
+  user_id: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
   worked: boolean('worked').notNull(),
   reported_at: timestamp('reported_at', { withTimezone: true }).defaultNow().notNull(),
 });
