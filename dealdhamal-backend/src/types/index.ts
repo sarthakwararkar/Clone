@@ -10,7 +10,8 @@ export interface AppBindings {
 }
 
 export interface AuthUser {
-  id: string;
+  id: string; // Firebase UID
+  internal_id?: string; // Internal UUID from DB
   email: string;
   role: 'user' | 'admin';
   name?: string;

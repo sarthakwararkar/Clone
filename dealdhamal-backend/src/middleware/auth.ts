@@ -51,21 +51,19 @@ export const authMiddleware = createMiddleware<AppBindings>(async (c, next) => {
 
     const db = createDb(c.env.DATABASE_URL);
     let role: 'user' | 'admin' = (payload.role as 'user' | 'admin') || 'user';
+    let internal_id: string | undefined = undefined;
     const email = (payload.email as string) || '';
 
     if (email) {
       try {
-        console.log(`[Auth] Looking up role for email: "${email}"`);
         const [dbUser] = await db
-          .select({ role: users.role })
+          .select({ id: users.id, role: users.role })
           .from(users)
           .where(eq(sql`LOWER(${users.email})`, email.toLowerCase()))
           .limit(1);
         if (dbUser) {
           role = dbUser.role;
-          console.log(`[Auth] Found user in DB, role: "${role}"`);
-        } else {
-          console.log(`[Auth] User not found in DB for email: "${email}". Role remains: "${role}"`);
+          internal_id = dbUser.id;
         }
       } catch (dbErr: any) {
         console.error(`[Auth] DB role lookup FAILED for email "${email}". Error:`, dbErr?.message || dbErr);
@@ -78,6 +76,7 @@ export const authMiddleware = createMiddleware<AppBindings>(async (c, next) => {
 
     const user: AuthUser = {
       id: payload.sub as string,
+      internal_id,
       email,
       role,
       name: (payload.name as string) || undefined,
@@ -154,17 +153,19 @@ export const optionalAuthMiddleware = createMiddleware<AppBindings>(async (c, ne
 
     const db = createDb(c.env.DATABASE_URL);
     let role: 'user' | 'admin' = (payload.role as 'user' | 'admin') || 'user';
+    let internal_id: string | undefined = undefined;
     const email = (payload.email as string) || '';
 
     if (email) {
       try {
         const [dbUser] = await db
-          .select({ role: users.role })
+          .select({ id: users.id, role: users.role })
           .from(users)
           .where(eq(sql`LOWER(${users.email})`, email.toLowerCase()))
           .limit(1);
         if (dbUser) {
           role = dbUser.role;
+          internal_id = dbUser.id;
         }
       } catch (dbErr) {
         console.error('Error fetching role from DB in optionalAuthMiddleware:', dbErr);
@@ -173,6 +174,7 @@ export const optionalAuthMiddleware = createMiddleware<AppBindings>(async (c, ne
 
     const user: AuthUser = {
       id: payload.sub as string,
+      internal_id,
       email,
       role,
       name: (payload.name as string) || undefined,

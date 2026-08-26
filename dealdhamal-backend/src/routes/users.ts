@@ -116,7 +116,7 @@ usersRouter.get('/', async (c) => {
   const db = createDb(c.env.DATABASE_URL);
 
   // Find user by provider. getInternalUserId handles auto-creation if user doesn't exist
-  const internalUserId = await getInternalUserId(db, authUser);
+  const internalUserId = (authUser.internal_id || await getInternalUserId(db, authUser));
   
   if (!internalUserId) {
     return c.json({ success: false, error: 'Failed to create or find user' } as ApiResponse, 500);
@@ -160,7 +160,7 @@ usersRouter.patch('/', async (c) => {
   }
 
   const db = createDb(c.env.DATABASE_URL);
-  let internalUserId = await getInternalUserId(db, authUser);
+  let internalUserId = (authUser.internal_id || await getInternalUserId(db, authUser));
   let user: any = null;
 
   if (!internalUserId) {
@@ -253,7 +253,7 @@ usersRouter.get('/saved', async (c) => {
   const db = createDb(c.env.DATABASE_URL);
 
   // Get user's internal ID
-  const internalUserId = await getInternalUserId(db, authUser);
+  const internalUserId = (authUser.internal_id || await getInternalUserId(db, authUser));
 
   if (!internalUserId) {
     return c.json({ success: true, data: [] });
@@ -322,7 +322,7 @@ usersRouter.post('/saved/:couponId', async (c) => {
   const db = createDb(c.env.DATABASE_URL);
 
   // Get user's internal ID
-  const internalUserId = await getInternalUserId(db, authUser);
+  const internalUserId = (authUser.internal_id || await getInternalUserId(db, authUser));
 
   if (!internalUserId) {
     return c.json({ success: false, error: 'User not found' } as ApiResponse, 404);
@@ -360,7 +360,7 @@ usersRouter.delete('/saved/:couponId', async (c) => {
   const db = createDb(c.env.DATABASE_URL);
 
   // Get user's internal ID
-  const internalUserId = await getInternalUserId(db, authUser);
+  const internalUserId = (authUser.internal_id || await getInternalUserId(db, authUser));
 
   if (!internalUserId) {
     return c.json({ success: false, error: 'User not found' } as ApiResponse, 404);

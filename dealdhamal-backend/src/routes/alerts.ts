@@ -67,7 +67,7 @@ alertsRouter.post('/', async (c) => {
   const db = createDb(c.env.DATABASE_URL);
 
   // Get user's internal ID
-  const internalUserId = await getInternalUserId(db, authUser);
+  const internalUserId = (authUser.internal_id || await getInternalUserId(db, authUser));
 
   if (!internalUserId) {
     return c.json({ success: false, error: 'User not found' } as ApiResponse, 404);
@@ -121,7 +121,7 @@ alertsRouter.get('/', async (c) => {
   const db = createDb(c.env.DATABASE_URL);
 
   // Get user's internal ID
-  const internalUserId = await getInternalUserId(db, authUser);
+  const internalUserId = (authUser.internal_id || await getInternalUserId(db, authUser));
 
   if (!internalUserId) {
     return c.json({ success: true, data: [] });
@@ -152,7 +152,7 @@ alertsRouter.delete('/:id', async (c) => {
   const db = createDb(c.env.DATABASE_URL);
 
   // Get user's internal ID
-  const internalUserId = await getInternalUserId(db, authUser);
+  const internalUserId = (authUser.internal_id || await getInternalUserId(db, authUser));
 
   if (!internalUserId) {
     return c.json({ success: false, error: 'User not found' } as ApiResponse, 404);
