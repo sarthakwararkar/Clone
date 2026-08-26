@@ -173,8 +173,13 @@ export const couponReports = pgTable('coupon_reports', {
     .references(() => coupons.id, { onDelete: 'cascade' }),
   user_id: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
   worked: boolean('worked').notNull(),
+  ip_hash: text('ip_hash'),
   reported_at: timestamp('reported_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => ({
+  // One report per user per coupon
+  user_coupon_unique: uniqueIndex('coupon_reports_user_coupon_idx')
+    .on(table.coupon_id, table.user_id),
+}));
 
 // ─── Deal Alerts Table ──────────────────────────────────────────────────────
 

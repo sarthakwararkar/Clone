@@ -182,9 +182,17 @@ couponsRouter.post('/:id/report', optionalAuthMiddleware, async (c) => {
   const db = createDb(c.env.DATABASE_URL);
   const couponService = createCouponService(db);
 
+  // Hash IP for anonymous duplicate detection
+  const clientIp = c.req.header('cf-connecting-ip') ||
+    c.req.header('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const ipHashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(clientIp));
+  const ipHash = Array.from(new Uint8Array(ipHashBuffer))
+    .map((b) => b.toString(16).padStart(2, '0')).join('');
+
   const success = await couponService.recordReport(
     couponId,
     user?.id ?? null,
+    ipHash,
     parsed.data.worked
   );
 

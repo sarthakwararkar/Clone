@@ -4,6 +4,7 @@ import { eq, sql, desc } from 'drizzle-orm';
 import { createDb } from '../db';
 import { coupons, stores, youtubeCommentators } from '../db/schema';
 import { authMiddleware, adminMiddleware } from '../middleware/auth';
+import { rateLimitMiddleware } from '../middleware/rateLimit';
 import { createCouponService } from '../services/couponService';
 import { createCacheService } from '../services/cacheService';
 import { createCloudinaryService } from '../services/cloudinaryService';
@@ -12,9 +13,10 @@ import type { AppBindings, ApiResponse, CouponResponse, StoreResponse } from '..
 
 const adminRouter = new Hono<AppBindings>();
 
-// Apply auth + admin middleware to all admin routes
+// Apply auth + admin middleware to all admin routes, then rate limit
 adminRouter.use('*', authMiddleware);
 adminRouter.use('*', adminMiddleware);
+adminRouter.use('*', rateLimitMiddleware);
 
 // ─── POST /api/admin/upload ──────────────────────────────────────────────────
 

@@ -55,7 +55,15 @@ app.use('*', cors({
 app.use('*', logger());
 app.use('*', prettyJSON());
 app.use('*', sentryMiddleware);
-app.use('*', rateLimitMiddleware);
+
+// Rate limiting for public (unauthenticated) routes — applied per-group so that
+// authenticated routers can apply it after their auth middleware (where c.get('user') is set).
+app.use('/api/coupons/*', rateLimitMiddleware);
+app.use('/api/stores/*', rateLimitMiddleware);
+app.use('/api/categories/*', rateLimitMiddleware);
+app.use('/api/search', rateLimitMiddleware);
+app.use('/api/newsletter/*', rateLimitMiddleware);
+app.use('/api/commentators/*', rateLimitMiddleware);
 
 // ─── Health Check ───────────────────────────────────────────────────────────
 

@@ -351,12 +351,7 @@ export class CouponService {
    * Record a user report on whether a coupon worked.
    * Recalculates and updates success_rate.
    */
-  async recordReport(
-    couponId: string,
-    userId: string | null,
-    worked: boolean
-  ): Promise<boolean> {
-    // Check if coupon exists
+  async recordReport(couponId: string, userId: string | null, ipHash: string, worked: boolean): Promise<boolean> {
     const [coupon] = await this.db
       .select({ id: coupons.id })
       .from(coupons)
@@ -365,12 +360,17 @@ export class CouponService {
 
     if (!coupon) return false;
 
-    // Insert the report
-    await this.db.insert(couponReports).values({
-      coupon_id: couponId,
-      user_id: userId,
-      worked,
-    });
+    try {
+      await this.db.insert(couponReports).values({
+        coupon_id: couponId,
+        user_id: userId,
+        ip_hash: ipHash,
+        worked,
+      }).onConflictDoNothing();
+    } catch {
+      // Duplicate report — ignore silently
+      return true;
+    }
 
     // Recalculate success rate
     const result = await this.db.execute(sql`

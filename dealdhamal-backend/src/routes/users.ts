@@ -4,13 +4,15 @@ import { eq, and } from 'drizzle-orm';
 import { createDb } from '../db';
 import { users, googleUsers, normalUsers, savedCoupons, coupons, stores } from '../db/schema';
 import { authMiddleware } from '../middleware/auth';
+import { rateLimitMiddleware } from '../middleware/rateLimit';
 import type { AppBindings, UserProfileResponse, CouponResponse, ApiResponse } from '../types';
 import { sql } from 'drizzle-orm';
 
 const usersRouter = new Hono<AppBindings>();
 
-// Apply auth middleware to all user routes
+// Apply auth middleware to all user routes, then rate limit (so user context is available)
 usersRouter.use('*', authMiddleware);
+usersRouter.use('*', rateLimitMiddleware);
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -53,8 +55,20 @@ export async function getInternalUserId(db: any, authUser: { id: string; email: 
           avatar_url: authUser.avatar_url || null,
           provider: authUser.provider || 'email',
         })
+        .onConflictDoNothing()
         .returning();
-      baseUser = newBase;
+      
+      if (newBase) {
+        baseUser = newBase;
+      } else {
+        // If conflict (race condition), re-fetch the user that was just created
+        const [existing] = await db
+          .select()
+          .from(users)
+          .where(eq(sql`LOWER(${users.email})`, authUser.email.toLowerCase()))
+          .limit(1);
+        baseUser = existing;
+      }
     }
 
     if (isGoogle) {
@@ -101,58 +115,21 @@ usersRouter.get('/', async (c) => {
   const authUser = c.get('user')!;
   const db = createDb(c.env.DATABASE_URL);
 
-  // Find user by provider
-  let internalUserId = await getInternalUserId(db, authUser);
-  let user: any = null;
-
-  if (internalUserId) {
-    [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, internalUserId))
-      .limit(1);
+  // Find user by provider. getInternalUserId handles auto-creation if user doesn't exist
+  const internalUserId = await getInternalUserId(db, authUser);
+  
+  if (!internalUserId) {
+    return c.json({ success: false, error: 'Failed to create or find user' } as ApiResponse, 500);
   }
 
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, internalUserId))
+    .limit(1);
+
   if (!user) {
-    // Auto-create user on first login
-    const isGoogle = authUser.provider === 'google';
-    
-    // Create base user record
-    const [baseUser] = await db
-      .insert(users)
-      .values({
-        email: authUser.email.toLowerCase(),
-        role: authUser.role,
-        name: authUser.name || null,
-        avatar_url: authUser.avatar_url || null,
-        provider: authUser.provider || 'email',
-      })
-      .returning();
-
-    user = baseUser;
-
-    // Create provider-specific profile record
-    if (isGoogle) {
-      await db
-        .insert(googleUsers)
-        .values({
-          id: baseUser.id,
-          firebase_uid: authUser.id,
-          email: authUser.email,
-          name: authUser.name || null,
-          avatar_url: authUser.avatar_url || null,
-        });
-    } else {
-      await db
-        .insert(normalUsers)
-        .values({
-          id: baseUser.id,
-          firebase_uid: authUser.id,
-          email: authUser.email,
-          name: authUser.name || null,
-          avatar_url: authUser.avatar_url || null,
-        });
-    }
+    return c.json({ success: false, error: 'User record not found' } as ApiResponse, 500);
   }
 
   const profile: UserProfileResponse = {

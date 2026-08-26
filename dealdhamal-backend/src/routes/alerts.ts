@@ -4,14 +4,16 @@ import { eq, and } from 'drizzle-orm';
 import { createDb } from '../db';
 import { dealAlerts, users } from '../db/schema';
 import { authMiddleware } from '../middleware/auth';
+import { rateLimitMiddleware } from '../middleware/rateLimit';
 import { createEmailService } from '../services/emailService';
 import type { AppBindings, DealAlertResponse, ApiResponse } from '../types';
 import { getInternalUserId } from './users';
 
 const alertsRouter = new Hono<AppBindings>();
 
-// Apply auth middleware to all alert routes
+// Apply auth middleware to all alert routes, then rate limit
 alertsRouter.use('*', authMiddleware);
+alertsRouter.use('*', rateLimitMiddleware);
 
 // ─── Validation schemas ─────────────────────────────────────────────────────
 
