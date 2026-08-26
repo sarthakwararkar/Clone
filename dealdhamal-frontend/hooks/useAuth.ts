@@ -18,7 +18,7 @@ import type { User } from '@/types'
 function firebaseUserToFallbackUser(firebaseUser: any, provider: string): User {
   return {
     id: firebaseUser.uid,
-    supabase_uid: firebaseUser.uid, // compatibility field
+    firebase_uid: firebaseUser.uid, // compatibility field
     email: firebaseUser.email ?? '',
     name: firebaseUser.displayName || null,
     avatar_url: firebaseUser.photoURL || null,

@@ -110,7 +110,7 @@ export async function POST(req: Request) {
       access_token,
       user: {
         id: sub,
-        supabase_uid: sub, // kept for type compatibility
+        firebase_uid: sub, // kept for type compatibility
         email,
         name: name || email.split('@')[0],
         avatar_url: null,
