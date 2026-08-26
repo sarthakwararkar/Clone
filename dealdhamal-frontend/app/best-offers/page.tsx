@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { api } from '@/lib/api'
 import { CouponCard } from '@/components/coupons/CouponCard'
 
-export const revalidate = 600 // Cache for 10 minutes
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Top 10 Best Offers & Coupons | DealDhamal',
@@ -10,8 +10,11 @@ export const metadata: Metadata = {
 }
 
 export default async function BestOffersPage() {
-  const couponsResponse = await api.getCoupons({ featured: true, limit: 10 }).catch(() => ({ data: [], total: 0 }))
-  const coupons = couponsResponse.data
+  const couponsResponse = await api.getCoupons({ featured: true, limit: 50 }).catch(() => ({ data: [], total: 0 }))
+  
+  // Shuffle the pool and pick 10 so it's dynamic on every page load
+  const shuffled = [...couponsResponse.data].sort(() => Math.random() - 0.5)
+  const coupons = shuffled.slice(0, 10)
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
