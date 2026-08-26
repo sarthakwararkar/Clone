@@ -8,7 +8,7 @@ export class EmailService {
   private resend: Resend;
   private fromEmail: string;
 
-  constructor(apiKey: string, fromEmail: string = 'CouponDunia <noreply@coupondunia.com>') {
+  constructor(apiKey: string, fromEmail: string = 'DealDhamal <noreply@DealDhamal.com>') {
     this.resend = new Resend(apiKey);
     this.fromEmail = fromEmail;
   }
@@ -20,7 +20,7 @@ export class EmailService {
     const { data, error } = await this.resend.emails.send({
       from: this.fromEmail,
       to,
-      subject: 'Welcome to CouponDunia Deal Alerts! 🎉',
+      subject: 'Welcome to DealDhamal Deal Alerts! 🎉',
       html: this.getWelcomeEmailTemplate(name),
     });
     if (error) {
@@ -37,8 +37,8 @@ export class EmailService {
     storeName?: string
   ): Promise<void> {
     const subject = storeName
-      ? `🔥 New deals from ${storeName} on CouponDunia!`
-      : '🔥 New deals matching your alerts on CouponDunia!';
+      ? `🔥 New deals from ${storeName} on DealDhamal!`
+      : '🔥 New deals matching your alerts on DealDhamal!';
 
     const { data, error } = await this.resend.emails.send({
       from: this.fromEmail,
@@ -90,7 +90,7 @@ export class EmailService {
       <body style="margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f4f4f7;">
         <div style="max-width:600px;margin:0 auto;padding:20px;">
           <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:12px 12px 0 0;padding:40px 30px;text-align:center;">
-            <h1 style="color:#fff;margin:0;font-size:28px;">🎉 Welcome to CouponDunia!</h1>
+            <h1 style="color:#fff;margin:0;font-size:28px;">🎉 Welcome to DealDhamal!</h1>
           </div>
           <div style="background:#fff;padding:30px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
             <p style="font-size:16px;color:#333;line-height:1.6;">Hi ${this.escapeHtml(name)},</p>
@@ -103,10 +103,10 @@ export class EmailService {
               <li>📱 Personalized recommendations</li>
             </ul>
             <div style="text-align:center;margin-top:30px;">
-              <a href="https://coupondunia.com" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:14px 30px;border-radius:8px;text-decoration:none;font-size:16px;font-weight:600;display:inline-block;">Browse Latest Deals</a>
+              <a href="https://DealDhamal.com" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:14px 30px;border-radius:8px;text-decoration:none;font-size:16px;font-weight:600;display:inline-block;">Browse Latest Deals</a>
             </div>
           </div>
-          <p style="text-align:center;font-size:12px;color:#999;margin-top:20px;">© ${new Date().getFullYear()} CouponDunia. You're receiving this because you subscribed to deal alerts.</p>
+          <p style="text-align:center;font-size:12px;color:#999;margin-top:20px;">© ${new Date().getFullYear()} DealDhamal. You're receiving this because you subscribed to deal alerts.</p>
         </div>
       </body>
       </html>
@@ -148,10 +148,10 @@ export class EmailService {
           <div style="background:#fff;padding:24px;border-radius:0 0 12px 12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
             ${couponCards}
             <div style="text-align:center;margin-top:24px;">
-              <a href="https://coupondunia.com" style="background:linear-gradient(135deg,#f59e0b 0%,#ef4444 100%);color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block;">View All Deals →</a>
+              <a href="https://DealDhamal.com" style="background:linear-gradient(135deg,#f59e0b 0%,#ef4444 100%);color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block;">View All Deals →</a>
             </div>
           </div>
-          <p style="text-align:center;font-size:12px;color:#999;margin-top:20px;">© ${new Date().getFullYear()} CouponDunia. <a href="https://coupondunia.com/unsubscribe" style="color:#999;">Unsubscribe</a></p>
+          <p style="text-align:center;font-size:12px;color:#999;margin-top:20px;">© ${new Date().getFullYear()} DealDhamal. <a href="https://DealDhamal.com/unsubscribe" style="color:#999;">Unsubscribe</a></p>
         </div>
       </body>
       </html>
@@ -181,10 +181,10 @@ export class EmailService {
             </div>
             ${coupon.expires_at ? `<p style="font-size:13px;color:#ef4444;text-align:center;">⏰ Expires: ${new Date(coupon.expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>` : ''}
             <div style="text-align:center;margin-top:20px;">
-              <a href="https://coupondunia.com/coupons/${coupon.id}" style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block;">Get This Deal →</a>
+              <a href="https://DealDhamal.com/coupons/${coupon.id}" style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;display:inline-block;">Get This Deal →</a>
             </div>
           </div>
-          <p style="text-align:center;font-size:12px;color:#999;margin-top:20px;">© ${new Date().getFullYear()} CouponDunia. <a href="https://coupondunia.com/unsubscribe" style="color:#999;">Unsubscribe</a></p>
+          <p style="text-align:center;font-size:12px;color:#999;margin-top:20px;">© ${new Date().getFullYear()} DealDhamal. <a href="https://DealDhamal.com/unsubscribe" style="color:#999;">Unsubscribe</a></p>
         </div>
       </body>
       </html>

@@ -1,5 +1,5 @@
 -- ============================================================================
--- Full-Text Search Trigger Functions for CouponDunia
+-- Full-Text Search Trigger Functions for DealDhamal
 -- Run this migration manually against your Neon database after drizzle-kit push
 -- ============================================================================
 

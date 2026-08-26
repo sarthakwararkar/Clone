@@ -14,6 +14,28 @@ export class AffiliateService {
   constructor(private db: Database) {}
 
   /**
+   * Extract discount value from title text.
+   * E.g., "Get 50% Off on Electronics" → "50% Off"
+   *       "Flat Rs 200 Cashback" → "Rs 200 Cashback"
+   *       "Free Shipping on Orders" → "Free Shipping"
+   */
+  private extractDiscountValue(title: string): string {
+    // Try percentage match: "50% Off", "Up to 70%"
+    const pctMatch = title.match(/((?:up\s*to\s+|flat\s+)?(?:get\s+)?\d+%\s*(?:off|discount|cashback)?)/i);
+    if (pctMatch) return pctMatch[1].trim();
+
+    // Try rupee match: "Rs 200", "₹500"
+    const rsMatch = title.match(/((?:flat\s+)?(?:rs\.?\s*|₹)\s*\d[\d,]*\s*(?:off|cashback|discount)?)/i);
+    if (rsMatch) return rsMatch[1].trim();
+
+    // Free shipping / BOGO
+    if (/free\s+(?:shipping|delivery)/i.test(title)) return 'Free Shipping';
+    if (/buy\s+\d+\s+get\s+\d+/i.test(title)) return title.match(/(buy\s+\d+\s+get\s+\d+\s*(?:free)?)/i)?.[1] || 'Special Offer';
+
+    return 'Special Offer';
+  }
+
+  /**
    * Sync coupons from vCommission API.
    * vCommission provides a JSON API for Indian affiliate programs.
    */
@@ -64,7 +86,7 @@ export class AffiliateService {
           description: description,
           code: code,
           coupon_type: this.resolveType(this.mapCouponType(type), code),
-          discount_value: title,
+          discount_value: this.extractDiscountValue(title),
           affiliate_url: trackingUrl,
           source: 'vcommission' as CouponSource,
           external_id: String(couponId),
@@ -163,7 +185,7 @@ export class AffiliateService {
             description: item.description || null,
             code: item.coupon_code || null,
             coupon_type: this.mapCouponType((item as any).type || item.offer_type || (item.coupon_code ? 'coupon' : 'deal')),
-            discount_value: item.discount || item.title || '',
+            discount_value: item.discount || this.extractDiscountValue(item.title || ''),
             affiliate_url: affiliateUrl,
             source: 'cuelinks' as CouponSource,
             external_id: String(item.id),
@@ -361,7 +383,7 @@ export class AffiliateService {
             description: item.description || null,
             code: item.promocode || null,
             coupon_type: this.resolveType(this.mapCouponType(rawType), item.promocode ?? null),
-            discount_value: item.discount || '',
+            discount_value: item.discount || this.extractDiscountValue(item.name || ''),
             affiliate_url: affiliateUrl,
             source: 'admitad' as CouponSource,
             external_id: String(item.id),
@@ -443,7 +465,7 @@ export class AffiliateService {
         description: item.description || null,
         code: item['coupon-code'] || null,
         coupon_type: item['coupon-code'] ? ('code' as const) : ('deal' as const),
-        discount_value: item['sale-commission'] || '',
+        discount_value: item['sale-commission'] || this.extractDiscountValue(item['link-name'] || ''),
         affiliate_url: item['click-url'] || '',
         source: 'cj' as CouponSource,
         external_id: String(item['link-id']),

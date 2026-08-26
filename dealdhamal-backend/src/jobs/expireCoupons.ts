@@ -15,7 +15,7 @@ import { createCacheService } from '../services/cacheService';
 
 async function main() {
   console.log('═══════════════════════════════════════════════════════');
-  console.log('  CouponDunia — Expire Coupons Job');
+  console.log('  DealDhamal — Expire Coupons Job');
   console.log(`  Started at: ${new Date().toISOString()}`);
   console.log('═══════════════════════════════════════════════════════');
 

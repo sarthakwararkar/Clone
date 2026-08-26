@@ -11,7 +11,26 @@ import { getInternalUserId } from './users';
 
 const alertsRouter = new Hono<AppBindings>();
 
-// Apply auth middleware to all alert routes, then rate limit
+// ─── Public Routes ──────────────────────────────────────────────────────────
+
+// GET /api/alerts/unsubscribe?email=...
+alertsRouter.get('/unsubscribe', async (c) => {
+  const email = c.req.query('email');
+  if (!email) {
+    return c.json({ success: false, error: 'Email is required' } as ApiResponse, 400);
+  }
+
+  const db = createDb(c.env.DATABASE_URL);
+  
+  await db
+    .update(dealAlerts)
+    .set({ is_active: false })
+    .where(eq(dealAlerts.email, email));
+
+  return c.json({ success: true, message: 'Unsubscribed successfully' } as ApiResponse);
+});
+
+// Apply auth middleware to all other alert routes, then rate limit
 alertsRouter.use('*', authMiddleware);
 alertsRouter.use('*', rateLimitMiddleware);
 
