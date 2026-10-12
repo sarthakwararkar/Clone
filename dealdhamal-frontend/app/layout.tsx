@@ -5,7 +5,6 @@ import { Providers } from '@/components/layout/Providers'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { MobileNav } from '@/components/layout/MobileNav'
-import { Toaster } from 'sonner'
 import Script from 'next/script'
 import { OrganizationSchema } from '@/components/seo/OrganizationSchema'
 import { WebsiteSchema } from '@/components/seo/WebsiteSchema'
@@ -68,8 +67,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <head>
+    <html lang="en" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
+      <body className="min-h-full flex flex-col bg-transparent text-text-primary" suppressHydrationWarning>
         {/* Google tag (gtag.js) */}
         <Script
           async
@@ -85,8 +84,7 @@ export default function RootLayout({
             gtag('config', 'G-93D34R6XN1');
           `}
         </Script>
-      </head>
-      <body className="min-h-full flex flex-col bg-transparent text-text-primary">
+
         <Providers>
           <Header />
           <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6 md:py-8 mb-16 md:mb-0">
@@ -94,7 +92,6 @@ export default function RootLayout({
           </main>
           <Footer />
           <MobileNav />
-          <Toaster position="top-right" richColors />
           <SoraFAQBot />
         </Providers>
         <OrganizationSchema />

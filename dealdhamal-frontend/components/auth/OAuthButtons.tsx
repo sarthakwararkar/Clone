@@ -1,5 +1,8 @@
 'use client'
+
+import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { toast } from 'sonner'
 
 interface OAuthButtonsProps {
   next?: string
@@ -7,25 +10,38 @@ interface OAuthButtonsProps {
 
 export function OAuthButtons({ next }: OAuthButtonsProps) {
   const { signInWithGoogle } = useAuth()
+  const [loading, setLoading] = useState(false)
 
-  const handleGoogleSignIn = () => {
-    void signInWithGoogle(next && next.startsWith('/') ? next : undefined)
+  const handleGoogleSignIn = async () => {
+    setLoading(true)
+    try {
+      await signInWithGoogle(next && next.startsWith('/') ? next : undefined)
+    } catch (err: any) {
+      toast.error(err?.message || 'Google sign-in failed. Please try again or use email/password.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <div className="space-y-3">
       <button
         onClick={handleGoogleSignIn}
-        className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors shadow-sm"
+        disabled={loading}
+        className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed text-sm font-medium text-gray-700 transition-colors shadow-sm cursor-pointer"
       >
-        {/* Google Logo SVG */}
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-          <path d="M17.64 9.2045C17.64 8.5664 17.5827 7.9527 17.4764 7.3636H9V10.845H13.8436C13.635 11.97 13.0009 12.9232 12.0477 13.5614V15.8195H14.9564C16.6582 14.2527 17.64 11.9455 17.64 9.2045Z" fill="#4285F4"/>
-          <path d="M9 18C11.43 18 13.4673 17.1941 14.9564 15.8195L12.0477 13.5614C11.2418 14.1014 10.2109 14.4205 9 14.4205C6.65591 14.4205 4.67182 12.8373 3.96409 10.71H0.957275V13.0418C2.43818 15.9832 5.48182 18 9 18Z" fill="#34A853"/>
-          <path d="M3.96409 10.71C3.78409 10.17 3.68182 9.5932 3.68182 9C3.68182 8.4068 3.78409 7.83 3.96409 7.29V4.9582H0.957275C0.347727 6.1732 0 7.5477 0 9C0 10.4523 0.347727 11.8268 0.957275 13.0418L3.96409 10.71Z" fill="#FBBC05"/>
-          <path d="M9 3.5795C10.3214 3.5795 11.5077 4.0336 12.4405 4.9255L15.0218 2.3441C13.4632 0.8918 11.4259 0 9 0C5.48182 0 2.43818 2.0168 0.957275 4.9582L3.96409 7.29C4.67182 5.1627 6.65591 3.5795 9 3.5795Z" fill="#EA4335"/>
-        </svg>
-        Continue with Google
+        {loading ? (
+          <div className="w-4 h-4 border-2 border-gray-400 border-t-primary rounded-full animate-spin" />
+        ) : (
+          /* Google Logo SVG */
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <path d="M17.64 9.2045C17.64 8.5664 17.5827 7.9527 17.4764 7.3636H9V10.845H13.8436C13.635 11.97 13.0009 12.9232 12.0477 13.5614V15.8195H14.9564C16.6582 14.2527 17.64 11.9455 17.64 9.2045Z" fill="#4285F4"/>
+            <path d="M9 18C11.43 18 13.4673 17.1941 14.9564 15.8195L12.0477 13.5614C11.2418 14.1014 10.2109 14.4205 9 14.4205C6.65591 14.4205 4.67182 12.8373 3.96409 10.71H0.957275V13.0418C2.43818 15.9832 5.48182 18 9 18Z" fill="#34A853"/>
+            <path d="M3.96409 10.71C3.78409 10.17 3.68182 9.5932 3.68182 9C3.68182 8.4068 3.78409 7.83 3.96409 7.29V4.9582H0.957275C0.347727 6.1732 0 7.5477 0 9C0 10.4523 0.347727 11.8268 0.957275 13.0418L3.96409 10.71Z" fill="#FBBC05"/>
+            <path d="M9 3.5795C10.3214 3.5795 11.5077 4.0336 12.4405 4.9255L15.0218 2.3441C13.4632 0.8918 11.4259 0 9 0C5.48182 0 2.43818 2.0168 0.957275 4.9582L3.96409 7.29C4.67182 5.1627 6.65591 3.5795 9 3.5795Z" fill="#EA4335"/>
+          </svg>
+        )}
+        <span>{loading ? 'Connecting with Google...' : 'Continue with Google'}</span>
       </button>
     </div>
   )

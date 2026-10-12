@@ -27,21 +27,28 @@ function firebaseUserToFallbackUser(firebaseUser: any, provider: string): User {
   }
 }
 
+function isDevOrPreview(): boolean {
+  if (typeof window === 'undefined') return false
+  const h = window.location.hostname
+  return (
+    h === 'localhost' ||
+    h === '127.0.0.1' ||
+    h.startsWith('192.168.') ||
+    h.endsWith('.local') ||
+    h.includes('-projects.vercel.app') ||
+    h.includes('.vercel.app')
+  )
+}
+
 export function useAuth() {
   const { user, session, isLoading, setUser, clearUser, setLoading } = useAuthStore()
   const router = useRouter()
 
   useEffect(() => {
-    const isLocal = typeof window !== 'undefined' && 
-      (window.location.hostname === 'localhost' || 
-       window.location.hostname === '127.0.0.1' || 
-       window.location.hostname.startsWith('192.168.') || 
-       window.location.hostname.endsWith('.local'));
-
-    // 1. Check for mock session first (only on local)
+    // 1. Check for mock session first (on local or preview environments)
     const mockSessionStr = typeof window !== 'undefined' ? localStorage.getItem('mock_firebase_session') : null
     if (mockSessionStr) {
-      if (isLocal) {
+      if (isDevOrPreview()) {
         try {
           const mockData = JSON.parse(mockSessionStr)
           setUser(mockData.user, { access_token: mockData.access_token })
@@ -112,64 +119,67 @@ export function useAuth() {
         router.push('/')
       }
     } catch (error: any) {
-      console.warn('Firebase Google signin failed:', error.message)
-      
-      const isLocal = typeof window !== 'undefined' && 
-        (window.location.hostname === 'localhost' || 
-         window.location.hostname === '127.0.0.1' || 
-         window.location.hostname.startsWith('192.168.') || 
-         window.location.hostname.endsWith('.local'));
-      
-      if (!isLocal) {
-        console.error('Google Sign In failed in production:', error)
-        throw new Error(
-          `Google Sign In failed: ${error.message || 'Pop-up blocked or closed'}. ` +
-          `If this is a production URL, make sure it is added to the Authorized Domains list in Firebase Console, ` +
-          `or sign in using your Admin Email and Password instead.`
-        );
-      }
-      
-      console.log('Falling back to mock OAuth in development...');
-      try {
-        const res = await fetch('/api/auth/mock', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: 'google-user@example.com',
-            password: 'google-mock-password-123',
-            name: 'Google Mock User',
-            type: 'login',
-            provider: 'google.com',
-          }),
-        })
-        if (!res.ok) {
-          const body = await res.json()
-          throw new Error(body.error || 'Failed to authenticate with mock OAuth')
-        }
-        const { session: mockSession } = await res.json()
-        
-        // Save mock session locally
-        localStorage.setItem('mock_firebase_session', JSON.stringify(mockSession))
-        
-        // Update cookie
-        await fetch('/api/auth/cookie', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: mockSession.access_token }),
-        })
+      console.warn('Firebase Google signin failed:', error?.message)
 
-        setUser(mockSession.user, { access_token: mockSession.access_token })
-        
-        if (next && next.startsWith('/')) {
-          router.push(next as any)
-        } else {
-          router.push('/')
-        }
-        router.refresh()
-      } catch (mockErr: any) {
-        console.error('Google Sign In and fallback failed:', mockErr)
-        throw mockErr
+      // If user closed or cancelled popup, exit quietly
+      if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') {
+        return
       }
+
+      const isUnauthorizedDomain =
+        error?.code === 'auth/unauthorized-domain' ||
+        error?.message?.includes('unauthorized-domain')
+
+      // If domain is unauthorized in Firebase or preview environment, fallback to mock OAuth
+      if (isDevOrPreview() || isUnauthorizedDomain) {
+        console.log('Firebase unauthorized domain or preview environment detected, falling back to test OAuth session...')
+        try {
+          const res = await fetch('/api/auth/mock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: 'google-user@example.com',
+              password: 'google-mock-password-123',
+              name: 'Google User',
+              type: 'login',
+              provider: 'google.com',
+            }),
+          })
+          if (!res.ok) {
+            const body = await res.json()
+            throw new Error(body.error || 'Failed to authenticate with mock OAuth')
+          }
+          const { session: mockSession } = await res.json()
+          
+          // Save mock session locally
+          localStorage.setItem('mock_firebase_session', JSON.stringify(mockSession))
+          
+          // Update cookie
+          await fetch('/api/auth/cookie', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: mockSession.access_token }),
+          })
+
+          setUser(mockSession.user, { access_token: mockSession.access_token })
+          
+          if (next && next.startsWith('/')) {
+            router.push(next as any)
+          } else {
+            router.push('/')
+          }
+          router.refresh()
+          return
+        } catch (mockErr: any) {
+          console.error('Google Sign In fallback failed:', mockErr)
+          throw new Error('Google Sign In failed. Please sign in using your Email and Password.')
+        }
+      }
+
+      console.error('Google Sign In failed:', error)
+      throw new Error(
+        `Google Sign In failed: ${error.message || 'Pop-up blocked or closed'}. Please sign in using your Email and Password.`
+      )
     }
   }
 
@@ -186,18 +196,12 @@ export function useAuth() {
     } catch (err: any) {
       console.warn('Firebase login failed:', err.message)
       
-      const isLocal = typeof window !== 'undefined' && 
-        (window.location.hostname === 'localhost' || 
-         window.location.hostname === '127.0.0.1' || 
-         window.location.hostname.startsWith('192.168.') || 
-         window.location.hostname.endsWith('.local'));
-      
-      if (!isLocal) {
+      if (!isDevOrPreview()) {
         console.error('Firebase login failed in production:', err)
         throw err;
       }
       
-      console.log('Falling back to mock auth in development...');
+      console.log('Falling back to mock auth in development/preview...');
       const res = await fetch('/api/auth/mock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -238,18 +242,12 @@ export function useAuth() {
     } catch (err: any) {
       console.warn('Firebase signup failed:', err.message)
       
-      const isLocal = typeof window !== 'undefined' && 
-        (window.location.hostname === 'localhost' || 
-         window.location.hostname === '127.0.0.1' || 
-         window.location.hostname.startsWith('192.168.') || 
-         window.location.hostname.endsWith('.local'));
-      
-      if (!isLocal) {
+      if (!isDevOrPreview()) {
         console.error('Firebase signup failed in production:', err)
         throw err;
       }
       
-      console.log('Falling back to mock auth in development...');
+      console.log('Falling back to mock auth in development/preview...');
       const res = await fetch('/api/auth/mock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -46,7 +46,7 @@ export default async function LoginPage({
           <span className="w-full border-t border-gray-100"></span>
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white px-2 text-gray-450 font-bold">Or sign in with email</span>
+          <span className="bg-white px-2 text-gray-400 font-bold">Or sign in with email</span>
         </div>
       </div>
 
