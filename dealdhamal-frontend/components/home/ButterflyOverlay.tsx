@@ -1,9 +1,22 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 // @ts-ignore
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
+
+function isWebGLAvailable(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    const canvas = document.createElement('canvas')
+    return !!(
+      window.WebGLRenderingContext &&
+      (canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl'))
+    )
+  } catch {
+    return false
+  }
+}
 
 // Geometry Splitting Helper for base.obj
 function splitButterflyGeometry(geo: THREE.BufferGeometry) {
@@ -117,9 +130,16 @@ interface ButterflyState {
 export default function ButterflyOverlay() {
   const backdropContainerRef = useRef<HTMLDivElement>(null)
   const butterfliesContainerRef = useRef<HTMLDivElement>(null)
+  const [webglSupported, setWebglSupported] = useState(true)
 
   useEffect(() => {
     if (!backdropContainerRef.current || !butterfliesContainerRef.current) return
+
+    if (!isWebGLAvailable()) {
+      setWebglSupported(false)
+      return
+    }
+
     const backdropContainer = backdropContainerRef.current
     const butterfliesContainer = butterfliesContainerRef.current
 
@@ -130,43 +150,52 @@ export default function ButterflyOverlay() {
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000)
     camera.position.set(0, 0.5, 12)
 
-    // ── BACKDROP RENDERER (behind everything, z-[-10]) ──
-    const backdropRenderer = new THREE.WebGLRenderer({
-      antialias: false,
-      alpha: true,
-      powerPreference: 'high-performance',
-      precision: 'mediump'
-    })
-    backdropRenderer.setPixelRatio(1.0)
-    backdropRenderer.setSize(window.innerWidth, window.innerHeight)
-    backdropRenderer.domElement.style.position = 'absolute'
-    backdropRenderer.domElement.style.inset = '0'
-    backdropRenderer.domElement.style.width = '100%'
-    backdropRenderer.domElement.style.height = '100%'
-    backdropRenderer.domElement.style.pointerEvents = 'none'
-    backdropRenderer.domElement.style.willChange = 'transform'
-    backdropRenderer.domElement.style.transform = 'translate3d(0,0,0)'
-    backdropRenderer.domElement.style.contain = 'strict'
-    backdropContainer.appendChild(backdropRenderer.domElement)
+    let backdropRenderer: THREE.WebGLRenderer | null = null
+    let butterfliesRenderer: THREE.WebGLRenderer | null = null
 
-    // ── BUTTERFLIES RENDERER (on top of everything, z-[50]) ──
-    const butterfliesRenderer = new THREE.WebGLRenderer({
-      antialias: false,
-      alpha: true,
-      powerPreference: 'high-performance',
-      precision: 'mediump'
-    })
-    butterfliesRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
-    butterfliesRenderer.setSize(window.innerWidth, window.innerHeight)
-    butterfliesRenderer.domElement.style.position = 'absolute'
-    butterfliesRenderer.domElement.style.inset = '0'
-    butterfliesRenderer.domElement.style.width = '100%'
-    butterfliesRenderer.domElement.style.height = '100%'
-    butterfliesRenderer.domElement.style.pointerEvents = 'none'
-    butterfliesRenderer.domElement.style.willChange = 'transform'
-    butterfliesRenderer.domElement.style.transform = 'translate3d(0,0,0)'
-    butterfliesRenderer.domElement.style.contain = 'strict'
-    butterfliesContainer.appendChild(butterfliesRenderer.domElement)
+    try {
+      // ── BACKDROP RENDERER (behind everything, z-[-10]) ──
+      backdropRenderer = new THREE.WebGLRenderer({
+        antialias: false,
+        alpha: true,
+        powerPreference: 'high-performance',
+        precision: 'mediump'
+      })
+      backdropRenderer.setPixelRatio(1.0)
+      backdropRenderer.setSize(window.innerWidth, window.innerHeight)
+      backdropRenderer.domElement.style.position = 'absolute'
+      backdropRenderer.domElement.style.inset = '0'
+      backdropRenderer.domElement.style.width = '100%'
+      backdropRenderer.domElement.style.height = '100%'
+      backdropRenderer.domElement.style.pointerEvents = 'none'
+      backdropRenderer.domElement.style.willChange = 'transform'
+      backdropRenderer.domElement.style.transform = 'translate3d(0,0,0)'
+      backdropRenderer.domElement.style.contain = 'strict'
+      backdropContainer.appendChild(backdropRenderer.domElement)
+
+      // ── BUTTERFLIES RENDERER (on top of everything, z-[50]) ──
+      butterfliesRenderer = new THREE.WebGLRenderer({
+        antialias: false,
+        alpha: true,
+        powerPreference: 'high-performance',
+        precision: 'mediump'
+      })
+      butterfliesRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
+      butterfliesRenderer.setSize(window.innerWidth, window.innerHeight)
+      butterfliesRenderer.domElement.style.position = 'absolute'
+      butterfliesRenderer.domElement.style.inset = '0'
+      butterfliesRenderer.domElement.style.width = '100%'
+      butterfliesRenderer.domElement.style.height = '100%'
+      butterfliesRenderer.domElement.style.pointerEvents = 'none'
+      butterfliesRenderer.domElement.style.willChange = 'transform'
+      butterfliesRenderer.domElement.style.transform = 'translate3d(0,0,0)'
+      butterfliesRenderer.domElement.style.contain = 'strict'
+      butterfliesContainer.appendChild(butterfliesRenderer.domElement)
+    } catch (err) {
+      console.warn('WebGL initialization failed in ButterflyOverlay:', err)
+      setWebglSupported(false)
+      return
+    }
 
     // ── Lighting ──
     const addLights = (scene: THREE.Scene) => {
@@ -508,10 +537,12 @@ export default function ButterflyOverlay() {
       if(rightWingMesh.instanceColor) rightWingMesh.instanceColor.needsUpdate=true
 
       // Butterflies render every frame (smooth 60fps trail effect on top)
-      butterfliesRenderer.render(butterfliesScene, camera)
+      if (butterfliesRenderer) {
+        butterfliesRenderer.render(butterfliesScene, camera)
+      }
 
       // Backdrop renders every 3rd frame (~20fps) — terrain/grass doesn't need 60fps
-      if (frameCount % 3 === 0) {
+      if (frameCount % 3 === 0 && backdropRenderer) {
         animateMeadow(animTime)
         backdropRenderer.render(backdropScene, camera)
       }
@@ -542,12 +573,22 @@ export default function ButterflyOverlay() {
       terrainGeo.dispose(); terrainMat.dispose()
       grassGeo.dispose(); grassMat.dispose(); grassTex.dispose(); flowerGeo.dispose()
       flowerMeshes.forEach(({mesh})=>{ (mesh.material as THREE.Material).dispose(); backdropScene.remove(mesh) })
-      backdropRenderer.dispose()
-      if (backdropRenderer.domElement && backdropContainer.contains(backdropRenderer.domElement)) backdropContainer.removeChild(backdropRenderer.domElement)
-      butterfliesRenderer.dispose()
-      if (butterfliesRenderer.domElement && butterfliesContainer.contains(butterfliesRenderer.domElement)) butterfliesContainer.removeChild(butterfliesRenderer.domElement)
+      if (backdropRenderer) {
+        backdropRenderer.dispose()
+        if (backdropRenderer.domElement && backdropContainer.contains(backdropRenderer.domElement)) {
+          backdropContainer.removeChild(backdropRenderer.domElement)
+        }
+      }
+      if (butterfliesRenderer) {
+        butterfliesRenderer.dispose()
+        if (butterfliesRenderer.domElement && butterfliesContainer.contains(butterfliesRenderer.domElement)) {
+          butterfliesContainer.removeChild(butterfliesRenderer.domElement)
+        }
+      }
     }
   }, [])
+
+  if (!webglSupported) return null
 
   return (
     <>

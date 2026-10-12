@@ -10,6 +10,37 @@ interface IntroSplashProps {
 
 type FlowState = 'intro' | 'transitioning' | 'main';
 
+function isWebGLAvailable(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const canvas = document.createElement('canvas');
+    return !!(
+      window.WebGLRenderingContext &&
+      (canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl'))
+    );
+  } catch {
+    return false;
+  }
+}
+
+function getSessionStorage(key: string): string | null {
+  try {
+    return typeof window !== 'undefined' ? sessionStorage.getItem(key) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setSessionStorage(key: string, value: string): void {
+  try {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(key, value);
+    }
+  } catch {
+    // Ignore storage errors in restricted contexts
+  }
+}
+
 export default function IntroSplash({ children }: IntroSplashProps) {
   const [flow, setFlow] = useState<FlowState>('intro');
   const [canvasFadeOut, setCanvasFadeOut] = useState(false);
@@ -23,8 +54,15 @@ export default function IntroSplash({ children }: IntroSplashProps) {
   const animStartTimeRef = useRef<number>(0);
 
   useEffect(() => {
+    // Check WebGL availability first - if not available, bypass intro directly
+    if (!isWebGLAvailable()) {
+      setFlow('main');
+      setIsMounted(true);
+      return;
+    }
+
     // Check if the user has already seen the intro during this browser session
-    const seen = sessionStorage.getItem('hasSeenIntro');
+    const seen = getSessionStorage('hasSeenIntro');
     if (seen === 'true') {
       setFlow('main');
     }
@@ -51,155 +89,187 @@ export default function IntroSplash({ children }: IntroSplashProps) {
     if (!isMounted || flow === 'main') return;
     if (!containerRef.current) return;
 
+    if (!isWebGLAvailable()) {
+      setFlow('main');
+      return;
+    }
+
     const container = containerRef.current;
     const width = window.innerWidth;
     const height = window.innerHeight;
 
-    // Create Scene, Camera, Renderer
-    const scene = new THREE.Scene();
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-    
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x0d0d0f, 1);
-    container.appendChild(renderer.domElement);
+    let scene: THREE.Scene | null = null;
+    let camera: THREE.OrthographicCamera | null = null;
+    let renderer: THREE.WebGLRenderer | null = null;
+    let geometry: THREE.PlaneGeometry | null = null;
+    let material: THREE.ShaderMaterial | null = null;
+    let texture: THREE.Texture | null = null;
 
-    // Shaders
-    const vertexShader = `
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        gl_Position = vec4(position, 1.0);
-      }
-    `;
+    try {
+      // Create Scene, Camera, Renderer
+      scene = new THREE.Scene();
+      camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+      
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setClearColor(0x0d0d0f, 1);
+      container.appendChild(renderer.domElement);
 
-    const fragmentShader = `
-      uniform sampler2D uTexture;
-      uniform float uProgress;
-      uniform float uTime;
-      uniform vec2 uResolution;
-      uniform vec2 uTextureResolution;
-      uniform float uIntensity;
-      uniform float uFrequency;
-      varying vec2 vUv;
+      // Shaders
+      const vertexShader = `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = vec4(position, 1.0);
+        }
+      `;
 
-      void main() {
-        float textureAspect = uTextureResolution.x / uTextureResolution.y;
-        float quadAspect = uResolution.x / uResolution.y;
-        vec2 coverUv = vUv;
-        if (quadAspect < textureAspect) {
-          float scaleX = quadAspect / textureAspect;
-          coverUv.x = (vUv.x - 0.5) * scaleX + 0.5;
-        } else {
-          float scaleY = textureAspect / quadAspect;
-          coverUv.y = (vUv.y - 0.5) * scaleY + 0.5;
+      const fragmentShader = `
+        uniform sampler2D uTexture;
+        uniform float uProgress;
+        uniform float uTime;
+        uniform vec2 uResolution;
+        uniform vec2 uTextureResolution;
+        uniform float uIntensity;
+        uniform float uFrequency;
+        varying vec2 vUv;
+
+        void main() {
+          float textureAspect = uTextureResolution.x / uTextureResolution.y;
+          float quadAspect = uResolution.x / uResolution.y;
+          vec2 coverUv = vUv;
+          if (quadAspect < textureAspect) {
+            float scaleX = quadAspect / textureAspect;
+            coverUv.x = (vUv.x - 0.5) * scaleX + 0.5;
+          } else {
+            float scaleY = textureAspect / quadAspect;
+            coverUv.y = (vUv.y - 0.5) * scaleY + 0.5;
+          }
+
+          vec2 center = vec2(0.5);
+          float dist = distance(coverUv, center);
+          float envelope = sin(uProgress * 3.14159265);
+          float wave = sin(dist * uFrequency - uProgress * 25.0) * uIntensity * envelope;
+          
+          vec2 dir = normalize(coverUv - center);
+          if (dist == 0.0) dir = vec2(0.0);
+          
+          vec2 distortedUv = coverUv + dir * wave;
+          gl_FragColor = texture2D(uTexture, distortedUv);
+        }
+      `;
+
+      // Load Texture
+      const textureLoader = new THREE.TextureLoader();
+      const textureResolution = new THREE.Vector2(1920, 1080); // Default fallback
+      
+      texture = textureLoader.load(
+        '/unseen-bg.png',
+        (tex) => {
+          if (tex.image && renderer && scene && camera) {
+            textureResolution.set(tex.image.width, tex.image.height);
+            renderer.render(scene, camera);
+          }
+        },
+        undefined,
+        (err) => {
+          console.warn('Could not load intro background texture:', err);
+        }
+      );
+
+      texture.wrapS = THREE.ClampToEdgeWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+      texture.minFilter = THREE.LinearFilter;
+
+      // Uniforms
+      const uniforms = {
+        uTexture: { value: texture },
+        uProgress: { value: 0.0 },
+        uTime: { value: 0.0 },
+        uResolution: { value: new THREE.Vector2(width, height) },
+        uTextureResolution: { value: textureResolution },
+        uIntensity: { value: 0.08 },
+        uFrequency: { value: 30.0 }
+      };
+
+      uniformsRef.current = uniforms;
+
+      material = new THREE.ShaderMaterial({
+        vertexShader,
+        fragmentShader,
+        uniforms,
+        depthWrite: false,
+        depthTest: false
+      });
+
+      geometry = new THREE.PlaneGeometry(2, 2);
+      const mesh = new THREE.Mesh(geometry, material);
+      scene.add(mesh);
+
+      // Easing helper
+      const easeInOutCubic = (t: number) =>
+        t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+      // Animation Loop
+      let time = 0;
+      const animate = (timestamp: number) => {
+        if (!renderer || !scene || !camera) return;
+        time += 0.01;
+        if (uniformsRef.current) {
+          uniformsRef.current.uTime.value = time;
         }
 
-        vec2 center = vec2(0.5);
-        float dist = distance(coverUv, center);
-        float envelope = sin(uProgress * 3.14159265);
-        float wave = sin(dist * uFrequency - uProgress * 25.0) * uIntensity * envelope;
-        
-        vec2 dir = normalize(coverUv - center);
-        if (dist == 0.0) dir = vec2(0.0);
-        
-        vec2 distortedUv = coverUv + dir * wave;
-        gl_FragColor = texture2D(uTexture, distortedUv);
-      }
-    `;
+        if (animatingRef.current) {
+          const elapsed = timestamp - animStartTimeRef.current;
+          const p = Math.min(elapsed / 1600, 1.0);
+          progressRef.current = p;
+          if (uniformsRef.current) {
+            uniformsRef.current.uProgress.value = easeInOutCubic(p);
+          }
 
-    // Load Texture
-    const textureLoader = new THREE.TextureLoader();
-    const textureResolution = new THREE.Vector2(1920, 1080); // Default fallback
-    
-    const texture = textureLoader.load('/unseen-bg.png', (tex) => {
-      if (tex.image) {
-        textureResolution.set(tex.image.width, tex.image.height);
-      }
-      renderer.render(scene, camera);
-    });
-
-    texture.wrapS = THREE.ClampToEdgeWrapping;
-    texture.wrapT = THREE.ClampToEdgeWrapping;
-    texture.minFilter = THREE.LinearFilter;
-
-    // Uniforms
-    const uniforms = {
-      uTexture: { value: texture },
-      uProgress: { value: 0.0 },
-      uTime: { value: 0.0 },
-      uResolution: { value: new THREE.Vector2(width, height) },
-      uTextureResolution: { value: textureResolution },
-      uIntensity: { value: 0.08 },
-      uFrequency: { value: 30.0 }
-    };
-
-    uniformsRef.current = uniforms;
-
-    const material = new THREE.ShaderMaterial({
-      vertexShader,
-      fragmentShader,
-      uniforms,
-      depthWrite: false,
-      depthTest: false
-    });
-
-    const geometry = new THREE.PlaneGeometry(2, 2);
-    const mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
-
-    // Easing helper
-    const easeInOutCubic = (t: number) =>
-      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-    // Animation Loop
-    let time = 0;
-    const animate = (timestamp: number) => {
-      time += 0.01;
-      uniforms.uTime.value = time;
-
-      if (animatingRef.current) {
-        const elapsed = timestamp - animStartTimeRef.current;
-        const p = Math.min(elapsed / 1600, 1.0);
-        progressRef.current = p;
-        uniforms.uProgress.value = easeInOutCubic(p);
-
-        if (p >= 1.0) {
-          animatingRef.current = false;
+          if (p >= 1.0) {
+            animatingRef.current = false;
+          }
         }
-      }
 
-      renderer.render(scene, camera);
+        renderer.render(scene, camera);
+        requestRef.current = requestAnimationFrame(animate);
+      };
+
       requestRef.current = requestAnimationFrame(animate);
-    };
 
-    requestRef.current = requestAnimationFrame(animate);
+      // Resize Handler
+      const handleResize = () => {
+        if (!renderer || !uniformsRef.current) return;
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        renderer.setSize(w, h);
+        uniformsRef.current.uResolution.value.set(w, h);
+      };
+      window.addEventListener('resize', handleResize);
 
-    // Resize Handler
-    const handleResize = () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      renderer.setSize(w, h);
-      uniforms.uResolution.value.set(w, h);
-    };
-    window.addEventListener('resize', handleResize);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      if (requestRef.current) cancelAnimationFrame(requestRef.current);
-      
-      // Dispose resources
-      geometry.dispose();
-      material.dispose();
-      texture.dispose();
-      renderer.dispose();
-      
-      if (renderer.domElement && container.contains(renderer.domElement)) {
-        container.removeChild(renderer.domElement);
-      }
-    };
+      // Cleanup
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        if (requestRef.current) cancelAnimationFrame(requestRef.current);
+        
+        // Dispose resources
+        if (geometry) geometry.dispose();
+        if (material) material.dispose();
+        if (texture) texture.dispose();
+        if (renderer) {
+          renderer.dispose();
+          if (renderer.domElement && container.contains(renderer.domElement)) {
+            container.removeChild(renderer.domElement);
+          }
+        }
+      };
+    } catch (err) {
+      console.warn('WebGL initialization failed in IntroSplash, bypassing intro:', err);
+      setFlow('main');
+      return;
+    }
   }, [isMounted, flow]);
 
   const handleStartTransition = () => {
@@ -218,9 +288,20 @@ export default function IntroSplash({ children }: IntroSplashProps) {
     // Complete the flow at 1.6 seconds
     setTimeout(() => {
       setFlow('main');
-      sessionStorage.setItem('hasSeenIntro', 'true');
+      setSessionStorage('hasSeenIntro', 'true');
     }, 1600);
   };
+
+  // Keyboard shortcut to skip intro
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && flow === 'intro') {
+        handleStartTransition();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [flow]);
 
   // If the flow is resolved to main, render only the site children
   if (flow === 'main') {
@@ -253,10 +334,16 @@ export default function IntroSplash({ children }: IntroSplashProps) {
         >
           <header className="flex justify-between items-center">
             <div className="text-xl font-medium tracking-tight font-sans">dealdhamal<span className="text-xs align-super ml-0.5 opacity-70">®</span></div>
-            <div className="flex flex-col gap-1.5 cursor-pointer p-2">
-              <span className="w-6 h-[2px] bg-white" />
-              <span className="w-6 h-[2px] bg-white" />
-            </div>
+            <button
+              onClick={handleStartTransition}
+              aria-label="Skip intro and view deals"
+              className="flex items-center gap-2 text-xs uppercase tracking-widest text-white/70 hover:text-white px-3 py-1.5 rounded-full border border-white/20 hover:border-white/50 transition-colors cursor-pointer"
+            >
+              <span>Skip Intro</span>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </button>
           </header>
 
           <div className="self-center text-center max-w-[800px] -mt-12 select-none">
